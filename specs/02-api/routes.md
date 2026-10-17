@@ -18,7 +18,7 @@
 | `GET /api/members/[id]/profile` | v2 | Returns questionnaire answers and structured tags |
 | `PUT /api/members/[id]/profile` | v2 | Saves answers, re-runs Gemini structuring, returns tags |
 | `PUT /api/members/[id]/tags` | v2 | Manual tag edits (override Gemini) |
-| `POST /api/vapi/tools` | v1 | Hope's in-call tool calls (`tool-calls` messages). See [hope-tools](../08-agents/hope-tools.md) |
+| `POST /api/vapi/tools` | v1 | Hope's in-call `flag_concern` tool call (`tool-calls` messages), for health concerns only. See [hope-tools](../08-agents/hope-tools.md) |
 | `POST /api/agent/coordinate` | v1 | Runs the coordinator for an opportunity (v1: one Gemini call). See [coordinator-agent](../08-agents/coordinator-agent.md) |
 
 ## Webhook flow: `end-of-call-report`
@@ -28,6 +28,6 @@
 4. Pull `message.artifact.transcript`, `message.summary`, `startedAt`, `endedAt`, `endedReason`. Map senior by `call.customer.number`.
 5. Voicemail/no-answer: insert `no_answer` check-in and stop (retry scheduling is v2).
 6. Call Gemini Flash with the structured schema (see 03-ai). Retry once, then fall back to a minimal row so the call is never lost.
-7. Insert `check_ins`; insert `alerts` for fired flags; insert `call_requests` if `wants_family_contact`; update engagement aggregates. Link opportunities Hope created mid-call (by `check_in_vapi_call_id`) and skip extracted duplicates; start the coordinator for the rest.
+7. Insert `check_ins`; insert `alerts` for fired flags; insert `call_requests` if `wants_family_contact`; update engagement aggregates. Skip extracted health alerts that `flag_concern` already raised during the call; start the coordinator for every extracted opportunity.
 8. FCM multicast to members with tokens; urgent alerts high priority.
 9. `export const maxDuration = 30`; if Gemini is slow, return 200 and finish with `after()`.
