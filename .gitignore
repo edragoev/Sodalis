@@ -8,6 +8,8 @@
 
 # Firebase service-account credentials
 *-firebase-adminsdk-*.json
+service-account*.json
+serviceAccount*.json
 
 # dependencies
 node_modules/
