@@ -6,7 +6,7 @@
 - **No rushing:** no agenda announcements; mirror their words; ask about names they mention.
 - **Per-call context** via `assistantOverrides.variableValues`: name, family names, last call's topics, interests, one open thread to follow up.
 - **Safety:** on a fall, chest pain or confusion, stay calm, ask if they are safe and whether to tell family. No medical advice.
-- **Loneliness:** Hope may check availability and offer a day ("Danny's free Saturday. Want me to ask them?"), but never confirms a visit. In-call tools are in [hope-tools](../08-agents/hope-tools.md); the extraction flags remain the source of truth.
+- **Loneliness and visits:** Hope just listens. She never offers a day, offers to ask the family, or says anyone will come: elders often decline so as not to be a burden, and the family is asked afterwards from the transcript. Her one in-call tool is `flag_concern` for health concerns ([hope-tools](../08-agents/hope-tools.md)); the extraction flags remain the source of truth.
 - **Closing:** only after the elder winds down; warm goodbye; mention next call.
 - **Guards:** `maxDurationSeconds` ~15 min; gentle "are you still there?" on silence.
 

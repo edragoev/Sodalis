@@ -9,8 +9,9 @@
 - `call_requests`: the elder asks Hope to get a relative to call.
 - Scale: 1 senior, 3-4 family members.
 - No auth. v1: the elder and 4 family members are seeded, and a "Who are you?" picker saves `member_id` to localStorage (drives FCM tokens and fairness). v2: members link by the elder's phone number. See [family-linking](../07-onboarding/family-linking.md).
-- Demo priority: reliable call-to-dashboard loop, then the live mid-call buzz.
-- Hope has in-call tools: she may offer a free day ("want me to ask?") but never confirms. Pushes can go out live during the call. See [hope-tools](../08-agents/hope-tools.md).
+- Demo priority: reliable call-to-dashboard loop, then the push to a family member after the call.
+- Visit and call pushes go out only after the conversation, from the transcript. Hope never offers a day or asks the family during the call, because elders tend to decline so as not to be a burden.
+- The one exception is a health concern: Hope's `flag_concern` tool raises an alert, and an urgent push, while the call is still going. See [hope-tools](../08-agents/hope-tools.md).
 - Coordinator: v1 is one Gemini call that picks from a code-built shortlist, chooses slots and writes the push, validated in code with a template fallback. v2 is a tool-calling agent loop. See [coordinator-agent](../08-agents/coordinator-agent.md).
 - Push notifications via Firebase Cloud Messaging (FCM) web push. No SMS.
 - Team: 4 beginners. Scope is v1; v2 is stretch.
@@ -20,8 +21,8 @@
 | Area | v1 (build this) | v2 (stretch) |
 |---|---|---|
 | Hope's call | Vapi assistant, persona prompt, outbound call via "Call now" button | Daily cron calls with retries and missed-check-in alerts |
-| Hope's in-call tools | `get_family_availability`, `propose_visit`, `flag_concern`, querying Supabase directly | `recall`, pre-dial availability cache |
-| After the call | Webhook → Gemini extraction → `check_ins`, `alerts`, `opportunities`; idempotency; dedup with Hope-created opportunities | — |
+| Hope's in-call tool | `flag_concern` for health concerns only | — |
+| After the call | Webhook → Gemini extraction → `check_ins`, `alerts`, `opportunities`; idempotency; no duplicate of a health alert raised during the call | — |
 | Choosing who to notify | Code shortlist → one Gemini call → code validation → template fallback | Coordinator agent loop with tools |
 | "Why Danny?" trace | Input/output of the Gemini call in `agent_runs`; `why` shown on the dashboard | Full step-by-step tool trace |
 | Scheduler | [v1 simple version](../04-scheduler/algorithm.md#v1-demo) | Full scoring and greedy loop |
@@ -40,17 +41,17 @@ Work in tiers. Each tier is a working demo; don't start the next until the curre
 | 0-1.5 | Vapi account, number, assistant + persona prompt, test call to own phone. `create-next-app`, Vercel deploy, env vars | Supabase schema + seed (elder + 4 members with tags + availability grids), realtime. Firebase project |
 | 1.5-3 | Webhook stub on Vercel; save a real `end-of-call-report` as a fixture; replay script | FCM hello world: "Send test push" button reaches your own browser. Dashboard shell + "Who are you?" picker |
 | 3-7 | **Tier 1:** webhook pipeline (idempotency, Gemini extraction, `check_ins` / `alerts` / `opportunities` inserts) | **Tier 1:** live dashboard feed (check-ins, mood, summary, alerts, opportunities). v1 scheduler |
-| 7-10 | **Tier 2:** `/api/vapi/tools` (`get_family_availability`, `propose_visit`, `flag_concern`); one tool working in a real call first; prompt tuning | **Tier 2:** template push on new opportunity; `/opportunities/[id]` page with Confirm (first accept wins). **Tier 3:** single-call coordinator + "Why Danny?" |
+| 7-10 | **Tier 2:** `/api/vapi/tools` with `flag_concern`, working in a real call first; prompt tuning | **Tier 2:** template push to the chosen member after the call; `/opportunities/[id]` page with Confirm (first accept wins). **Tier 3:** single-call coordinator + "Why Danny?" |
 | 10-12 | **Feature freeze at 10.** Everyone: full demo run-throughs, fix bugs, seed polish, README, fallback video | |
 
 Interfaces to agree in hour 0: table columns (schema spec), `getSlots(member_id, kind, days) → slots[]`, `sendPush(member_ids, title, body, data)`.
 
-**Checkpoints:** hour 3, a test push arrives and a replayed fixture hits the webhook; hour 7, a real call shows up on the dashboard (Tier 1); hour 10, a member's phone buzzes while the elder is still on the call (Tier 2).
+**Checkpoints:** hour 3, a test push arrives and a replayed fixture hits the webhook; hour 7, a real call shows up on the dashboard (Tier 1); hour 10, a member's phone buzzes after a real call ends (Tier 2), and a health concern raised mid-call reaches the family at once.
 
-**v2 stretch (only after the hour-10 checkpoint):** coordinator agent loop, full scheduler, Google Calendar, phone linking, questionnaire, Hope-call cron, reminders/escalation, notification action buttons, `recall` tool, digest.
+**v2 stretch (only after the hour-10 checkpoint):** coordinator agent loop, full scheduler, Google Calendar, phone linking, questionnaire, Hope-call cron, reminders/escalation, notification action buttons, digest.
 
 ## Risks
-1. Hope's tool timing on a real call (awkward pauses, tools fired at the wrong moment). Get one tool working live early.
+1. `flag_concern` timing on a real call (awkward pauses, fired at the wrong moment, missed on a real fall). Get it working live early.
 2. FCM setup: permission must be requested from a click; VAPID key needed; service-account private key `\n`s break in env vars; push needs HTTPS or localhost; old service workers stay cached. The live dashboard is the backup.
 3. Vapi outbound needs a number; dial only your own or teammates' phones.
 4. iOS web push needs Add to Home Screen (iOS 16.4+); demo on Android/desktop Chrome.
@@ -62,6 +63,6 @@ Interfaces to agree in hour 0: table columns (schema spec), `getSlots(member_id,
 - Replay a canned `end-of-call-report` at the webhook; check row, alerts, realtime update.
 - Webhook idempotency: same call twice gives one row.
 - Real Vapi call to a test phone; confirm dashboard update and FCM push.
-- Mid-call: `propose_visit` sends a push before the call ends; post-call extraction doesn't duplicate it.
+- Mid-call: a health concern fires `flag_concern`, which inserts an alert and an urgent push before the call ends; post-call extraction doesn't duplicate it. A visit idea mentioned mid-call sends nothing until the call ends.
 - Coordinator: invalid Gemini output (unknown member, bad slot, health text) falls back to the template.
 - Scheduler: intersection and constraints (1 contact/day, 24 h gap).
