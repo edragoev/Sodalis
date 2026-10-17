@@ -1,4 +1,4 @@
-# CareChain: Family Connection AI Specs
+# Sodalis: Family Connection AI Specs
 
 Next.js PWA (Vercel) + Supabase + Vapi + Gemini Flash + Firebase Cloud Messaging.
 "Hope" phones an isolated senior, Gemini extracts mood/topics/engagement/flags, the family dashboard updates live, and a scheduler proposes family visits/calls and Hope's own check-in calls.
