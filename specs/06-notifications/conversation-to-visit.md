@@ -7,13 +7,21 @@ How Hope's conversation with the elder becomes a notification asking a family me
 > Choosing who to notify and writing the push are now done by the [coordinator agent](../08-agents/coordinator-agent.md), using sections 4 and 6 as its shortlist and fallback. Opportunities can also start mid-call via [Hope's tools](../08-agents/hope-tools.md).
 
 ## 1. Flow
+A push starts from one of two triggers. Both end in the same step: the [coordinator agent](../08-agents/coordinator-agent.md) picks the member(s) and slots, writes the push, and the push opens the web app (section 6).
+
+- **During the call (elder names a person):** Hope detects the named member, checks availability and, once the elder agrees, calls `propose_visit` ([hope-tools](../08-agents/hope-tools.md)). The server creates the opportunity (`source = 'hope_tool'`) and starts the coordinator right away, so the member's phone can buzz before the call ends. The post-call extraction later skips the same type and member from that call, so there is no second push.
+- **After the call (no one named):** the steps below run on the transcript. Gemini finds the opportunities, and the coordinator decides who to ask using the member match in section 4, then creates the push.
+
+The post-call steps also cover any opportunity Hope did not create live, including a named one she missed.
+
+**Post-call steps**
 1. Call ends, and Vapi sends `end-of-call-report` to the webhook (see [routes](../02-api/routes.md)).
-2. Gemini extraction returns `opportunities[]` (schema in section 3).
+2. Gemini extraction (an AI scan of the transcript) returns `opportunities[]` (schema in section 3).
 3. Filter by confidence, dedup, and save to `opportunities` (status `detected`).
 4. Match to member(s) (section 4).
 5. Generate up to 3 candidate slots using the scheduler (section 5).
-6. Send FCM push (section 6); status becomes `proposed`.
-7. A member taps Confirm on a slot, and a `visits` row is created (`confirmed`, `opportunity_id` set). The opportunity becomes `confirmed`.
+6. Send FCM push to the related family members (section 6); status becomes `proposed`. The push opens the web application at `/opportunities/[id]`.
+7. A member taps the push and lands in the web app, then taps Confirm on a slot. A `visits` row is created (`confirmed`, `opportunity_id` set) and the opportunity becomes `confirmed`.
 
 ## 2. Opportunity types
 | Type | Meaning | Example utterance | Default urgency |
@@ -64,11 +72,16 @@ Added to the Gemini output (see [hope-persona](../03-ai/hope-persona.md)):
 - Return the top 3 slots with the 30-minute grid and the usual constraints (1 contact per day, 24 h gap). If there are no candidates, return the nearest 3 near-misses flagged "needs a quick OK".
 
 ## 6. Notification payload (FCM)
-v1: the coordinator writes the title and body (template as fallback). The notification has no action buttons; tapping it opens `/opportunities/[id]`, which shows the quote, the slots and a Confirm button per slot.
+v1: the coordinator writes the title and body (template as fallback). The push goes only to the related family members chosen in section 4, and it always directs them into the web application: tapping it opens `/opportunities/[id]`, which shows the quote, the slots and a Confirm button per slot. Confirming happens in the web app, not in the notification. The notification has no action buttons.
+
+- **Recipients:** only the family members resolved in section 4 (named member(s), or the top matches). Members who are not notified do not get the first push and see the opportunity only on the dashboard, until the v2 reminder or escalation in section 7 widens it to everyone.
+- **Destination:** the push carries a link to `/opportunities/[id]` (FCM `webpush.fcm_options.link`, with the same URL in `data` for the service worker's click handler). A tap or click on a web push focuses an open tab of the app, or opens a new one, and navigates to that route.
+- **Signed-out recipient:** the app asks them to sign in, then returns them to `/opportunities/[id]`.
+- **Already claimed:** if another member accepted first, the page shows "already covered by [name]" instead of the Confirm buttons.
 
 - **Title:** short and warm, such as "A visit idea: zucchini from the garden".
 - **Body:** the quote and the slots, such as "'My zucchini are out of control.' Thu 4pm, Fri 10am, Sat 2pm".
-- **Data:** `opportunity_id`, slot ids, `urgency`.
+- **Data:** `opportunity_id`, slot ids, `urgency`, and the `/opportunities/[id]` link.
 - **Actions (v2):** Confirm slot, Pick another, Can't make it.
 - **Priority:** `high` urgency maps to FCM high priority; others are normal.
 - **Privacy:** short quotes only. Health detail stays in the dashboard.
