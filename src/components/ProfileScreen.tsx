@@ -44,8 +44,18 @@ export default function ProfileScreen() {
     const s = getSession();
     if (!s) return void router.replace("/");
     fetch(`/api/members/${s.member_id}/profile`)
-      .then((r) => r.json())
-      .then((p: Profile) => {
+      .then((r) => {
+        // The saved member may no longer exist (a different database, a deleted profile): start over.
+        if (r.status === 404) {
+          clearSession();
+          router.replace("/");
+          return null;
+        }
+        if (!r.ok) throw new Error("profile request failed");
+        return r.json() as Promise<Profile>;
+      })
+      .then((p) => {
+        if (!p) return;
         setMemberId(s.member_id);
         setProfile(p);
         setAnswers(p.answers ?? {});
