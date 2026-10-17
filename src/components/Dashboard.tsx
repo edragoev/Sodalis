@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { clearSession, getSession } from "@/lib/session";
+import NotificationsButton from "./NotificationsButton";
 
 type CheckIn = {
   id: string;
@@ -52,6 +53,7 @@ function Sparkline({ values }: { values: number[] }) {
 export default function Dashboard() {
   const router = useRouter();
   const [seniorName, setSeniorName] = useState("");
+  const [memberId, setMemberId] = useState<string | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [requests, setRequests] = useState<CallRequest[]>([]);
@@ -92,7 +94,10 @@ export default function Dashboard() {
     } catch {
       return void queueMicrotask(() => setError("Supabase isn't configured yet."));
     }
-    queueMicrotask(() => load(s.senior_id));
+    queueMicrotask(() => {
+      setMemberId(s.member_id);
+      load(s.senior_id);
+    });
     // Any change to these tables for this senior triggers a refetch.
     const channel = db.channel(`senior-${s.senior_id}`);
     for (const table of TABLES) {
@@ -121,6 +126,8 @@ export default function Dashboard() {
           <button className="text-stone-500 underline" onClick={() => { clearSession(); router.push("/"); }}>Switch</button>
         </nav>
       </header>
+
+      <NotificationsButton memberId={memberId} />
 
       {alerts.length > 0 && (
         <section aria-label="Alerts" className="space-y-2">
