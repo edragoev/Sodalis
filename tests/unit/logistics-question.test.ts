@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { createElement, useState } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import LogisticsQuestion from '@/components/LogisticsQuestion'
 
-let latest = ''
+const reported = vi.fn()
+const latest = () => (reported.mock.lastCall?.[0] as string | undefined) ?? ''
 function Harness({ initial = '' }: { initial?: string }) {
   const [value, setValue] = useState(initial)
-  // Record what was reported from the change handler, not during render.
   const onChange = (v: string) => {
-    latest = v
+    reported(v)
     setValue(v)
   }
   return createElement(LogisticsQuestion, { value, onChange })
@@ -17,7 +17,7 @@ function Harness({ initial = '' }: { initial?: string }) {
 
 afterEach(() => {
   cleanup()
-  latest = ''
+  reported.mockReset()
 })
 
 const tap = (name: string) => fireEvent.click(screen.getByRole('button', { name }))
@@ -29,7 +29,7 @@ describe('LogisticsQuestion', () => {
     tap('I drive')
     tap('15 to 30 min')
     fireEvent.change(screen.getByLabelText(/anything else/i), { target: { value: 'Weekends only' } })
-    expect(latest).toBe('Getting there: I drive. Distance: 15 to 30 min. Note: Weekends only')
+    expect(latest()).toBe('Getting there: I drive. Distance: 15 to 30 min. Note: Weekends only')
     expect(pressed('I drive')).toBe('true')
     expect(pressed('15 to 30 min')).toBe('true')
   })
@@ -38,7 +38,7 @@ describe('LogisticsQuestion', () => {
     render(createElement(Harness))
     tap('I drive')
     tap('I drive')
-    expect(latest).toBe('')
+    expect(latest()).toBe('')
     expect(pressed('I drive')).toBe('false')
   })
 
@@ -47,7 +47,7 @@ describe('LogisticsQuestion', () => {
     expect(screen.getByRole('button', { name: 'Under 15 min' })).toBeTruthy()
     tap('I can only call or video')
     expect(screen.queryByRole('button', { name: 'Under 15 min' })).toBeNull()
-    expect(latest).toBe('Getting there: I can only call or video.')
+    expect(latest()).toBe('Getting there: I can only call or video.')
   })
 
   it('preselects from a saved answer', () => {
@@ -61,7 +61,7 @@ describe('LogisticsQuestion', () => {
     render(createElement(Harness, { initial: 'Usually free on weekends, about 20 minutes away by car.' }))
     expect((screen.getByLabelText(/anything else/i) as HTMLTextAreaElement).value).toBe('Usually free on weekends, about 20 minutes away by car.')
     tap('I drive')
-    expect(latest).toBe('Getting there: I drive. Note: Usually free on weekends, about 20 minutes away by car.')
+    expect(latest()).toBe('Getting there: I drive. Note: Usually free on weekends, about 20 minutes away by car.')
   })
 
   it('lets you type spaces in the note without them being eaten', () => {
