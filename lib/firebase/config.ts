@@ -8,6 +8,10 @@ export type FirebaseConfig = {
   measurementId?: string // only needed for Analytics
 }
 
+export type FirebaseVapidConfig = {
+  vapidKey?: string
+}
+
 /**
  * Firebase web config, read from NEXT_PUBLIC_FIREBASE_* variables (see .env.example).
  *
@@ -42,4 +46,8 @@ export function getFirebaseConfig(): FirebaseConfig {
 
   const measurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID?.trim() || undefined
   return { ...(values as Omit<FirebaseConfig, 'measurementId'>), measurementId }
+}
+
+export function getFirebaseVapidKey(): string | undefined {
+  return process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.trim() || undefined
 }

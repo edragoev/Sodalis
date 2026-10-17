@@ -4,5 +4,8 @@
 !.env.example
 !.env.test.example
 
+# Firebase service-account credentials
+*-firebase-adminsdk-*.json
+
 # dependencies
 node_modules/
