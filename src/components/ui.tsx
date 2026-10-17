@@ -10,19 +10,24 @@ export const textareaCls =
 const labelBaseCls = "mb-2 block font-semibold text-ink";
 // Class-string version of <Button> for plain <button>/<a> elements.
 export const primaryCls =
-  "h-14 w-full rounded-2xl bg-primary px-6 text-lg font-semibold text-white transition-colors hover:bg-primary-dark disabled:bg-primary/40";
+  "h-14 w-full rounded-2xl bg-btn px-6 text-lg font-semibold text-primary-dark transition-colors hover:bg-btn-hover disabled:opacity-50";
 export const labelCls = `${labelBaseCls} text-sm`;
 export const largeLabelCls = `${labelBaseCls} text-2xl`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";
 export const subCls = "mt-3 text-lg leading-relaxed text-slate";
 
-export function Logo() {
+// A tilted phone handset with two dot eyes above it: Hope's friendly voice on the line.
+const HANDSET =
+  "M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z";
+
+export function Logo({ align = "center" }: { align?: "center" | "left" | "right" }) {
   return (
-    <div className="flex items-center justify-center gap-3">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-mist">
-        <svg viewBox="0 0 32 32" className="h-7 w-7 text-primary" fill="none" aria-hidden>
-          <path d="M16 5c-6 0-11 4-11 9.5 0 3 1.5 5.5 4 7.2L8 27l5.2-3.3c.9.2 1.8.3 2.8.3 6 0 11-4 11-9.5S22 5 16 5Z" fill="currentColor" />
-          <path d="M11.5 14.5c1.2 2 3 3 4.5 3s3.3-1 4.5-3" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    <div className={`flex items-center gap-3 ${align === "right" ? "justify-end" : align === "left" ? "justify-start" : "justify-center"}`}>
+      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-btn">
+        <svg viewBox="0 0 24 24" className="h-8 w-8 text-primary-dark" fill="currentColor" aria-hidden>
+          <path d={HANDSET} />
+          <circle cx="13.2" cy="5.6" r="1.5" />
+          <circle cx="18.2" cy="9.6" r="1.5" />
         </svg>
       </span>
       <span className="font-serif text-3xl font-semibold text-ink">Sodalis</span>
@@ -43,7 +48,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "text" };
 export function Button({ variant = "primary", className = "", ...props }: BtnProps) {
   const styles = {
-    primary: "bg-primary text-white hover:bg-primary-dark disabled:bg-primary/40",
+    primary: "bg-btn text-primary-dark hover:bg-btn-hover disabled:opacity-50",
     secondary: "border border-sand bg-white text-ink hover:bg-cream disabled:opacity-50",
     text: "text-ink underline-offset-4 hover:underline disabled:opacity-50",
   }[variant];

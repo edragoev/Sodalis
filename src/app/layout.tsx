@@ -14,13 +14,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f5f5c",
+  themeColor: "#b0cde6",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${figtree.variable} ${fraunces.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      {/* Browser extensions (e.g. ColorZilla) add attributes to <body> before React loads. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         {children}
         <ServiceWorkerRegister />
       </body>
