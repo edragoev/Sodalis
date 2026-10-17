@@ -7,8 +7,12 @@ import LogisticsQuestion from '@/components/LogisticsQuestion'
 let latest = ''
 function Harness({ initial = '' }: { initial?: string }) {
   const [value, setValue] = useState(initial)
-  latest = value
-  return createElement(LogisticsQuestion, { value, onChange: setValue })
+  // Record what was reported from the change handler, not during render.
+  const onChange = (v: string) => {
+    latest = v
+    setValue(v)
+  }
+  return createElement(LogisticsQuestion, { value, onChange })
 }
 
 afterEach(() => {
