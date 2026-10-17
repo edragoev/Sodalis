@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveSession } from "@/lib/session";
-import { Avatar, BackButton, Button, Logo, Screen, headingCls, inputCls, labelCls, subCls } from "./ui";
+import { RELATIONSHIPS } from "@/lib/relationships";
+import { Avatar, BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, labelCls, subCls } from "./ui";
 
 type Step = "form" | "confirm" | "newElder" | "isThisYou";
 
-const RELATIONSHIPS = ["Daughter", "Son", "Granddaughter", "Grandson", "Niece or nephew", "Friend or neighbor", "Other"];
 const PRONOUNS = ["She/her", "He/him", "They/them", "Other"];
 
 async function post(url: string, body: unknown) {
@@ -17,29 +17,6 @@ async function post(url: string, body: unknown) {
     body: JSON.stringify(body),
   });
   return { status: res.status, data: await res.json().catch(() => ({})) };
-}
-
-function SelectField({
-  id, value, onChange, options, placeholder,
-}: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
-  return (
-    <div className="relative">
-      <select
-        id={id}
-        className={`${inputCls} appearance-none pr-12 ${value ? "" : "text-slate/60"}`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="" disabled>{placeholder}</option>
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
-      <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 9l6 6 6-6" />
-      </svg>
-    </div>
-  );
 }
 
 /** "(415) •••-0142" from whatever the user typed. */

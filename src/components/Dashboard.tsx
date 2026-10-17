@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
+import InviteCard from "./InviteCard";
 import { Avatar, Screen, TabBar } from "./ui";
 
 type CheckIn = {
@@ -82,6 +83,7 @@ function Trend({ points }: { points: { score: number; date: Date }[] }) {
 export default function Dashboard() {
   const router = useRouter();
   const [me, setMe] = useState("");
+  const [memberId, setMemberId] = useState("");
   const [seniorName, setSeniorName] = useState("");
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -117,7 +119,10 @@ export default function Dashboard() {
   useEffect(() => {
     const s = getSession();
     if (!s) return void router.replace("/");
-    queueMicrotask(() => setMe(s.name ?? ""));
+    queueMicrotask(() => {
+      setMe(s.name ?? "");
+      setMemberId(s.member_id);
+    });
     let db: ReturnType<typeof supabaseBrowser>;
     try {
       db = supabaseBrowser();
@@ -268,6 +273,8 @@ export default function Dashboard() {
             <p className="text-slate">Nothing yet.</p>
           )}
         </section>
+
+        {memberId && <InviteCard memberId={memberId} seniorName={sName} />}
       </div>
     </Screen>
   );
