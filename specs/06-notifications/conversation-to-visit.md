@@ -50,7 +50,9 @@ Added to the Gemini output (see [hope-persona](../03-ai/hope-persona.md)):
 
 - Notify members above 0.4, up to 2. If none qualify, notify everyone.
 - The family decides who takes it: the push shows suggested matches and the slots, and the first member to accept claims it.
-- Needs `family_members.interests[]`, `skills[]` and `relationship`.
+- `interest_or_skill` comes from the member's questionnaire answers, structured into tags (`activities_with_grandma`, `interests`, `skills`, `conversation_topics`). Details and weights are in [member-questionnaire](../07-onboarding/member-questionnaire.md).
+- A member with no profile gets a neutral 0.5 and is still eligible. If nobody has a profile, notify everyone.
+- The push can say why the member was picked ("You love cooking with Grandma").
 
 ## 5. Slot proposal (reuses the [scheduler](../04-scheduler/algorithm.md))
 - Candidates: S ∩ F_m for each notified member.

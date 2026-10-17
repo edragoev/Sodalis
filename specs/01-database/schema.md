@@ -21,6 +21,16 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 
 Enable realtime on `opportunities`. See [conversation-to-visit](../06-notifications/conversation-to-visit.md).
 
+## Member profiles (questionnaire)
+| Table / column | Notes |
+|---|---|
+| `member_profile_answers` | id, member_id→family_members, `question_key` (with_grandma/interests/skills/talk_about/wish/logistics), answer_text, updated_at; unique (member_id, question_key) |
+| `family_members.interests`, `.skills`, `.activities_with_grandma`, `.conversation_topics` | `text[]`, structured by Gemini from the answers; member-editable |
+| `family_members.constraints` | `jsonb` `{can_drive, travel_minutes, notes}` |
+| `family_members.profile_summary`, `.profile_updated_at` | one-line summary and timestamp |
+
+See [member-questionnaire](../07-onboarding/member-questionnaire.md).
+
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`

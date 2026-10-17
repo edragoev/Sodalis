@@ -11,6 +11,9 @@
 | `POST /api/push/register` | Stores a member's FCM token |
 | `POST /api/call-requests/[id]/accept` | Member claims a request; triggers scheduling of the next slot |
 | `POST /api/hope/call-now` | On-demand outbound Hope call (demo trigger) |
+| `GET /api/members/[id]/profile` | Returns questionnaire answers and structured tags |
+| `PUT /api/members/[id]/profile` | Saves answers, re-runs Gemini structuring, returns tags |
+| `PUT /api/members/[id]/tags` | Manual tag edits (override Gemini) |
 
 ## Webhook flow: `end-of-call-report`
 1. Verify the shared-secret header from Vapi; reject if missing.
