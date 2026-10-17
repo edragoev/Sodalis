@@ -21,6 +21,7 @@ export default function Availability() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
 
@@ -42,6 +43,7 @@ export default function Availability() {
   const change = (next: Set<string>) => {
     setSelected(next);
     setDirty(true);
+    setSaved(false);
     setNote("");
   };
 
@@ -70,7 +72,7 @@ export default function Availability() {
       });
       if (!res.ok) throw new Error();
       setDirty(false);
-      setNote("Saved. We'll suggest visits and calls that fit.");
+      setSaved(true);
     } catch {
       setNote("Couldn't save. Please try again.");
     }
@@ -84,11 +86,21 @@ export default function Availability() {
       tabs={<TabBar active="availability" name={name} />}
       footer={
         <div className="space-y-2">
-          <Button className="w-full" disabled={busy || !dirty} onClick={save}>
-            {busy ? "Saving…" : "Save my times"}
-          </Button>
+          {saved && !dirty ? (
+            <div role="status" className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-mist text-lg font-semibold text-primary-dark">
+              <svg viewBox="0 0 24 24" className="h-6 w-6 text-good" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+              Saved
+            </div>
+          ) : (
+            <Button className="w-full" disabled={busy || !dirty} onClick={save}>
+              {busy ? "Saving…" : "Save my times"}
+            </Button>
+          )}
+          {saved && !dirty && <p className="text-center text-sm text-slate">We&apos;ll suggest visits and calls that fit.</p>}
           {note && (
-            <p role="status" className={`text-center text-sm ${note.startsWith("Saved") ? "text-primary-dark" : "text-danger"}`}>
+            <p role="alert" className="text-center text-sm text-danger">
               {note}
             </p>
           )}

@@ -109,11 +109,27 @@ describe('Availability grid', () => {
     fireEvent.click(cell('Friday', '10 am to 12 pm'))
     fireEvent.click(screen.getByRole('button', { name: 'Save my times' }))
 
-    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/^Saved/))
+    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/Saved/))
     expect(saved?.windows).toEqual([
       { dow: 1, start: '16:00', end: '20:00' },
       { dow: 5, start: '10:00', end: '12:00' },
     ])
-    expect((screen.getByRole('button', { name: 'Save my times' }) as HTMLButtonElement).disabled).toBe(true)
+    // The button is replaced by a clear "Saved" confirmation, and comes back as soon as you change something.
+    expect(screen.queryByRole('button', { name: 'Save my times' })).toBeNull()
+    fireEvent.click(cell('Monday', '8 am to 10 am'))
+    expect(screen.queryByRole('status')).toBeNull()
+    expect((screen.getByRole('button', { name: 'Save my times' }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('shows an error, and keeps the button, when saving fails', async () => {
+    await load()
+    ;(globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (_u: string, init?: RequestInit) =>
+      init?.method === 'PUT' ? new Response('{}', { status: 500 }) : new Response('{"windows":[]}', { status: 200 }),
+    )
+    fireEvent.click(cell('Monday', '8 am to 10 am'))
+    fireEvent.click(screen.getByRole('button', { name: 'Save my times' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/couldn't save/i))
+    expect(screen.queryByRole('status')).toBeNull()
+    expect((screen.getByRole('button', { name: 'Save my times' }) as HTMLButtonElement).disabled).toBe(false)
   })
 })

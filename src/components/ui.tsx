@@ -76,12 +76,14 @@ export function Screen({
     <div className="flex min-h-dvh justify-center bg-cream sm:items-center sm:p-6">
       <div className="relative flex min-h-dvh w-full max-w-md flex-col bg-white sm:min-h-[680px] sm:rounded-[28px] sm:shadow-[0_8px_40px_rgba(31,42,41,0.08)]">
         {top && <div className="px-6 pt-5">{top}</div>}
-        <div className={`flex-1 px-6 pt-6 ${tabs ? "pb-28" : "pb-6"}`}>{children}</div>
-        {footer && (
-          // With a tab bar, sit above it instead of underneath (the tab bar is about 4.5rem tall).
-          <div className={`sticky border-t border-sand bg-white px-6 py-4 sm:rounded-b-[28px] ${tabs ? "bottom-[4.5rem]" : "bottom-0"}`}>{footer}</div>
+        <div className="flex-1 px-6 pb-6 pt-6">{children}</div>
+        {(footer || tabs) && (
+          // The footer and the tab bar share one sticky area, so they stack and can never overlap.
+          <div className="sticky bottom-0 z-10 bg-white sm:rounded-b-[28px]">
+            {footer && <div className="border-t border-sand px-6 py-4">{footer}</div>}
+            {tabs}
+          </div>
         )}
-        {tabs}
       </div>
     </div>
   );
@@ -100,7 +102,7 @@ export function TabBar({ active, name }: { active: "home" | "availability" | "pr
     { key: "profile", href: "/profile", label: name || "Me", icon: icons.person },
   ] as const;
   return (
-    <nav className="fixed bottom-0 left-1/2 z-10 flex w-full max-w-md -translate-x-1/2 border-t border-sand bg-white pb-[env(safe-area-inset-bottom)] sm:absolute sm:rounded-b-[28px]">
+    <nav className="flex w-full border-t border-sand bg-white pb-[env(safe-area-inset-bottom)] sm:rounded-b-[28px]">
       {tabs.map((t) => (
         <Link
           key={t.key}
