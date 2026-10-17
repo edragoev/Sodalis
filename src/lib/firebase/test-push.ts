@@ -1,4 +1,4 @@
-import { absoluteUrl } from '@/lib/app-url'
+import { deliveryOptions, type PushMessageBody } from './push-message'
 
 // The "hello world" push behind POST /api/push/test.
 
@@ -7,20 +7,12 @@ export type TokenMessaging = {
   send(message: TestPushMessage): Promise<string>
 }
 
-export type TestPushMessage = {
-  token: string
-  notification: { title: string; body: string }
-  data: Record<string, string>
-  android: { priority: 'normal' }
-  webpush: { headers: { Urgency: 'normal' }; fcmOptions?: { link: string } }
-}
+export type TestPushMessage = PushMessageBody<'normal'> & { token: string }
 
 export { isDeadTokenError } from './dead-token'
 
 export function buildTestPush(token: string, memberName?: string | null, appUrl?: string | null): TestPushMessage {
   const firstName = memberName?.trim().split(/\s+/)[0]
-  // FCM rejects a relative link, so it is left out when the app URL is unknown.
-  const link = absoluteUrl(appUrl, '/')
   return {
     token,
     notification: {
@@ -30,8 +22,7 @@ export function buildTestPush(token: string, memberName?: string | null, appUrl?
         : 'Notifications are working.',
     },
     data: { type: 'test' },
-    android: { priority: 'normal' },
-    webpush: { headers: { Urgency: 'normal' }, ...(link ? { fcmOptions: { link } } : {}) },
+    ...deliveryOptions('normal', appUrl, '/'),
   }
 }
 

@@ -1,5 +1,5 @@
-import { absoluteUrl } from '@/lib/app-url'
 import { isDeadTokenError } from './dead-token'
+import { deliveryOptions, type PushMessageBody } from './push-message'
 
 // FCM push for a proposed opportunity (specs/06-notifications/conversation-to-visit.md, section 6).
 
@@ -22,12 +22,7 @@ export type MulticastMessaging = {
   }>
 }
 
-export type OpportunityPushMessage = {
-  notification: { title: string; body: string }
-  data: Record<string, string>
-  android: { priority: 'high' | 'normal' }
-  webpush: { headers: { Urgency: 'high' | 'normal' }; fcmOptions?: { link: string } }
-}
+export type OpportunityPushMessage = PushMessageBody
 
 // Health detail stays on the dashboard, so only a short quote goes in the push.
 const MAX_QUOTE = 80
@@ -69,9 +64,6 @@ export function buildOpportunityPush(
   appUrl?: string | null,
 ): OpportunityPushMessage {
   const priority = opportunity.urgency === 'high' ? 'high' : 'normal'
-  // FCM rejects a relative link, so it is left out when the app URL is unknown. Taps still
-  // work: the service worker routes from data.opportunity_id.
-  const link = absoluteUrl(appUrl, `/opportunities/${encodeURIComponent(opportunity.id)}`)
   const subject = opportunity.mentioned_item?.trim() || opportunity.summary
   slots = validSlots(slots)
   const slotText = slots.map((s) => formatSlot(s.starts_at, timezone)).join(', ')
@@ -89,8 +81,7 @@ export function buildOpportunityPush(
       slot_ids: slots.map((s) => s.id).join(','),
       urgency: opportunity.urgency,
     },
-    android: { priority },
-    webpush: { headers: { Urgency: priority }, ...(link ? { fcmOptions: { link } } : {}) },
+    ...deliveryOptions(priority, appUrl, `/opportunities/${encodeURIComponent(opportunity.id)}`),
   }
 }
 
