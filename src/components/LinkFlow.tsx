@@ -155,15 +155,15 @@ export default function LinkFlow() {
           <Button className="w-full" disabled={busy || !phoneReady} onClick={lookup}>
             Continue
           </Button>
-          <p className="text-center text-xl text-slate">Your family&apos;s details stay private and are never sold.</p>
+          <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
         </div>
       }
     >
-      <div className="flex items-center justify-center pt-4 text-center origin-center scale-125">
-        <Logo />
+      <div className="pt-4">
+        <Logo align="right" />
       </div>
       <h1 className={`${headingCls} mt-12`}>What&apos;s your loved one&apos;s phone number?</h1>
-      <p className={`${subCls} text-xl`}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
+      <p className={subCls}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
       <form
         className="mt-8"
         onSubmit={(e) => {
@@ -171,10 +171,10 @@ export default function LinkFlow() {
           if (phoneReady && !busy) lookup();
         }}
       >
-        <label className={largeLabelCls} htmlFor="elder-phone">Their phone number</label>
+        <label className="mb-2 block text-base font-semibold text-ink" htmlFor="elder-phone">Their phone number</label>
         <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-slate">+1</span>
-          <input id="elder-phone" className={`${largeInputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
+          <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
             value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <button type="submit" className="hidden" />
