@@ -2,13 +2,13 @@
 
 ## Decisions
 - Senior and family surfaces matter equally.
-- Hope reaches Grandma by outbound Vapi phone calls; she has no app.
-- Scheduler schedules family appointments with the elder (visits/calls in `visits`) against Grandma's preferred times. Hope check-in calls run on a fixed cadence outside the scheduler.
+- Hope reaches the elder by outbound Vapi phone calls; the elder has no app.
+- Scheduler schedules family appointments with the elder (visits/calls in `visits`) against the elder's preferred times. Hope check-in calls run on a fixed cadence outside the scheduler.
 - Family free time from Google Calendar free/busy, with a manual grid fallback.
 - Alerts: low mood, health/safety, missed check-in, wants family contact.
-- `call_requests`: Grandma asks Hope to get a relative to call.
+- `call_requests`: the elder asks Hope to get a relative to call.
 - Scale: 1 senior, 3-4 family members.
-- No auth. A "Who are you?" picker saved in localStorage drives FCM tokens and fairness.
+- No auth. Family members link to the elder by entering the elder's phone number (no verification in the demo), then give their name and relationship. `member_id` saved in localStorage drives FCM tokens and fairness. See [family-linking](../07-onboarding/family-linking.md).
 - Engagement scoring uses per-person and per-time-slot history.
 - Demo priority: reliable call-to-dashboard loop and a sophisticated scheduler.
 - No accounts exist yet: Vapi + number, Gemini, Supabase, Firebase, Google Cloud OAuth.
@@ -17,9 +17,9 @@
 | Hours | Work |
 |---|---|
 | 0-1.5 | Account setup, `create-next-app`, Vercel deploy, env vars |
-| 1.5-3 | Schema + seed data, realtime |
+| 1.5-3 | Schema + seed data (the elder only; members join via phone linking), realtime |
 | 3-5.5 | Hope assistant, webhook, Gemini extraction, alerts/call_requests; end-to-end call-to-row test |
-| 5.5-8 | Dashboard, picker screen, PWA manifest + service worker, FCM |
+| 5.5-8 | Dashboard, phone-linking screen, PWA manifest + service worker, FCM |
 | 8-10.5 | Scheduler plan, Google free/busy, confirm flow, Hope-call cron |
 | 10.5-12 | Demo script, seed polish, README, fallback video |
 

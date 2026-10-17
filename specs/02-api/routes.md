@@ -11,6 +11,9 @@
 | `POST /api/push/register` | Stores a member's FCM token |
 | `POST /api/call-requests/[id]/accept` | Member claims a request; triggers scheduling of the next slot |
 | `POST /api/hope/call-now` | On-demand outbound Hope call (demo trigger) |
+| `POST /api/link/lookup` | Finds the elder by phone number; returns only the first name |
+| `POST /api/link/join` | Creates or reconnects a family member for that elder |
+| `POST /api/link/elders` | Demo-only: creates a new elder. See [family-linking](../07-onboarding/family-linking.md) |
 | `GET /api/members/[id]/profile` | Returns questionnaire answers and structured tags |
 | `PUT /api/members/[id]/profile` | Saves answers, re-runs Gemini structuring, returns tags |
 | `PUT /api/members/[id]/tags` | Manual tag edits (override Gemini) |

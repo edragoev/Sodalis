@@ -24,12 +24,17 @@ Enable realtime on `opportunities`. See [conversation-to-visit](../06-notificati
 ## Member profiles (questionnaire)
 | Table / column | Notes |
 |---|---|
-| `member_profile_answers` | id, member_id→family_members, `question_key` (with_grandma/interests/skills/talk_about/wish/logistics), answer_text, updated_at; unique (member_id, question_key) |
-| `family_members.interests`, `.skills`, `.activities_with_grandma`, `.conversation_topics` | `text[]`, structured by Gemini from the answers; member-editable |
+| `member_profile_answers` | id, member_id→family_members, `question_key` (with_elder/interests/skills/talk_about/wish/logistics), answer_text, updated_at; unique (member_id, question_key) |
+| `family_members.interests`, `.skills`, `.activities_with_elder`, `.conversation_topics` | `text[]`, structured by Gemini from the answers; member-editable |
 | `family_members.constraints` | `jsonb` `{can_drive, travel_minutes, notes}` |
 | `family_members.profile_summary`, `.profile_updated_at` | one-line summary and timestamp |
 
 See [member-questionnaire](../07-onboarding/member-questionnaire.md).
+
+## Phone linking
+- `seniors.phone_e164` is UNIQUE (the lookup key for family linking and the Vapi webhook).
+- `family_members.joined_at`; unique `(senior_id, lower(name))`. Members are created through phone linking, not pre-seeded.
+- See [family-linking](../07-onboarding/family-linking.md).
 
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
