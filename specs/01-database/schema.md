@@ -36,6 +36,19 @@ See [member-questionnaire](../07-onboarding/member-questionnaire.md).
 - `family_members.joined_at`; unique `(senior_id, lower(name))`. Members are created through phone linking, not pre-seeded.
 - See [family-linking](../07-onboarding/family-linking.md).
 
+## Agents
+| Table / column | Notes |
+|---|---|
+| `opportunities.source` | `extraction` or `hope_tool` |
+| `opportunities.check_in_vapi_call_id` | set by Hope's `propose_visit` before the check-in row exists; used for dedup |
+| `hope_calls.availability_cache` | `jsonb`, per-member free slots computed before dialing (v2) |
+| `agent_runs` | id, opportunity_id, step, tool, args `jsonb`, result `jsonb`, model_text, used_fallback bool, created_at (v1: one row per run with input/output; v2: one row per step) |
+
+Enable realtime on `agent_runs` for the dashboard trace. See [hope-tools](../08-agents/hope-tools.md) and [coordinator-agent](../08-agents/coordinator-agent.md).
+
+## v1 seed
+The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`.
+
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`

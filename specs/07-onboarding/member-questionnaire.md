@@ -1,5 +1,7 @@
 # Family Member Questionnaire
 
+> **v2 (stretch).** v1 seeds each member's tags and `profile_summary` directly (section 10 has the sample answers). Matching and Hope's context use the seeded tags.
+
 Each family member describes, in their own words, what they enjoy and what they like doing with the elder. The answers become structured tags that drive who gets notified for an opportunity (see [conversation-to-visit](../06-notifications/conversation-to-visit.md)). The family member who loves cooking gets the zucchini.
 
 ## 1. When it appears
