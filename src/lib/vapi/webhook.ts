@@ -1,6 +1,6 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
 import type { CheckInInput } from '@/lib/check-ins'
 import { bad, readJsonObject } from '@/lib/http'
+import { secretMatches } from '@/lib/shared-secret'
 
 // POST /api/vapi/webhook, `end-of-call-report` (specs/02-api/routes.md "Webhook flow").
 // The handler only orchestrates; every collaborator is injected so it can be tested without a database.
@@ -27,13 +27,6 @@ type Json = Record<string, unknown>
 
 const isObject = (v: unknown): v is Json => typeof v === 'object' && v !== null && !Array.isArray(v)
 const text = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() !== '' ? v : undefined)
-
-/** Compares digests so the check takes the same time wherever the strings differ. */
-function secretMatches(expected: string | undefined, given: string | null): boolean {
-  if (!expected || !given) return false
-  const digest = (s: string) => createHash('sha256').update(s).digest()
-  return timingSafeEqual(digest(expected), digest(given))
-}
 
 function validDate(v: unknown): Date | null {
   const s = text(v)
