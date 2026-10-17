@@ -1,0 +1,24 @@
+# API Routes (Next.js App Router)
+
+| Route | Purpose |
+|---|---|
+| `POST /api/vapi/webhook` | Receives Vapi server messages; handles `end-of-call-report` |
+| `POST /api/schedule/plan` | Scheduling math for a horizon (default 14 days); returns proposed `visits` and `hope_calls` |
+| `POST /api/schedule/confirm` | Member confirms a proposal; status becomes `confirmed`; push to others |
+| `GET /api/cron/hope-calls` | Vercel Cron every 5-15 min; dials due `hope_calls` via Vapi; retry after 30 min, max 2, then `missed_checkin` alert |
+| `GET /api/auth/google` + `/callback` | Per-member Google Calendar OAuth (free/busy scope); stores refresh token |
+| `GET /api/availability/[memberId]` | Busy intervals from Google, or the manual grid |
+| `POST /api/push/register` | Stores a member's FCM token |
+| `POST /api/call-requests/[id]/accept` | Member claims a request; triggers scheduling of the next slot |
+| `POST /api/hope/call-now` | On-demand outbound Hope call (demo trigger) |
+
+## Webhook flow: `end-of-call-report`
+1. Verify the shared-secret header from Vapi; reject if missing.
+2. Read `message.type`; return 200 immediately for other types.
+3. Idempotency: check `call.id` against `check_ins.vapi_call_id`.
+4. Pull `message.artifact.transcript`, `message.summary`, `startedAt`, `endedAt`, `endedReason`. Map senior by `call.customer.number`.
+5. Voicemail/no-answer: insert `no_answer` check-in, schedule retry, stop.
+6. Call Gemini Flash with the structured schema (see 03-ai). Retry once, then fall back to a minimal row so the call is never lost.
+7. Insert `check_ins`; insert `alerts` for fired flags; insert `call_requests` if `wants_family_contact`; update engagement aggregates.
+8. FCM multicast to members with tokens; urgent alerts high priority.
+9. `export const maxDuration = 30`; if Gemini is slow, return 200 and finish with `after()`.
