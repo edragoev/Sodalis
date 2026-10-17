@@ -142,11 +142,11 @@ export default function LinkFlow() {
         <p className={subCls}>We don&apos;t have {elderPhone} yet. Tell us a little about them.</p>
         <div className="mt-8 space-y-5">
           <div>
-            <label className={labelCls} htmlFor="elder-name">Their first name</label>
+            <label className={`${labelCls} text-lg`} htmlFor="elder-name">Their first name</label>
             <input id="elder-name" className={inputCls} value={seniorName} onChange={(e) => setSeniorName(e.target.value)} />
           </div>
           <div>
-            <label className={labelCls} htmlFor="elder-pronouns">Their pronouns</label>
+            <label className={`${labelCls} text-lg`} htmlFor="elder-pronouns">Their pronouns</label>
             <SelectField id="elder-pronouns" value={pronouns} onChange={setPronouns} options={PRONOUNS} placeholder="Choose one" />
             {pronouns === "Other" && (
               <input className={`${inputCls} mt-3`} placeholder="Their pronouns, in your words" value={otherPronouns} onChange={(e) => setOtherPronouns(e.target.value)} />
@@ -188,15 +188,15 @@ export default function LinkFlow() {
           <Button className="w-full" disabled={busy || !formReady} onClick={lookup}>
             Continue
           </Button>
-          <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
+          <p className="text-center text-xl text-slate">Your family&apos;s details stay private and are never sold.</p>
         </div>
       }
     >
-      <div className="pt-4">
+      <div className="flex items-center justify-center pt-4 text-center origin-center scale-125">
         <Logo />
       </div>
       <h1 className={`${headingCls} mt-12`}>Stay close to someone you love</h1>
-      <p className={subCls}>A few quick details and you&apos;re in.</p>
+      <p className={`${subCls} text-xl`}>A few quick details and you&apos;re in.</p>
       <form
         className="mt-8 space-y-5"
         onSubmit={(e) => {
@@ -205,24 +205,26 @@ export default function LinkFlow() {
         }}
       >
         <div>
-          <label className={labelCls} htmlFor="your-name">Your first name</label>
+          <label className={`${labelCls} text-xl`} htmlFor="your-name">Your name</label>
           <input id="your-name" className={inputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className={labelCls} htmlFor="relationship">How are you related to them?</label>
-          <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" />
+          <label className={`${labelCls} text-xl`} htmlFor="relationship">How are you related to them?</label>
+          <div className="[&_select]:!text-black [&_option]:!text-black">
+            <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" />
+          </div>
           {relationship === "Other" && (
             <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
           )}
         </div>
         <div>
-          <label className={labelCls} htmlFor="elder-phone">Their phone number</label>
+          <label className={`${labelCls} text-xl`} htmlFor="elder-phone">Their phone number</label>
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
             <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
               value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <p className="mt-2 text-sm text-slate">The number Hope calls to check in on them.</p>
+          <p className="mt-2 text-xl text-slate">The number Hope calls to check in on them.</p>
         </div>
         <button type="submit" className="hidden" />
       </form>
