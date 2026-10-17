@@ -51,3 +51,17 @@ export function getFirebaseConfig(): FirebaseConfig {
 export function getFirebaseVapidKey(): string | undefined {
   return process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.trim() || undefined
 }
+
+/**
+ * True when browser push can work here: the Firebase web config is complete and there is a web
+ * push key. The app uses this to hide the notifications button instead of failing when Firebase
+ * has not been set up (for example a fresh checkout without these variables).
+ */
+export function isPushConfigured(): boolean {
+  try {
+    getFirebaseConfig()
+  } catch {
+    return false
+  }
+  return !!getFirebaseVapidKey()
+}

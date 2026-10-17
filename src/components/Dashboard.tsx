@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
 import InviteCard from "./InviteCard";
+import { isPushConfigured } from "@/lib/firebase/config";
 import NotificationsButton from "./NotificationsButton";
 import { Avatar, MoodFace, Screen, TabBar } from "./ui";
 
@@ -166,7 +167,8 @@ export default function Dashboard() {
       </header>
 
       <div className="mt-6 space-y-4">
-        <NotificationsButton memberId={memberId || null} />
+        {/* Hidden until Firebase is set up, so a missing setting never breaks the page. */}
+        {isPushConfigured() && <NotificationsButton memberId={memberId || null} />}
 
         {topAlert && (
           <section aria-label="Alerts" className="space-y-3">
