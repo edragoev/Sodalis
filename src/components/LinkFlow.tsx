@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { saveElder } from "@/lib/session";
+import DatePicker from "./DatePicker";
 import TagInput from "./TagInput";
 import { BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls, textareaCls } from "./ui";
 
@@ -144,7 +145,7 @@ export default function LinkFlow() {
         <p className={`${subCls} text-xl`}>We don&apos;t have {prettyPhone(phone)} yet. Tell us a little about them.</p>
         <div className="mt-8 space-y-6">
           <div>
-            <label className={largeLabelCls} htmlFor="elder-name">Their first name</label>
+            <label className={largeLabelCls} htmlFor="elder-name">Their name</label>
             <input id="elder-name" className={largeInputCls} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
@@ -156,7 +157,7 @@ export default function LinkFlow() {
           </div>
           <div>
             <label className={largeLabelCls} htmlFor="elder-birthday">Their birthday (optional)</label>
-            <input id="elder-birthday" type="date" className={largeInputCls} value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+            <DatePicker id="elder-birthday" value={birthday} onChange={setBirthday} placeholder="Select their birthday" startYear={1950} />
           </div>
         </div>
       </Screen>
