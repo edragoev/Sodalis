@@ -77,7 +77,10 @@ export function Screen({
       <div className="relative flex min-h-dvh w-full max-w-md flex-col bg-white sm:min-h-[680px] sm:rounded-[28px] sm:shadow-[0_8px_40px_rgba(31,42,41,0.08)]">
         {top && <div className="px-6 pt-5">{top}</div>}
         <div className={`flex-1 px-6 pt-6 ${tabs ? "pb-28" : "pb-6"}`}>{children}</div>
-        {footer && <div className="sticky bottom-0 border-t border-sand bg-white px-6 py-4 sm:rounded-b-[28px]">{footer}</div>}
+        {footer && (
+          // With a tab bar, sit above it instead of underneath (the tab bar is about 4.5rem tall).
+          <div className={`sticky border-t border-sand bg-white px-6 py-4 sm:rounded-b-[28px] ${tabs ? "bottom-[4.5rem]" : "bottom-0"}`}>{footer}</div>
+        )}
         {tabs}
       </div>
     </div>

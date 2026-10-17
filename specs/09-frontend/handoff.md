@@ -35,7 +35,7 @@ Invite link /join/<token> ─▶ name, pronouns, relationship ─▶ questionnai
 
 **Opportunity slots (`opportunities.proposed_slots`)**: `[{ "id": "s1", "starts_at": "2026-10-18T16:00:00Z" }]`. Times are shown in the elder's time zone (`formatSlot`). `confirm_opportunity_slot` computes the end (1 h for a visit, 30 min for a call). The status must be `proposed` for the screen to offer confirming.
 
-**Member availability (`family_members.manual_availability`)**: `[{ "dow": 1, "start": "17:00", "end": "21:00" }]`. `dow` 0 = Sunday, 24 h times in the member's local time, no time zone stored, same shape as `seniors.preferred_windows`. The UI works in blocks (Morning 08:00-12:00, Afternoon 12:00-17:00, Evening 17:00-21:00) and merges touching blocks. Tell the frontend if the scheduler needs finer precision or a time zone.
+**Member availability (`family_members.manual_availability`)**: `[{ "dow": 1, "start": "16:00", "end": "20:00" }]`. `dow` 0 = Sunday, 24 h times in the member's local time, no time zone stored, same shape as `seniors.preferred_windows`. The UI is a 7-day by 7-slot grid of **2-hour slots** (8-10 am up to 8-10 pm), because a visit lasts about 2 hours; touching slots are merged into one window, so a window's start and end are always on even hours between 08:00 and 22:00. A call fits inside any ticked slot. Older saved windows (the previous 8-12 / 12-5 / 5-9 blocks) show only the whole slots they cover. Tell the frontend if the scheduler needs 30-minute precision or a time zone.
 
 **Elder profile (`seniors`)**: `pronouns` (text), `birthday` (date), `interests` and `skills` (lowercase text tags), `notes` (the free-text "good to know"). Hope and the coordinator can read all of these.
 

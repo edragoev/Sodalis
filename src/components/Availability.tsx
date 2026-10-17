@@ -2,14 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BLOCKS, DAYS, DAY_NAMES, cellKey, fromWindows, toWindows } from "@/lib/availability";
+import { DAY_LETTERS, DAY_NAMES, SLOTS, cellKey, dayKeys, fromWindows, slotKeys, toWindows } from "@/lib/availability";
 import { getSession } from "@/lib/session";
 import { Button, Screen, TabBar, headingCls, subCls } from "./ui";
 
+// "After work" on weekdays (4 to 8 pm), and the daytime on weekends (8 am to 8 pm).
 const PRESETS = [
-  { label: "Weekday evenings", cells: [1, 2, 3, 4, 5].map((d) => cellKey(d, 2)) },
-  { label: "Weekends", cells: [0, 6].flatMap((d) => [0, 1, 2].map((b) => cellKey(d, b))) },
+  { label: "Weekday evenings", cells: [1, 2, 3, 4, 5].flatMap((d) => [4, 5].map((s) => cellKey(d, s))) },
+  { label: "Weekends", cells: [0, 6].flatMap((d) => [0, 1, 2, 3, 4, 5].map((s) => cellKey(d, s))) },
 ];
+
+const header = "rounded-lg py-1.5 text-sm font-semibold text-ink hover:bg-mist";
 
 export default function Availability() {
   const router = useRouter();
@@ -36,21 +39,24 @@ export default function Availability() {
       });
   }, [router]);
 
+  const change = (next: Set<string>) => {
+    setSelected(next);
+    setDirty(true);
+    setNote("");
+  };
+
   function toggle(key: string) {
     const next = new Set(selected);
     if (!next.delete(key)) next.add(key);
-    setSelected(next);
-    setDirty(true);
-    setNote("");
+    change(next);
   }
 
-  function applyPreset(cells: string[]) {
+  // A preset, a whole day or a whole time of day: select it all, or clear it if it's all selected already.
+  function toggleMany(cells: string[]) {
     const all = cells.every((c) => selected.has(c));
     const next = new Set(selected);
     cells.forEach((c) => (all ? next.delete(c) : next.add(c)));
-    setSelected(next);
-    setDirty(true);
-    setNote("");
+    change(next);
   }
 
   async function save() {
@@ -90,60 +96,56 @@ export default function Availability() {
       }
     >
       <h1 className={headingCls}>When are you free?</h1>
-      <p className={subCls}>Tap the times that usually work for a visit or a call. You can change this any time.</p>
+      <p className={subCls}>Tap the times that usually work for a visit or a call. Each square is a 2-hour window.</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {PRESETS.map((p) => (
           <button
             key={p.label}
-            onClick={() => applyPreset(p.cells)}
+            onClick={() => toggleMany(p.cells)}
             className="rounded-full border border-sand px-4 py-2 text-sm font-semibold text-ink hover:bg-mist"
           >
             {p.label}
           </button>
         ))}
         <button
-          onClick={() => {
-            setSelected(new Set());
-            setDirty(true);
-            setNote("");
-          }}
+          onClick={() => change(new Set())}
           className="rounded-full px-4 py-2 text-sm font-semibold text-slate underline-offset-4 hover:underline"
         >
           Clear all
         </button>
       </div>
 
-      <div className="mt-6 grid grid-cols-[3rem_repeat(3,1fr)] items-center gap-2" role="group" aria-label="Weekly availability">
+      <div className="mt-6 grid grid-cols-[3.25rem_repeat(7,1fr)] items-center gap-1.5" role="group" aria-label="Weekly availability">
         <span />
-        {BLOCKS.map((b) => (
-          <div key={b.label} className="text-center">
-            <p className="text-xs font-semibold text-ink">{b.label}</p>
-            <p className="text-xs text-slate">{b.hint}</p>
-          </div>
+        {DAY_LETTERS.map((letter, d) => (
+          <button key={letter} aria-label={`Every time on ${DAY_NAMES[d]}`} onClick={() => toggleMany(dayKeys(d))} className={header}>
+            {letter}
+          </button>
         ))}
-        {DAYS.map((day, d) => (
-          <div key={day} className="contents">
-            <span className="text-sm font-semibold text-ink">{day}</span>
-            {BLOCKS.map((b, i) => {
+        {SLOTS.map((slot, i) => (
+          <div key={slot.label} className="contents">
+            <button aria-label={`${slot.range}, every day`} onClick={() => toggleMany(slotKeys(i))} className={`${header} text-left text-xs`}>
+              {slot.label}
+            </button>
+            {DAY_LETTERS.map((_, d) => {
               const on = selected.has(cellKey(d, i));
               return (
                 <button
-                  key={b.label}
+                  key={d}
                   aria-pressed={on}
-                  aria-label={`${DAY_NAMES[d]} ${b.label.toLowerCase()}`}
+                  aria-label={`${DAY_NAMES[d]} ${slot.range}`}
                   onClick={() => toggle(cellKey(d, i))}
-                  className={`h-12 rounded-xl border text-lg transition-colors ${
-                    on ? "border-primary bg-primary text-white" : "border-sand bg-white text-transparent hover:bg-mist"
+                  className={`h-11 rounded-lg border transition-colors ${
+                    on ? "border-primary bg-primary" : "border-sand bg-white hover:bg-mist"
                   }`}
-                >
-                  ✓
-                </button>
+                />
               );
             })}
           </div>
         ))}
       </div>
+      <p className="mt-4 text-sm text-slate">Each row starts at the time on the left. Tap a day or a time to fill its whole row or column.</p>
     </Screen>
   );
 }
