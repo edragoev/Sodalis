@@ -88,6 +88,17 @@ describe('ProfilePicker', () => {
     expect(localStorage.getItem('sodalis.session')).toBeNull() // nobody is signed in just by being added
   })
 
+  it('works for someone signed in by invite link, who never saved the family on this device', async () => {
+    localStorage.clear()
+    localStorage.setItem('sodalis.session', JSON.stringify({ member_id: 'm9', senior_id: 'sen-1', name: 'Zoe' }))
+    members = [{ id: 'm9', name: 'Zoe', relationship: 'Niece or nephew', has_answers: true }]
+    mockApi()
+    render(createElement(ProfilePicker))
+    expect(await screen.findByRole('heading', { name: "Who's checking in on Mary?" })).toBeTruthy()
+    expect(replace).not.toHaveBeenCalledWith('/')
+    expect(JSON.parse(localStorage.getItem('sodalis.elder')!)).toMatchObject({ senior_id: 'sen-1' })
+  })
+
   it('tapping a profile with no answers opens the questionnaire; with answers, the dashboard', async () => {
     members = [
       { id: 'm1', name: 'Danny', relationship: 'Grandson', has_answers: false },

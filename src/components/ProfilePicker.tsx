@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { RELATIONSHIPS } from "@/lib/relationships";
-import { clearElder, getElder, saveSession } from "@/lib/session";
+import { clearElder, getElder, getSession, saveElder, saveSession } from "@/lib/session";
 import { Avatar, BackButton, Button, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls } from "./ui";
 
 type Member = { id: string; name: string; relationship: string; has_answers: boolean };
@@ -40,8 +40,11 @@ export default function ProfilePicker() {
   }, [router]);
 
   useEffect(() => {
-    const e = getElder();
+    // Signed in by invite link? Then we know the family from the session even if it was never saved.
+    const session = getSession();
+    const e = getElder() ?? (session ? { senior_id: session.senior_id } : null);
     if (!e) return void router.replace("/");
+    if (session && !getElder()) saveElder(e);
     queueMicrotask(() => {
       setSeniorId(e.senior_id);
       load(e.senior_id).catch(() => setError("Couldn't load the family. Please try again."));

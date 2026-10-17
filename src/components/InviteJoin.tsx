@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { RELATIONSHIPS } from "@/lib/relationships";
-import { saveSession } from "@/lib/session";
+import { saveElder, saveSession } from "@/lib/session";
 import { Avatar, BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, labelCls, subCls } from "./ui";
 
 type State = "loading" | "invalid" | "form" | "isThisYou";
@@ -51,6 +51,7 @@ export default function InviteJoin({ token }: { token: string }) {
       else if (!res.ok) setError(data.error ?? "Could not join");
       else {
         saveSession({ member_id: data.member_id, senior_id: data.senior_id, name: name.trim() });
+        saveElder({ senior_id: data.senior_id, name: seniorName });
         router.push(data.reconnected ? "/dashboard" : "/questionnaire");
       }
     } catch {

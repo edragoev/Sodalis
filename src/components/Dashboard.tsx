@@ -160,7 +160,7 @@ export default function Dashboard() {
           <p className="text-slate">{first ? `${greeting()}, ${first}` : greeting()}</p>
           <h1 className="font-serif text-3xl font-semibold leading-tight text-ink">Here&apos;s how {sName} is</h1>
         </div>
-        <button aria-label="My profile" onClick={() => router.push("/profile")}>
+        <button aria-label="Switch or add profile" onClick={() => router.push("/profiles")}>
           <Avatar name={me || "?"} />
         </button>
       </header>
