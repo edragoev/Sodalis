@@ -84,7 +84,7 @@ v1: the coordinator writes the title and body (template as fallback). The push g
 - **Data:** `opportunity_id`, slot ids, `urgency`, and the `/opportunities/[id]` link.
 - **Actions (v2):** Confirm slot, Pick another, Can't make it.
 - **Priority:** `high` urgency maps to FCM high priority; others are normal.
-- **Privacy:** short quotes only. Health detail stays in the dashboard.
+- **Privacy:** short quotes only. Nothing about the elder's health goes in a push: if the quote is about feeling unwell or pain ("my knee hurts"), the push leaves it out and uses the summary instead. Health detail stays in the dashboard.
 
 ## 7. Lifecycle
 `detected → proposed → confirmed | declined | expired`

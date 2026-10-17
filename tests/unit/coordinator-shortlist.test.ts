@@ -111,15 +111,10 @@ describe('buildShortlist', () => {
     expect(buildShortlist(opportunity(), [a, b]).map((m) => m.id)).toEqual(['b', 'a'])
   })
 
-  it('drops a member who cannot drive from an errand', () => {
+  it('does not drop anyone for their constraints', () => {
     const noCar = member('nocar', { activities_with_elder: ['cooking', 'gardening'], constraints: { can_drive: false } })
     const list = buildShortlist(opportunity({ type: 'gift_errand' }), [noCar, maya])
-    expect(list.map((m) => m.id)).toEqual(['maya'])
-  })
-
-  it('keeps a member who cannot drive for an activity', () => {
-    const noCar = member('nocar', { activities_with_elder: ['cooking', 'gardening'], constraints: { can_drive: false } })
-    expect(buildShortlist(opportunity({ type: 'activity' }), [noCar]).map((m) => m.id)).toEqual(['nocar'])
+    expect(list.map((m) => m.id)).toEqual(['nocar'])
   })
 
   it('returns an empty list for a family with no members', () => {

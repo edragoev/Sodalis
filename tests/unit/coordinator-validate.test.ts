@@ -51,7 +51,15 @@ describe('validateDecision', () => {
     expect(validateDecision(bad as unknown as Decision, shortlist)).toMatchObject({ ok: false })
   })
 
-  it.each(['her medication', 'blood pressure', 'since her fall', 'the diagnosis'])(
+  it.each([
+    'her medication',
+    'blood pressure',
+    'since her fall',
+    'the diagnosis',
+    'her knee hurts',
+    'that she is not feeling well',
+    'a pain in her back',
+  ])(
     'rejects text that mentions health (%s)',
     (phrase) => {
       expect(validateDecision(decision({ body: `Grandma mentioned ${phrase}. Thu 4pm?` }), shortlist)).toEqual({
@@ -61,6 +69,13 @@ describe('validateDecision', () => {
       expect(validateDecision(decision({ title: phrase }), shortlist)).toMatchObject({ ok: false, reason: 'health_mentioned' })
     },
   )
+
+  it('rejects health text in the why too', () => {
+    expect(validateDecision(decision({ why: 'Her knee hurts, so she needs company.' }), shortlist)).toEqual({
+      ok: false,
+      reason: 'health_mentioned',
+    })
+  })
 
   it('does not mistake ordinary words for health words', () => {
     expect(validateDecision(decision({ body: "She fell in love with the garden. Thu 4pm?" }), shortlist)).toEqual({ ok: true })
