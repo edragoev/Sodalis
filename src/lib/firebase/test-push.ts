@@ -4,7 +4,7 @@ import { deliveryOptions, type PushMessageBody } from './push-message'
 
 /** The slice of firebase-admin's Messaging that a single-token send needs. */
 export type TokenMessaging = {
-  send(message: TestPushMessage): Promise<string>
+  send(message: TestPushMessage, dryRun?: boolean): Promise<string>
 }
 
 export type TestPushMessage = PushMessageBody<'normal'> & { token: string }

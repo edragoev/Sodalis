@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getFirebaseApp } from '../firebase/client'
 import { registerServiceWorker } from '../firebase/notifications'
-import { registerToken } from '../push-registration'
+import { registerToken, verifyToken } from '../push-registration'
 
 export type NotificationPermissionState = 'default' | 'granted' | 'denied' | 'unsupported'
 
@@ -9,6 +9,7 @@ export type UseNotificationsOptions = {
   /** Who to register the token for. Without one the token is fetched but not registered. */
   memberId?: string | null
   register?: typeof registerToken
+  verify?: typeof verifyToken
 }
 
 export type UseNotificationsResult = {
@@ -35,7 +36,7 @@ const asError = (caught: unknown) => (caught instanceof Error ? caught : new Err
  * on page load: on mount it only reads the current permission (and quietly fetches a token if
  * it was already granted). Asking happens in enable().
  */
-export function useNotifications({ memberId = null, register = registerToken }: UseNotificationsOptions = {}): UseNotificationsResult {
+export function useNotifications({ memberId = null, register = registerToken, verify = verifyToken }: UseNotificationsOptions = {}): UseNotificationsResult {
   const [permission, setPermission] = useState<NotificationPermissionState>('default')
   const [token, setToken] = useState<string | null>(null)
   const [error, setError] = useState<Error | null>(null)
@@ -51,31 +52,41 @@ export function useNotifications({ memberId = null, register = registerToken }: 
     }
   }, [])
 
-  // Fetches this browser's FCM token and registers it for the member.
+  // Fetches this browser's FCM token and registers it for the member. If Firebase says the token
+  // it handed back is dead (it caches one in the browser), drops it and starts over once.
   const fetchAndRegister = useCallback(async () => {
-    const { getMessaging, getToken } = await import('firebase/messaging')
+    const { deleteToken, getMessaging, getToken } = await import('firebase/messaging')
     // Tie the token to our own worker (sw.js); otherwise Firebase registers its default
     // firebase-messaging-sw.js and taps never reach our notificationclick handler.
     const serviceWorkerRegistration = await registerServiceWorker()
     if (!serviceWorkerRegistration) throw new Error('Service worker is not available')
-    const fcmToken = await getToken(getMessaging(getFirebaseApp()), {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration,
-    })
-    if (!mounted.current) return
-    setToken(fcmToken)
-    setRegistered(false)
+    const messaging = getMessaging(getFirebaseApp())
+    const options = { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY, serviceWorkerRegistration }
 
-    if (!memberId) return
-    const saved = await register(memberId, fcmToken)
-    if (!mounted.current) return
-    if (saved.ok) {
-      setError(null)
-      setRegistered(true)
-    } else {
-      setError(new Error('Could not save your notification settings'))
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const fcmToken = await getToken(messaging, options)
+      if (!mounted.current) return
+      setToken(fcmToken)
+      setRegistered(false)
+
+      if (!memberId) return
+      const saved = await register(memberId, fcmToken)
+      if (!mounted.current) return
+      if (!saved.ok) {
+        setError(new Error('Could not save your notification settings'))
+        return
+      }
+      // 'unknown' (could not check) is trusted: only a clear "dead" answer triggers a fresh token.
+      if ((await verify(memberId)) !== 'dead') {
+        if (!mounted.current) return
+        setError(null)
+        setRegistered(true)
+        return
+      }
+      if (attempt === 0) await deleteToken(messaging)
     }
-  }, [memberId, register])
+    if (mounted.current) setError(new Error('Push token was rejected'))
+  }, [memberId, register, verify])
 
   useEffect(() => {
     async function check() {
