@@ -1,11 +1,14 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { QUESTION_KEYS, loadProfile, restructureMember } from "@/lib/profile";
+import { QUESTION_KEYS, hasPendingStructuring, loadProfile, scheduleRestructure } from "@/lib/profile";
 import { logisticsConstraints, parseLogistics } from "@/lib/logistics";
+
+// The tags are built after the response is sent; give that work room to finish.
+export const maxDuration = 60;
 
 export async function GET(_req: Request, ctx: RouteContext<"/api/members/[id]/profile">) {
   const { id } = await ctx.params;
-  // Retry structuring if a previous attempt failed (no-op when nothing is pending).
-  await restructureMember(id);
+  // Retry building the tags in the background if an earlier attempt didn't finish. Never wait for it.
+  if (await hasPendingStructuring(id)) scheduleRestructure(id);
   const profile = await loadProfile(id);
   if (!profile) return Response.json({ error: "Member not found" }, { status: 404 });
   return Response.json(profile);
@@ -51,7 +54,9 @@ export async function PUT(req: Request, ctx: RouteContext<"/api/members/[id]/pro
     }
   }
 
-  const structuring = await restructureMember(id);
+  // Answers and exact travel facts are saved; the tags are built in the background ("pending").
+  const pending = await hasPendingStructuring(id);
+  if (pending) scheduleRestructure(id);
   const profile = await loadProfile(id);
-  return Response.json({ ...profile, structuring });
+  return Response.json({ ...profile, structuring: pending ? "pending" : "skipped" });
 }

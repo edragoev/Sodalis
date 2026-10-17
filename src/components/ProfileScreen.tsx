@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { QUESTIONS } from "@/lib/profile-questions";
 import { clearSession, getSession } from "@/lib/session";
 import LogisticsQuestion from "./LogisticsQuestion";
@@ -31,6 +31,14 @@ export default function ProfileScreen() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const alive = useRef(true); // stops the tag-refresh polling when you leave the page
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const s = getSession();
@@ -57,11 +65,25 @@ export default function ProfileScreen() {
       const data = await res.json();
       if (!res.ok) throw new Error();
       setProfile(data);
-      setNote(data.structuring === "failed" ? "Saved. We'll finish building your tags next time you visit." : "Saved.");
+      setBusy(false);
+      if (data.structuring !== "pending") return void setNote("Saved.");
+
+      // Your answers are saved. The tags are built in the background, so check back for them.
+      setNote("Saved. Updating your tags…");
+      for (let i = 0; i < 15 && alive.current; i++) {
+        await new Promise((r) => setTimeout(r, 4000));
+        if (!alive.current) return;
+        const check = await fetch(`/api/members/${memberId}/profile`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        if (check && check.updated_at && check.updated_at !== data.updated_at) {
+          setProfile(check);
+          return void setNote("Saved. Your tags are up to date.");
+        }
+      }
+      setNote("Saved. Your tags will update shortly.");
     } catch {
       setNote("Couldn't save. Please try again.");
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function saveTags(field: TagField, tags: string[]) {
