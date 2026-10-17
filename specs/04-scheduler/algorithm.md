@@ -24,8 +24,11 @@ C = {(m, s) : s ∈ S ∩ F_m and the slot run fits the kind}. A visit needs 2 h
 4. Increment n_m and recompute fairness (this rotates the rota).
 5. Repeat until target met (default 3 contacts/week, at least 1 visit per fortnight) or candidates run out.
 
-## Hope check-in calls
-Daily by default. Pick the slot inside `hope_call_windows` with the highest T_s. Skip slots within 2 h of a visit or call. Retry a missed call after 30 min. With no stats, default to late morning.
+## Scope
+The scheduler only schedules **family appointments with the elder**: visits and calls (`visits`), matched to Grandma's preferred times and each member's free time. It does not schedule Grandma's availability around Hope.
+
+## Hope check-in calls (outside the scheduler)
+A fixed daily time inside `hope_call_windows` (default late morning), skipping times within 2 h of a confirmed family visit/call. Retry a missed call after 30 min. No scoring. T_s is still computed from Hope check-ins and reused when scoring family slots.
 
 ## Fallback
 If S ∩ F_m is empty for everyone, return the 3 nearest near-misses (window widened ±1 h) flagged "needs a quick OK".

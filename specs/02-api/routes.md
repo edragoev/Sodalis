@@ -3,7 +3,7 @@
 | Route | Purpose |
 |---|---|
 | `POST /api/vapi/webhook` | Receives Vapi server messages; handles `end-of-call-report` |
-| `POST /api/schedule/plan` | Scheduling math for a horizon (default 14 days); returns proposed `visits` and `hope_calls` |
+| `POST /api/schedule/plan` | Scheduling math for a horizon (default 14 days); returns proposed family `visits` (visit or call) only |
 | `POST /api/schedule/confirm` | Member confirms a proposal; status becomes `confirmed`; push to others |
 | `GET /api/cron/hope-calls` | Vercel Cron every 5-15 min; dials due `hope_calls` via Vapi; retry after 30 min, max 2, then `missed_checkin` alert |
 | `GET /api/auth/google` + `/callback` | Per-member Google Calendar OAuth (free/busy scope); stores refresh token |

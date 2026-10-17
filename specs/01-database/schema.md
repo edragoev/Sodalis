@@ -10,7 +10,7 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `call_requests` | id, senior_id, check_in_id, `target_member_id` (nullable = anyone), reason, urgency, status (pending/accepted/declined/done), accepted_by, created_at |
 | `alerts` | id, senior_id, check_in_id, type (low_mood/health/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
 | `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, call_request_id, `outcome_engagement` |
-| `hope_calls` | id, senior_id, scheduled_for, status (scheduled/dialed/answered/missed), attempt, vapi_call_id |
+| `hope_calls` (fixed-cadence queue, not scheduler output) | id, senior_id, scheduled_for, status (scheduled/dialed/answered/missed), attempt, vapi_call_id |
 
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)

@@ -3,7 +3,7 @@
 ## Decisions
 - Senior and family surfaces matter equally.
 - Hope reaches Grandma by outbound Vapi phone calls; she has no app.
-- Scheduler outputs family visits/calls (`visits`) and Hope check-in calls.
+- Scheduler schedules family appointments with the elder (visits/calls in `visits`) against Grandma's preferred times. Hope check-in calls run on a fixed cadence outside the scheduler.
 - Family free time from Google Calendar free/busy, with a manual grid fallback.
 - Alerts: low mood, health/safety, missed check-in, wants family contact.
 - `call_requests`: Grandma asks Hope to get a relative to call.
