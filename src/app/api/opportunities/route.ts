@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/utils/supabase/admin'
+import { supabaseAdmin } from '@/lib/supabase/server'
 
 const REQUIRED = ['senior_id', 'type', 'summary'] as const
 const OPTIONAL = [
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     if (input[field] !== undefined) record[field] = input[field]
   }
 
-  const { data, error } = await createAdminClient()
+  const { data, error } = await supabaseAdmin()
     .from('opportunities')
     .insert(record)
     .select()

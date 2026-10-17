@@ -7,8 +7,8 @@ const select = vi.fn(() => ({ single }))
 const insert = vi.fn(() => ({ select }))
 const from = vi.fn(() => ({ insert }))
 
-vi.mock('@/utils/supabase/admin', () => ({
-  createAdminClient: () => ({ from }),
+vi.mock('@/lib/supabase/server', () => ({
+  supabaseAdmin: () => ({ from }),
 }))
 
 import { POST } from '@/app/api/opportunities/route'
