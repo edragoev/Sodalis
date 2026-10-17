@@ -1,6 +1,6 @@
 const KEY = "sodalis.session";
 
-export type Session = { member_id: string; senior_id: string };
+export type Session = { member_id: string; senior_id: string; name?: string };
 
 export function getSession(): Session | null {
   try {
