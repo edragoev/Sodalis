@@ -112,10 +112,21 @@ export default function DatePicker({
                 type="button"
                 aria-expanded={mode === "jump"}
                 onClick={() => setMode(mode === "days" ? "jump" : "days")}
-                className="flex items-center gap-2 rounded-full px-4 py-2 font-serif text-xl font-semibold text-ink hover:bg-mist"
+                className="flex items-center gap-2 rounded-full bg-mist px-4 py-2 font-serif text-xl font-semibold text-ink hover:bg-btn/50"
               >
                 {MONTH_NAMES[view.m]} {view.y}
-                <span aria-hidden className={`text-base text-primary transition-transform ${mode === "jump" ? "rotate-180" : ""}`}>▾</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`h-6 w-6 text-primary-dark transition-transform ${mode === "jump" ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
               </button>
               <button
                 type="button"
