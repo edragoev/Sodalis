@@ -46,7 +46,14 @@ export default function OpportunityScreen({
   load = defaultLoad,
   confirm = confirmSlot,
 }: Props) {
-  const [session] = useState(() => (sessionProp !== undefined ? sessionProp : getSession()));
+  // The stored session is read after mounting, never while rendering: the server has no
+  // localStorage, so deciding here would make the server HTML and the first browser render differ.
+  // undefined means "not read yet", and shows "Loading…" like the server did.
+  const [stored, setStored] = useState<Session | null | undefined>(undefined);
+  useEffect(() => {
+    if (sessionProp === undefined) queueMicrotask(() => setStored(getSession()));
+  }, [sessionProp]);
+  const session = sessionProp !== undefined ? sessionProp : stored;
   const [data, setData] = useState<OpportunityData | null | undefined>(undefined); // undefined = loading
   const [loadFailed, setLoadFailed] = useState(false);
   const [sending, setSending] = useState(false);
@@ -64,6 +71,7 @@ export default function OpportunityScreen({
     };
   }, [opportunityId, session, load]);
 
+  if (session === undefined) return <p className="p-8 text-stone-600">Loading…</p>;
   if (!session) {
     return (
       <div className="mx-auto w-full max-w-xl space-y-4 px-5 py-10">
