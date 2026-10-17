@@ -4,15 +4,12 @@ How Hope's conversation with the elder becomes a notification asking a family me
 
 **Rule: suggest only.** Nothing is booked until a family member confirms.
 
-> Choosing who to notify and writing the push are now done by the [coordinator agent](../08-agents/coordinator-agent.md), using sections 4 and 6 as its shortlist and fallback. Opportunities can also start mid-call via [Hope's tools](../08-agents/hope-tools.md).
+> Choosing who to notify and writing the push are now done by the [coordinator agent](../08-agents/coordinator-agent.md), using sections 4 and 6 as its shortlist and fallback.
 
 ## 1. Flow
-A push starts from one of two triggers. Both end in the same step: the [coordinator agent](../08-agents/coordinator-agent.md) picks the member(s) and slots, writes the push, and the push opens the web app (section 6).
+A push is sent only after the conversation ends. Hope never offers a day or asks the family during the call, because an elder will often say no so as not to be a burden. When the call ends, the steps below run on the transcript, for opportunities that name a member and ones that don't. Gemini finds the opportunities, the [coordinator agent](../08-agents/coordinator-agent.md) picks the member(s) and slots and writes the push, and the push opens the web app (section 6).
 
-- **During the call (elder names a person):** Hope detects the named member, checks availability and, once the elder agrees, calls `propose_visit` ([hope-tools](../08-agents/hope-tools.md)). The server creates the opportunity (`source = 'hope_tool'`) and starts the coordinator right away, so the member's phone can buzz before the call ends. The post-call extraction later skips the same type and member from that call, so there is no second push.
-- **After the call (no one named):** the steps below run on the transcript. Gemini finds the opportunities, and the coordinator decides who to ask using the member match in section 4, then creates the push.
-
-The post-call steps cover unnamed opportunities only. If the extraction finds an opportunity that names a member and Hope did not already propose it live, it is saved and shown on the dashboard but not pushed.
+The only message sent during a call is a health alert from Hope's `flag_concern` tool ([hope-tools](../08-agents/hope-tools.md)). It goes through `alerts`, not through this flow.
 
 **Post-call steps**
 1. Call ends, and Vapi sends `end-of-call-report` to the webhook (see [routes](../02-api/routes.md)).
@@ -104,7 +101,7 @@ v1: dedup only. Rate limits and the digest are v2.
 - Max 2 pushes per member per day; bundle low-urgency ones into a daily digest.
 
 ## 9. Hope's behavior
-- Never confirms a visit. Hope may offer a free day from `get_family_availability` and ask "Want me to ask them?" (see [hope-tools](../08-agents/hope-tools.md)).
+- Never offers a visit, a day or to "ask them", and never says anyone will come. She listens, and the family is asked afterwards from the transcript.
 - Asks a natural follow-up to sharpen the signal (how many zucchini, which days suit the elder).
 - Does not name a member unprompted if the elder did not.
 
@@ -112,7 +109,7 @@ v1: dedup only. Rate limits and the digest are v2.
 A realtime "Opportunities" feed showing the quote, status, who was notified and who accepted. Realtime is enabled on `opportunities` (in addition to the tables in the [schema](../01-database/schema.md)).
 
 ## 11. Worked example
-Transcript (Danny is named, so this runs live through `propose_visit` during the call): *"My zucchini are out of control this year. Danny loves them, you know."*
+Transcript (Danny is named, so only Danny is notified, after the call ends): *"My zucchini are out of control this year. Danny loves them, you know."*
 
 ```json
 {

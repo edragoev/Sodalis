@@ -4,9 +4,8 @@ Turns an opportunity into a family notification: who to ask, which slots to offe
 
 **Hybrid shortlist:** code picks the candidates and slots; Gemini chooses among them and writes the message.
 
-## Triggers
-- `propose_visit` from [Hope's in-call tools](hope-tools.md), immediately (live, during the call).
-- Post-call extraction, for unnamed opportunities only (named ones are handled live by `propose_visit`).
+## Trigger
+Post-call extraction only, for every opportunity found in the transcript, named or not. Nothing is pushed while the call is still going: the only mid-call message is a health alert from [Hope's `flag_concern` tool](hope-tools.md), which does not use the coordinator.
 
 Runs in `after()` or a separate `POST /api/agent/coordinate` call, so the webhook and tool routes return fast.
 
@@ -48,10 +47,10 @@ Then send one push with `data: { opportunity_id }` and set the opportunity to `p
 Write one `agent_runs` row per run: input, Gemini output, whether the fallback was used and why. The dashboard shows `why` on the opportunity card.
 
 ## Worked example
-*"I haven't seen Danny in ages."* During the call Hope checks availability, offers Saturday, the elder agrees, and `propose_visit(Danny, visit, "misses them", preferred_day=Sat)` runs.
+*"I haven't seen Danny in ages."* The call ends, the transcript scan finds a `wants_contact` opportunity naming Danny, and the coordinator runs.
 1. Shortlist: Danny (named); slots Sat 2pm, Sat 4pm, Sun 11am.
 2. Gemini returns Danny, Sat 2pm + Sat 4pm, "Grandma would love to see you", "'I haven't seen Danny in ages.' Sat 2pm or 4pm?", why "Grandma asked for Danny by name."
-3. Validation passes; Danny's phone buzzes while the call is still going.
+3. Validation passes; Danny's phone buzzes after the call has ended.
 
 ## v2 (stretch): agent loop
 A Gemini tool-calling loop instead of the single call. Same shortlist, validation and fallback.
