@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
 import InviteCard from "./InviteCard";
-import { Avatar, Screen, TabBar } from "./ui";
+import { Avatar, MoodFace, Screen, TabBar } from "./ui";
 
 type CheckIn = {
   id: string;
@@ -17,11 +18,12 @@ type CheckIn = {
   topics: string[] | null;
   engagement_score: number | null;
 };
-type Alert = { id: string; type: string; severity: "info" | "warn" | "urgent"; message: string; created_at: string };
+type Alert = { id: string; type: string; severity: "info" | "warn" | "urgent"; message: string; created_at: string; check_in_id: string | null };
 type CallRequest = { id: string; reason: string | null; status: string; created_at: string };
+type Idea = { id: string; type: string; summary: string; quote: string | null; status: string; accepted_by: string | null; created_at: string };
 type Visit = { id: string; kind: "visit" | "call"; starts_at: string; status: string };
 
-const TABLES = ["check_ins", "alerts", "call_requests", "visits"] as const;
+const TABLES = ["check_ins", "alerts", "call_requests", "visits", "opportunities"] as const;
 const RANK = { urgent: 0, warn: 1, info: 2 } as const;
 
 const ALERT_STYLE: Record<Alert["severity"], { card: string; icon: string; label: string; text: string }> = {
@@ -41,19 +43,6 @@ const greeting = () => {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 };
-
-function Face({ score }: { score: number | null }) {
-  const mouth = score == null || (score > -0.35 && score <= 0.35) ? "M9 20h10" : score > 0.35 ? "M8 18c2 3 8 3 10 0" : "M8 21c2-3 8-3 10 0";
-  return (
-    <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-primary/20 bg-mist text-primary">
-      <svg viewBox="0 0 26 26" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-        <circle cx="9" cy="11" r=".8" fill="currentColor" />
-        <circle cx="17" cy="11" r=".8" fill="currentColor" />
-        <path d={mouth} transform={score != null && score > 0.35 ? "" : "translate(0 -3)"} />
-      </svg>
-    </span>
-  );
-}
 
 function Trend({ points }: { points: { score: number; date: Date }[] }) {
   if (points.length < 2) return null;
@@ -89,22 +78,27 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [requests, setRequests] = useState<CallRequest[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async (id: string) => {
     const db = supabaseBrowser();
-    const [s, c, a, r, v] = await Promise.all([
+    const [s, c, a, r, v, o, m] = await Promise.all([
       db.from("seniors").select("name").eq("id", id).maybeSingle(),
       db.from("check_ins").select("id, started_at, status, summary, mood_score, mood_label, topics, engagement_score")
         .eq("senior_id", id).order("started_at", { ascending: false }).limit(14),
-      db.from("alerts").select("id, type, severity, message, created_at")
+      db.from("alerts").select("id, type, severity, message, created_at, check_in_id")
         .eq("senior_id", id).is("acknowledged_by", null).order("created_at", { ascending: false }).limit(10),
       db.from("call_requests").select("id, reason, status, created_at")
         .eq("senior_id", id).eq("status", "pending").order("created_at", { ascending: false }),
       db.from("visits").select("id, kind, starts_at, status")
         .eq("senior_id", id).in("status", ["proposed", "confirmed"]).gte("starts_at", new Date().toISOString())
         .order("starts_at").limit(10),
+      db.from("opportunities").select("id, type, summary, quote, status, accepted_by, created_at")
+        .eq("senior_id", id).in("status", ["proposed", "confirmed"]).order("created_at", { ascending: false }).limit(5),
+      db.from("family_members").select("id, name").eq("senior_id", id),
     ]);
     if (s.error || c.error) return setError("Couldn't load the dashboard.");
     setError("");
@@ -113,6 +107,8 @@ export default function Dashboard() {
     setAlerts(((a.data ?? []) as Alert[]).sort((x, y) => RANK[x.severity] - RANK[y.severity]));
     setRequests((r.data ?? []) as CallRequest[]);
     setVisits((v.data ?? []) as Visit[]);
+    setIdeas((o.data ?? []) as Idea[]);
+    setNames(Object.fromEntries((m.data ?? []).map((x) => [x.id, x.name.split(" ")[0]])));
     setLoaded(true);
   }, []);
 
@@ -182,6 +178,14 @@ export default function Dashboard() {
                     {ALERT_STYLE[topAlert.severity].label} · {when(topAlert.created_at)}
                   </p>
                   <p className="mt-1 text-lg font-semibold leading-snug text-ink">{topAlert.message}</p>
+                  {topAlert.check_in_id && (
+                    <Link
+                      href={`/calls/${topAlert.check_in_id}`}
+                      className="mt-3 inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-semibold text-ink hover:bg-cream"
+                    >
+                      Read the call
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -199,7 +203,7 @@ export default function Dashboard() {
           {latest ? (
             <>
               <div className="mt-3 flex items-center gap-4">
-                <Face score={latest.mood_score} />
+                <MoodFace score={latest.mood_score} />
                 <div>
                   <p className="font-serif text-3xl font-semibold capitalize text-ink">{latest.mood_label ?? "Mood unknown"}</p>
                   {latest.engagement_score != null && (
@@ -227,6 +231,21 @@ export default function Dashboard() {
           </section>
         )}
 
+        {ideas.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Hope&apos;s calls</h2>
+            {ideas.map((i) => (
+              <Link key={i.id} href={`/opportunities/${i.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
+                {i.quote && <p className="font-serif text-lg leading-snug text-ink">&ldquo;{i.quote}&rdquo;</p>}
+                <p className="text-slate">{i.summary}</p>
+                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${i.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-peach text-accent"}`}>
+                  {i.status === "confirmed" ? `${i.accepted_by ? names[i.accepted_by] ?? "Someone" : "Someone"} is on it` : "Needs someone"}
+                </span>
+              </Link>
+            ))}
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="font-serif text-2xl font-semibold text-ink">Coming up</h2>
           {visits.length ? (
@@ -250,7 +269,7 @@ export default function Dashboard() {
           <h2 className="font-serif text-2xl font-semibold text-ink">Recent calls with Hope</h2>
           {checkIns.length ? (
             checkIns.map((c) => (
-              <article key={c.id} className={`${card} space-y-2`}>
+              <Link key={c.id} href={`/calls/${c.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
                 <div className="flex items-center justify-between text-sm text-slate">
                   <span>{when(c.started_at)}</span>
                   <span className="font-semibold capitalize">
@@ -267,7 +286,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 )}
-              </article>
+              </Link>
             ))
           ) : (
             <p className="text-slate">Nothing yet.</p>

@@ -32,3 +32,41 @@ insert into call_requests (senior_id, check_in_id, reason, urgency, status)
 select s.id, c.id, 'Would love a call from one of the grandchildren.', 'normal', 'pending'
 from s, c
 where not exists (select 1 from call_requests r where r.senior_id = s.id and r.status = 'pending');
+
+-- Richer detail for the call screen (idempotent: plain UPDATEs keyed on vapi_call_id).
+update check_ins set
+  transcript = E'AI: Good morning Margaret, it''s Hope. How are you today?\nUser: Oh hello dear. I''m alright, a little tired.\nAI: I''m sorry to hear that. Did you sleep well?\nUser: Not really. My knee was sore on the stairs again yesterday.\nAI: That sounds uncomfortable. Have you been able to rest it?\nUser: A bit. I just sat with my tea.',
+  flags = '{"health_concern":{"present":true,"detail":"Her knee was sore on the stairs","severity":"mild"},"safety_concern":{"present":false,"detail":null},"wants_family_contact":{"present":false,"who":null,"reason":null},"low_mood":false,"confusion_or_memory":false}'::jsonb,
+  raw_extraction = '{"follow_up_topics":["How her knee is feeling","Whether she saw the doctor"]}'::jsonb
+where vapi_call_id = 'demo-call-2';
+
+update check_ins set
+  transcript = E'AI: Hello Margaret, it''s Hope. It''s been quiet this week, hasn''t it?\nUser: It has. I miss the grandchildren.\nAI: I''m sure they miss you too. Who would you most like to hear from?\nUser: Maya, I suppose. She always makes me laugh.\nAI: I''ll let Maya know you''d love to hear from her.',
+  flags = '{"health_concern":{"present":false,"detail":null,"severity":"none"},"safety_concern":{"present":false,"detail":null},"wants_family_contact":{"present":true,"who":"Maya","reason":"She misses her laughing together"},"low_mood":true,"confusion_or_memory":false}'::jsonb,
+  raw_extraction = '{"follow_up_topics":["Whether Maya called"]}'::jsonb
+where vapi_call_id = 'demo-call-4';
+
+update check_ins set
+  transcript = E'AI: Hello Margaret, it''s Hope. How''s the garden?\nUser: Oh, the zucchini are out of control! I have far too many.\nAI: That sounds like a lovely problem. What will you do with them?\nUser: I wish someone would come take some. I''d make bread, but I can''t eat it all.\nAI: I''ll let the family know.',
+  raw_extraction = '{"follow_up_topics":["Who took the zucchini","Her zucchini bread"]}'::jsonb
+where vapi_call_id = 'demo-call-5';
+
+-- Point the low-mood alert at the call it came from (already linked when seeded fresh).
+update alerts set check_in_id = (select id from check_ins where vapi_call_id = 'demo-call-4')
+where type = 'low_mood' and check_in_id is null
+  and senior_id = (select id from seniors where phone_e164 = '+14155550100');
+
+-- A proposed idea from the zucchini call, with three upcoming slots (relative to now, so the
+-- demo never goes stale when re-run). Open it from the dashboard's "Ideas from Hope's calls".
+insert into opportunities (senior_id, check_in_id, type, summary, quote, mentioned_item, interest_tags, urgency, confidence, suggested_kind, status, proposed_slots)
+select s.id, c.id, 'gift_errand',
+  'Margaret has more zucchini than she can use and would love someone to take some.',
+  'My zucchini are out of control.', 'zucchini', array['gardening','cooking'], 'normal', 0.86, 'visit', 'proposed',
+  jsonb_build_array(
+    jsonb_build_object('id','s1','kind','visit','starts_at', to_jsonb(date_trunc('hour', now()) + interval '1 day 4 hours'),  'ends_at', to_jsonb(date_trunc('hour', now()) + interval '1 day 6 hours')),
+    jsonb_build_object('id','s2','kind','visit','starts_at', to_jsonb(date_trunc('hour', now()) + interval '2 days 2 hours'), 'ends_at', to_jsonb(date_trunc('hour', now()) + interval '2 days 4 hours')),
+    jsonb_build_object('id','s3','kind','visit','starts_at', to_jsonb(date_trunc('hour', now()) + interval '3 days 5 hours'), 'ends_at', to_jsonb(date_trunc('hour', now()) + interval '3 days 7 hours'))
+  )
+from seniors s join check_ins c on c.senior_id = s.id and c.vapi_call_id = 'demo-call-5'
+where s.phone_e164 = '+14155550100'
+  and not exists (select 1 from opportunities o where o.check_in_id = c.id);

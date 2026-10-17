@@ -137,3 +137,16 @@ export function SelectField({
     </div>
   );
 }
+
+export function MoodFace({ score }: { score: number | null }) {
+  const mouth = score == null || (score > -0.35 && score <= 0.35) ? "M9 20h10" : score > 0.35 ? "M8 18c2 3 8 3 10 0" : "M8 21c2-3 8-3 10 0";
+  return (
+    <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-primary/20 bg-mist text-primary">
+      <svg viewBox="0 0 26 26" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <circle cx="9" cy="11" r=".8" fill="currentColor" />
+        <circle cx="17" cy="11" r=".8" fill="currentColor" />
+        <path d={mouth} transform={score != null && score > 0.35 ? "" : "translate(0 -3)"} />
+      </svg>
+    </span>
+  );
+}
