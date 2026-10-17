@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { confirmSlot, type ConfirmParams, type ConfirmResult } from "@/lib/confirm-slot";
 import { loadOpportunity } from "@/lib/load-opportunity";
-import { buildOpportunityView, type OpportunityData } from "@/lib/opportunity-view";
+import { buildOpportunityView, type OpportunityData, type OpportunityView } from "@/lib/opportunity-view";
 import { getSession, type Session } from "@/lib/session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { primaryCls } from "./ui";
@@ -25,11 +25,20 @@ type Outcome =
 
 const defaultLoad = (id: string) => loadOpportunity(supabaseBrowser(), id);
 
-const closed: Record<string, string> = {
+const CLOSED_MESSAGES: Partial<Record<OpportunityView["state"], string>> = {
   declined: "This idea was declined.",
   expired: "This idea has expired.",
   preparing: "Hope is still working on this idea. Check back soon.",
 };
+
+// The one line of status under the quote: what just happened, or how the idea stands.
+function statusMessage(view: OpportunityView, outcome: Outcome): string | null {
+  if (outcome.kind === "done") return `You're all set — ${outcome.label}.`;
+  if (outcome.kind === "covered") return `Already covered by ${outcome.by ?? "someone"}.`;
+  if (view.state === "claimed") return `${view.claimedBy} is covering this.`;
+  if (view.state === "claimed_by_me") return "You're covering this.";
+  return CLOSED_MESSAGES[view.state] ?? null;
+}
 
 export default function OpportunityScreen({
   opportunityId,
@@ -85,12 +94,7 @@ export default function OpportunityScreen({
     else setOutcome({ kind: "error" });
   }
 
-  let status: string | null = null;
-  if (outcome.kind === "done") status = `You're all set — ${outcome.label}.`;
-  else if (outcome.kind === "covered") status = `Already covered by ${outcome.by ?? "someone"}.`;
-  else if (view.state === "claimed") status = `${view.claimedBy} is covering this.`;
-  else if (view.state === "claimed_by_me") status = "You're covering this.";
-  else if (closed[view.state]) status = closed[view.state];
+  const status = statusMessage(view, outcome);
 
   const showSlots = view.canConfirm && outcome.kind !== "done" && outcome.kind !== "covered";
 

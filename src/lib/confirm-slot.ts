@@ -8,7 +8,7 @@ export type ConfirmResult =
   | { ok: false; reason: 'already_covered'; coveredBy: string | null }
   | { ok: false; reason: 'error' }
 
-const failed: ConfirmResult = { ok: false, reason: 'error' }
+const failed = (): ConfirmResult => ({ ok: false, reason: 'error' })
 
 export async function confirmSlot(
   params: ConfirmParams,
@@ -30,8 +30,8 @@ export async function confirmSlot(
       }
     }
     if (res.ok && typeof body?.visit_id === 'string') return { ok: true, visitId: body.visit_id }
-    return failed
+    return failed()
   } catch {
-    return failed
+    return failed()
   }
 }
