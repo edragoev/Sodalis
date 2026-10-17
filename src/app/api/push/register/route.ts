@@ -1,18 +1,12 @@
-import { bad, isUuid } from '@/lib/http'
+import { bad, isUuid, readJsonObject } from '@/lib/http'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
 // Stores a member's FCM token. The token is a credential, so it is never echoed back.
 export async function POST(request: Request) {
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return bad('Request body must be valid JSON')
-  }
-  if (typeof body !== 'object' || body === null || Array.isArray(body))
-    return bad('Request body must be a JSON object')
+  const body = await readJsonObject(request)
+  if (body instanceof Response) return body
 
-  const { member_id, token } = body as Record<string, unknown>
+  const { member_id, token } = body
   if (!isUuid(member_id)) return bad('member_id must be a UUID')
   if (typeof token !== 'string' || token.trim() === '') return bad('token is required')
 

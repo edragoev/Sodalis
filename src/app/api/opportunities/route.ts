@@ -1,4 +1,4 @@
-import { bad, isUuid } from '@/lib/http'
+import { bad, isUuid, readJsonObject } from '@/lib/http'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
 const REQUIRED = ['senior_id', 'type', 'summary'] as const
@@ -65,16 +65,9 @@ function validate(body: Record<string, unknown>): string | null {
 }
 
 export async function POST(request: Request) {
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return bad('Request body must be valid JSON')
-  }
-  if (typeof body !== 'object' || body === null || Array.isArray(body))
-    return bad('Request body must be a JSON object')
+  const input = await readJsonObject(request)
+  if (input instanceof Response) return input
 
-  const input = body as Record<string, unknown>
   const problem = validate(input)
   if (problem) return bad(problem)
 

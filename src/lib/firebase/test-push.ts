@@ -13,16 +13,7 @@ export type TestPushMessage = {
   webpush: { headers: { Urgency: 'normal' }; fcmOptions: { link: string } }
 }
 
-// FCM error codes meaning the token will never work again. Anything else is transient.
-const DEAD_TOKEN_CODES = new Set([
-  'messaging/registration-token-not-registered',
-  'messaging/invalid-registration-token',
-])
-
-export function isDeadTokenError(error: unknown): boolean {
-  const code = (error as { code?: unknown } | null)?.code
-  return typeof code === 'string' && DEAD_TOKEN_CODES.has(code)
-}
+export { isDeadTokenError } from './dead-token'
 
 export function buildTestPush(token: string, memberName?: string | null): TestPushMessage {
   const firstName = memberName?.trim().split(/\s+/)[0]

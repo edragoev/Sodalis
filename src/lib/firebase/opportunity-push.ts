@@ -1,3 +1,5 @@
+import { isDeadTokenError } from './dead-token'
+
 // FCM push for a proposed opportunity (specs/06-notifications/conversation-to-visit.md, section 6).
 
 export type PushOpportunity = {
@@ -31,12 +33,6 @@ const MAX_QUOTE = 80
 
 // FCM accepts at most 500 tokens per multicast call.
 const MAX_TOKENS_PER_CALL = 500
-
-// These mean the token will never work again; anything else (for example internal-error) is transient.
-const DEAD_TOKEN_CODES = new Set([
-  'messaging/registration-token-not-registered',
-  'messaging/invalid-registration-token',
-])
 
 /** "Thu 4pm", "Fri 10:30am", in the given IANA timezone. */
 export function formatSlot(startsAt: string, timezone: string): string {
@@ -115,7 +111,7 @@ export async function sendOpportunityPush(
     result.successCount += response.successCount
     result.failureCount += response.failureCount
     response.responses.forEach((r, index) => {
-      if (!r.success && r.error && DEAD_TOKEN_CODES.has(r.error.code)) result.invalidTokens.push(batch[index])
+      if (!r.success && isDeadTokenError(r.error)) result.invalidTokens.push(batch[index])
     })
   }
   return result

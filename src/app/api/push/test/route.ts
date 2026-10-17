@@ -1,21 +1,15 @@
 import { getAdminMessaging } from '@/lib/firebase/admin'
 import { isDeadTokenError, sendTestPush } from '@/lib/firebase/test-push'
-import { bad, isUuid } from '@/lib/http'
+import { bad, isUuid, readJsonObject } from '@/lib/http'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
 // Sends a hello-world push to one member, to prove their registered token works.
 // The token is a credential, so it is never returned and never appears in an error.
 export async function POST(request: Request) {
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return bad('Request body must be valid JSON')
-  }
-  if (typeof body !== 'object' || body === null || Array.isArray(body))
-    return bad('Request body must be a JSON object')
+  const body = await readJsonObject(request)
+  if (body instanceof Response) return body
 
-  const { member_id } = body as Record<string, unknown>
+  const { member_id } = body
   if (!isUuid(member_id)) return bad('member_id must be a UUID')
 
   const db = supabaseAdmin()
