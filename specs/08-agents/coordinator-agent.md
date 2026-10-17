@@ -6,7 +6,7 @@ Turns an opportunity into a family notification: who to ask, which slots to offe
 
 ## Triggers
 - `propose_visit` from [Hope's in-call tools](hope-tools.md), immediately (live, during the call).
-- Post-call extraction, for opportunities Hope didn't already create.
+- Post-call extraction, for unnamed opportunities only (named ones are handled live by `propose_visit`).
 
 Runs in `after()` or a separate `POST /api/agent/coordinate` call, so the webhook and tool routes return fast.
 

@@ -12,7 +12,7 @@ A push starts from one of two triggers. Both end in the same step: the [coordina
 - **During the call (elder names a person):** Hope detects the named member, checks availability and, once the elder agrees, calls `propose_visit` ([hope-tools](../08-agents/hope-tools.md)). The server creates the opportunity (`source = 'hope_tool'`) and starts the coordinator right away, so the member's phone can buzz before the call ends. The post-call extraction later skips the same type and member from that call, so there is no second push.
 - **After the call (no one named):** the steps below run on the transcript. Gemini finds the opportunities, and the coordinator decides who to ask using the member match in section 4, then creates the push.
 
-The post-call steps also cover any opportunity Hope did not create live, including a named one she missed.
+The post-call steps cover unnamed opportunities only. If the extraction finds an opportunity that names a member and Hope did not already propose it live, it is saved and shown on the dashboard but not pushed.
 
 **Post-call steps**
 1. Call ends, and Vapi sends `end-of-call-report` to the webhook (see [routes](../02-api/routes.md)).
@@ -112,7 +112,7 @@ v1: dedup only. Rate limits and the digest are v2.
 A realtime "Opportunities" feed showing the quote, status, who was notified and who accepted. Realtime is enabled on `opportunities` (in addition to the tables in the [schema](../01-database/schema.md)).
 
 ## 11. Worked example
-Transcript: *"My zucchini are out of control this year. Danny loves them, you know."*
+Transcript (Danny is named, so this runs live through `propose_visit` during the call): *"My zucchini are out of control this year. Danny loves them, you know."*
 
 ```json
 {
