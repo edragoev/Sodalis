@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { QUESTION_KEYS, loadProfile, restructureMember } from "@/lib/profile";
+import { logisticsConstraints, parseLogistics } from "@/lib/logistics";
 
 export async function GET(_req: Request, ctx: RouteContext<"/api/members/[id]/profile">) {
   const { id } = await ctx.params;
@@ -39,6 +40,15 @@ export async function PUT(req: Request, ctx: RouteContext<"/api/members/[id]/pro
   }
   if (removals.length) {
     await db.from("member_profile_answers").delete().eq("member_id", id).in("question_key", removals);
+  }
+
+  // Exact travel facts from the logistics taps are saved now, so they survive a Gemini failure.
+  const logisticsChanged = upserts.some((u) => u.question_key === "logistics") || removals.includes("logistics");
+  if (logisticsChanged) {
+    const parsed = parseLogistics(String(incoming.logistics ?? "").trim());
+    if (parsed) {
+      await db.from("family_members").update({ constraints: logisticsConstraints(parsed) }).eq("id", id);
+    }
   }
 
   const structuring = await restructureMember(id);

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QUESTIONS } from "@/lib/profile-questions";
 import { clearSession, getSession } from "@/lib/session";
+import LogisticsQuestion from "./LogisticsQuestion";
 import { Avatar, Button, Screen, TabBar, inputCls, textareaCls } from "./ui";
 
 type TagField = "activities_with_elder" | "interests" | "skills" | "conversation_topics";
@@ -144,7 +145,13 @@ export default function ProfileScreen() {
 
       <section className="mt-10 space-y-4">
         <h2 className="font-serif text-2xl font-semibold text-ink">Your answers</h2>
-        {QUESTIONS.map((q) => (
+        {QUESTIONS.map((q) =>
+          q.key === "logistics" ? (
+            <div key={q.key} className="space-y-3">
+              <span className="text-sm font-semibold text-ink">{q.text}</span>
+              <LogisticsQuestion value={answers.logistics ?? ""} onChange={(v) => setAnswers({ ...answers, logistics: v })} />
+            </div>
+          ) : (
           <label key={q.key} className="block space-y-2">
             <span className="text-sm font-semibold text-ink">{q.text}</span>
             <textarea
@@ -154,7 +161,8 @@ export default function ProfileScreen() {
               onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })}
             />
           </label>
-        ))}
+          ),
+        )}
         <Button className="w-full" disabled={busy} onClick={saveAnswers}>
           {busy ? "Saving…" : "Save answers"}
         </Button>

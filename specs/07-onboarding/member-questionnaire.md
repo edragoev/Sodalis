@@ -19,9 +19,9 @@ Open-ended free text, one per screen, 1-3 sentences expected. Stored by `questio
 | `skills` | What are you good at, or happy to help with (fixing things, driving, cooking, tech)? |
 | `talk_about` | What do you two talk about or laugh about? |
 | `wish` | Is there something you'd love to do with them but haven't yet? |
-| `logistics` | When and how are you usually able to visit? |
+| `logistics` | How do you usually get to visit? (taps, see below) |
 
-`logistics` is free text only. Calendar free/busy or the manual grid stays the source of truth for times.
+`logistics` is answered with taps, not typing: how they get there (I drive / I take public transport / Someone drives me / I can only call or video), how far away they are (under 15 min / 15 to 30 / 30 to 60 / over an hour), and an optional free-text note. It is stored as one sentence (`Getting there: I drive. Distance: 15 to 30 min. Note: ...`) and also fills `constraints` directly (`can_drive`, `travel_minutes` as an upper bound where 90 means more than an hour, `notes`), so Gemini does not have to guess. Older free-text answers still go through Gemini. The "when" is not asked here: the manual availability grid (or Calendar free/busy) stays the source of truth for times.
 
 ## 3. Structuring step (Gemini Flash)
 On save, send all answers to Gemini with `responseMimeType: application/json` and a `responseSchema`:

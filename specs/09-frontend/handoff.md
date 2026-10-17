@@ -39,6 +39,8 @@ Invite link /join/<token> ─▶ name, pronouns, relationship ─▶ questionnai
 
 **Elder profile (`seniors`)**: `pronouns` (text), `birthday` (date), `interests` and `skills` (lowercase text tags), `notes` (the free-text "good to know"). Hope and the coordinator can read all of these.
 
+**Member travel facts (`family_members.constraints`)**: questionnaire question 6 is now taps, not typing. It fills `constraints` exactly: `can_drive` (true/false/null), `travel_minutes` (an upper bound: 15, 30, 60, or 90 meaning more than an hour; null for "can only call or video") and `notes`. These are written when the answer is saved, so they survive a Gemini failure, and Gemini does not overwrite them. Older free-text answers still go through Gemini. The stored answer is a sentence such as `Getting there: I drive. Distance: 15 to 30 min. Note: weekends only`.
+
 **Call transcripts**: the call screen expects lines such as `AI: ...` and `User: ...` (also `Assistant`, `Hope`, `Customer`, `Caller`). Anything else shows as plain lines.
 
 **Call flags (`check_ins.flags`)**: read as in `specs/03-ai/hope-persona.md`: `health_concern`, `safety_concern`, `wants_family_contact` (objects with `present`, `detail`, `severity`, `who`, `reason`) and the booleans `low_mood` and `confusion_or_memory`. Follow-ups come from `raw_extraction.follow_up_topics`.

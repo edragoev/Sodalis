@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { QUESTIONS, QUESTION_KEYS, type QuestionKey } from "@/lib/profile-questions";
+import { parseLogistics } from "@/lib/logistics";
 
 export { QUESTIONS, QUESTION_KEYS };
 export type { QuestionKey };
@@ -105,7 +106,12 @@ export async function restructureMember(memberId: string): Promise<StructureResu
   try {
     const result = await structure(Object.fromEntries(answers.map((r) => [r.question_key, r.answer_text])));
     const update: Record<string, unknown> = { profile_summary: result.summary, profile_updated_at: new Date().toISOString() };
+    // Constraints chosen with the logistics taps are exact and saved when the answer is saved;
+    // Gemini only fills them in for older free-text answers.
+    const logistics = answers.find((r) => r.question_key === "logistics")?.answer_text ?? "";
+    const exactConstraints = !!logistics.trim() && !!parseLogistics(logistics);
     for (const [field, sources] of Object.entries(FIELD_SOURCES)) {
+      if (field === "constraints" && exactConstraints) continue;
       if (sources.some((k) => changed.has(k))) update[field] = result[field as keyof Structured];
     }
     const { error } = await db.from("family_members").update(update).eq("id", memberId);

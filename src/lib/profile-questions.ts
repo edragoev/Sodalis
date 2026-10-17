@@ -4,7 +4,7 @@ export const QUESTIONS = [
   { key: "skills", text: "What are you good at, or happy to help with (fixing things, driving, cooking, tech)?" },
   { key: "talk_about", text: "What do you two talk about or laugh about?" },
   { key: "wish", text: "Is there something you'd love to do with them but haven't yet?" },
-  { key: "logistics", text: "When and how are you usually able to visit?" },
+  { key: "logistics", text: "How do you usually get to visit?" },
 ] as const;
 
 export type QuestionKey = (typeof QUESTIONS)[number]["key"];
