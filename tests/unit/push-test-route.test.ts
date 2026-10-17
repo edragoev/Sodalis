@@ -118,6 +118,30 @@ describe('POST /api/push/test', () => {
       expect(updates).toEqual([])
     })
 
+    it('logs why a send failed, so a missing setting is easy to find, but never in the response', async () => {
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+      send.mockRejectedValue(new Error('Missing environment variable FIREBASE_PRIVATE_KEY'))
+
+      const res = await post({ member_id: memberId })
+
+      expect(res.status).toBe(502)
+      expect(JSON.stringify(res.json)).not.toContain('FIREBASE_PRIVATE_KEY') // the caller learns nothing
+      expect(log).toHaveBeenCalledWith('Test push failed:', 'Missing environment variable FIREBASE_PRIVATE_KEY')
+      log.mockRestore()
+    })
+
+    it('blanks the push token out of the logged reason', async () => {
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+      send.mockRejectedValue(new Error('The registration token tok-danny is not valid'))
+
+      await post({ member_id: memberId })
+
+      const [, reason] = log.mock.calls[0]
+      expect(reason).toBe('The registration token <token> is not valid')
+      expect(String(reason)).not.toContain('tok-danny')
+      log.mockRestore()
+    })
+
     it('returns 410 and clears the token when Firebase says it is dead', async () => {
       send.mockRejectedValue(
         Object.assign(new Error('gone'), { code: 'messaging/registration-token-not-registered' }),

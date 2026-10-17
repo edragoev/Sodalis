@@ -33,6 +33,10 @@ export async function POST(request: Request) {
       await db.from('family_members').update({ fcm_token: null }).eq('id', member_id)
       return Response.json({ error: 'The push token is no longer valid; register again' }, { status: 410 })
     }
+    // Say why in the server log (never in the response): a missing variable, an unreadable key, an
+    // API that is not enabled. The token is a credential, so it is blanked out of the message.
+    const reason = err instanceof Error ? err.message : String(err)
+    console.error('Test push failed:', reason.split(member.fcm_token).join('<token>').slice(0, 300))
     return Response.json({ error: 'Could not send the push notification' }, { status: 502 })
   }
   return Response.json({ ok: true })
