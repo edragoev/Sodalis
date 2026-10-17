@@ -13,5 +13,9 @@ Next.js PWA (Vercel) + Supabase + Vapi + Gemini Flash + Firebase Cloud Messaging
 | [06-notifications](06-notifications/conversation-to-visit.md) | How conversations become visit notifications |
 | [07-onboarding](07-onboarding/family-linking.md) | Linking family to the elder by phone number |
 | [07-onboarding](07-onboarding/member-questionnaire.md) | Family member interest questionnaire and matching profile |
+| [08-agents](08-agents/hope-tools.md) | Hope's in-call tools (availability, propose visit, flag concern) |
+| [08-agents](08-agents/coordinator-agent.md) | Gemini coordinator agent that turns opportunities into family pushes |
+
+**Scope:** v1 is the 12-hour build; v2 is stretch. The split is in [decisions](05-product/decisions.md#scope-v1-vs-v2).
 
 Source of truth: the approved plan from the planning session. Update these files if decisions change.

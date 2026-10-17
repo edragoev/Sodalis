@@ -4,6 +4,8 @@ How Hope's conversation with the elder becomes a notification asking a family me
 
 **Rule: suggest only.** Nothing is booked until a family member confirms.
 
+> Choosing who to notify and writing the push are now done by the [coordinator agent](../08-agents/coordinator-agent.md), using sections 4 and 6 as its shortlist and fallback. Opportunities can also start mid-call via [Hope's tools](../08-agents/hope-tools.md).
+
 ## 1. Flow
 1. Call ends, and Vapi sends `end-of-call-report` to the webhook (see [routes](../02-api/routes.md)).
 2. Gemini extraction returns `opportunities[]` (schema in section 3).
@@ -62,15 +64,19 @@ Added to the Gemini output (see [hope-persona](../03-ai/hope-persona.md)):
 - Return the top 3 slots with the 30-minute grid and the usual constraints (1 contact per day, 24 h gap). If there are no candidates, return the nearest 3 near-misses flagged "needs a quick OK".
 
 ## 6. Notification payload (FCM)
+v1: the coordinator writes the title and body (template as fallback). The notification has no action buttons; tapping it opens `/opportunities/[id]`, which shows the quote, the slots and a Confirm button per slot.
+
 - **Title:** short and warm, such as "A visit idea: zucchini from the garden".
 - **Body:** the quote and the slots, such as "'My zucchini are out of control.' Thu 4pm, Fri 10am, Sat 2pm".
 - **Data:** `opportunity_id`, slot ids, `urgency`.
-- **Actions:** Confirm slot, Pick another, Can't make it.
+- **Actions (v2):** Confirm slot, Pick another, Can't make it.
 - **Priority:** `high` urgency maps to FCM high priority; others are normal.
 - **Privacy:** short quotes only. Health detail stays in the dashboard.
 
 ## 7. Lifecycle
 `detected → proposed → confirmed | declined | expired`
+
+v1: first accept wins (concurrency rule below) and others see "already covered by [name]". Reminders, escalation and expiry are v2.
 
 - **Named member, no response:** one reminder after 24 h (4 h when urgent); then surface to the whole family as "unclaimed".
 - **Unnamed:** matches first; everyone else after the same timeout.
@@ -79,11 +85,13 @@ Added to the Gemini output (see [hope-persona](../03-ai/hope-persona.md)):
 - **Expired:** past `target_date` or 14 days with no taker.
 
 ## 8. Dedup and rate limits
+v1: dedup only. Rate limits and the digest are v2.
+
 - Collapse the same type and item within 7 days (updating the existing opportunity instead of creating another).
 - Max 2 pushes per member per day; bundle low-urgency ones into a daily digest.
 
 ## 9. Hope's behavior
-- Never promises a visit or time. Hope says "I'll pass that along to [name]."
+- Never confirms a visit. Hope may offer a free day from `get_family_availability` and ask "Want me to ask them?" (see [hope-tools](../08-agents/hope-tools.md)).
 - Asks a natural follow-up to sharpen the signal (how many zucchini, which days suit the elder).
 - Does not name a member unprompted if the elder did not.
 

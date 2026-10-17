@@ -1,5 +1,19 @@
 # Scheduler Algorithm
 
+## v1 (demo)
+Build this first. The full algorithm below is v2.
+
+1. Expand the elder's `preferred_windows` and each member's `manual_availability` into 30-minute slots over the next 7 days (senior's timezone; compute in UTC).
+2. Candidates: slots in both sets, with enough contiguous slots for the kind (visit 2 h, call 30 min), not overlapping confirmed visits or Hope calls.
+3. Constraints: max 1 contact per day, min 24 h gap from other contacts.
+4. Order members by least recently contacted, then slots by earliest start. Return the first 3 slots per member.
+5. Opportunity tweaks: `target_date` limits slots to before that date; perishable `gift_errand` prefers the next 3 days.
+6. No candidates: return nothing and show "needs a quick OK" on the dashboard.
+
+Interface: `getSlots(member_id, kind, days) → [{id, starts_at, ends_at}]`, used by Hope's tools and the coordinator.
+
+# v2: full algorithm
+
 **Grid:** 30-minute slots over a 14-day horizon in the senior's timezone. Compute in UTC; convert for display.
 
 ## Inputs

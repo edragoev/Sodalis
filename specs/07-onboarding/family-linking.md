@@ -1,5 +1,7 @@
 # Linking Family to the Elder by Phone Number
 
+> **v2 (stretch).** v1 seeds the elder and 4 family members, and a "Who are you?" picker saves `member_id` and `senior_id` to localStorage, then asks for push permission. Build this flow only after the v1 demo works.
+
 How a family member connects to an elder with no accounts or passwords. The elder's phone number is the link. It is the same number Hope calls, and the Vapi webhook already uses it to map calls to the senior (`call.customer.number`).
 
 This replaces the earlier "Who are you?" picker. Members are no longer pre-seeded. The demo seeds only the elder.
