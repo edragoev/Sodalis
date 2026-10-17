@@ -1,3 +1,4 @@
+import type { CountryCode } from "libphonenumber-js";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/phone";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
@@ -9,8 +10,9 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const name = String(body.name ?? "").trim();
   const relationship = String(body.relationship ?? "").trim();
-  const e164 = normalizePhone(body.phone);
-  const memberPhone = body.member_phone ? normalizePhone(body.member_phone) : null;
+  const region = (process.env.DEFAULT_PHONE_REGION || "US") as CountryCode;
+  const e164 = normalizePhone(body.phone, region);
+  const memberPhone = body.member_phone ? normalizePhone(body.member_phone, region) : null;
   if (!e164) return Response.json({ error: "Invalid elder phone number." }, { status: 400 });
   if (!name || !relationship) return Response.json({ error: "Name and relationship are required." }, { status: 400 });
   if (body.member_phone && !memberPhone) return Response.json({ error: "Your phone number looks invalid." }, { status: 400 });

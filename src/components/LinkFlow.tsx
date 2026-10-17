@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { normalizePhone } from "@/lib/phone";
 import { saveSession } from "@/lib/session";
 
 type Step = "phone" | "confirm" | "newElder" | "you" | "isThisYou";
@@ -91,6 +92,10 @@ export default function LinkFlow() {
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!normalizePhone(phone)) {
+              setError("Enter a valid phone number with area code, such as (415) 555-0142.");
+              return;
+            }
             lookup();
           }}
         >
