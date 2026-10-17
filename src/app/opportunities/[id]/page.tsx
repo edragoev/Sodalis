@@ -4,7 +4,7 @@ import OpportunityScreen from "@/components/OpportunityScreen";
 export default async function OpportunityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <main className="flex flex-1 items-start justify-center bg-stone-50">
+    <main className="flex flex-1 flex-col">
       <OpportunityScreen opportunityId={id} />
     </main>
   );

@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QUESTIONS } from "@/lib/profile-questions";
-import { getSession } from "@/lib/session";
-import { ghostCls, inputCls, primaryCls } from "./ui";
+import { clearSession, getSession } from "@/lib/session";
+import { Avatar, Button, Screen, TabBar, inputCls, textareaCls } from "./ui";
 
 type TagField = "activities_with_elder" | "interests" | "skills" | "conversation_topics";
 type Profile = {
@@ -56,11 +56,7 @@ export default function ProfileScreen() {
       const data = await res.json();
       if (!res.ok) throw new Error();
       setProfile(data);
-      setNote(
-        data.structuring === "failed"
-          ? "Saved. We'll finish building your tags next time you visit."
-          : "Saved.",
-      );
+      setNote(data.structuring === "failed" ? "Saved. We'll finish building your tags next time you visit." : "Saved.");
     } catch {
       setNote("Couldn't save. Please try again.");
     }
@@ -83,38 +79,44 @@ export default function ProfileScreen() {
     }
   }
 
-  if (!profile) return <p className="p-8 text-stone-600">{note || "Loading…"}</p>;
+  if (!profile) return <p className="p-8 text-slate">{note || "Loading…"}</p>;
+  const first = profile.name.split(" ")[0];
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-8 px-5 py-12">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-stone-900">{profile.name}&apos;s profile</h1>
-        {profile.summary && <p className="text-stone-700">{profile.summary}</p>}
-        {profile.updated_at && (
-          <p className="text-sm text-stone-500">Last updated {new Date(profile.updated_at).toLocaleString()}</p>
-        )}
+    <Screen tabs={<TabBar active="profile" name={first} />}>
+      <header className="flex items-center gap-4">
+        <Avatar name={profile.name} size={64} />
+        <div className="min-w-0">
+          <h1 className="font-serif text-3xl font-semibold text-ink">{profile.name}</h1>
+          {profile.updated_at && (
+            <p className="text-sm text-slate">Updated {new Date(profile.updated_at).toLocaleDateString()}</p>
+          )}
+        </div>
       </header>
+      {profile.summary && <p className="mt-4 text-lg leading-relaxed text-slate">{profile.summary}</p>}
 
-      <section className="space-y-5">
-        <h2 className="text-xl font-semibold text-stone-900">Your tags</h2>
-        <p className="text-sm text-stone-600">Edit these any time. We use them to suggest the right moments to connect.</p>
+      <section className="mt-8 space-y-6">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold text-ink">Your tags</h2>
+          <p className="mt-1 text-slate">Edit these any time. They help suggest the right moments to connect.</p>
+        </div>
         {TAG_GROUPS.map(({ field, label }) => (
           <div key={field} className="space-y-2">
-            <p className="font-medium text-stone-800">{label}</p>
+            <p className="text-sm font-semibold text-ink">{label}</p>
             <div className="flex flex-wrap gap-2">
               {profile.tags[field].map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 rounded-full bg-teal-100 py-1 pl-3 pr-1 text-teal-900">
+                <span key={t} className="inline-flex items-center gap-1 rounded-full bg-mist py-1 pl-3 pr-1 text-primary-dark">
                   {t}
                   <button
                     aria-label={`Remove ${t}`}
-                    className="rounded-full px-2 text-teal-800 hover:bg-teal-200"
+                    className="grid h-6 w-6 place-items-center rounded-full hover:bg-primary/10"
                     onClick={() => saveTags(field, profile.tags[field].filter((x) => x !== t))}
                   >
                     ×
                   </button>
                 </span>
               ))}
-              {!profile.tags[field].length && <span className="text-sm text-stone-500">None yet</span>}
+              {!profile.tags[field].length && <span className="text-sm text-slate">None yet</span>}
             </div>
             <form
               className="flex gap-2"
@@ -126,42 +128,52 @@ export default function ProfileScreen() {
               }}
             >
               <input
-                className={`${inputCls} py-2 text-base`}
+                aria-label={`Add to ${label}`}
+                className={`${inputCls} h-11 text-base`}
                 placeholder="Add a tag"
                 value={drafts[field] ?? ""}
                 onChange={(e) => setDrafts({ ...drafts, [field]: e.target.value })}
               />
-              <button className="rounded-xl border border-teal-700 px-4 text-teal-800">Add</button>
+              <Button variant="secondary" className="h-11 px-5 text-base">
+                Add
+              </Button>
             </form>
           </div>
         ))}
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold text-stone-900">Your answers</h2>
+      <section className="mt-10 space-y-4">
+        <h2 className="font-serif text-2xl font-semibold text-ink">Your answers</h2>
         {QUESTIONS.map((q) => (
-          <label key={q.key} className="block space-y-1">
-            <span className="text-stone-800">{q.text}</span>
+          <label key={q.key} className="block space-y-2">
+            <span className="text-sm font-semibold text-ink">{q.text}</span>
             <textarea
-              className={`${inputCls} min-h-20 text-base`}
+              className={`${textareaCls} min-h-24 text-base`}
               maxLength={2000}
               value={answers[q.key] ?? ""}
               onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })}
             />
           </label>
         ))}
-        <button className={primaryCls} disabled={busy} onClick={saveAnswers}>
+        <Button className="w-full" disabled={busy} onClick={saveAnswers}>
           {busy ? "Saving…" : "Save answers"}
-        </button>
+        </Button>
         {note && (
-          <p role="status" className="text-stone-700">
+          <p role="status" className="text-slate">
             {note}
           </p>
         )}
-        <button className={ghostCls} onClick={() => router.push("/dashboard")}>
-          Back to dashboard
-        </button>
+        <Button
+          variant="text"
+          className="text-slate"
+          onClick={() => {
+            clearSession();
+            router.push("/profiles");
+          }}
+        >
+          Switch profile
+        </Button>
       </section>
-    </div>
+    </Screen>
   );
 }

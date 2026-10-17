@@ -1,7 +1,7 @@
 "use client";
 
 import { useNotifications } from "@/lib/hooks/useNotifications";
-import { primaryCls } from "./ui";
+import { Button } from "./ui";
 
 // The one place a person is asked to turn notifications on, from a button press (never on page load).
 export default function NotificationsButton({ memberId }: { memberId: string | null }) {
@@ -14,13 +14,13 @@ export default function NotificationsButton({ memberId }: { memberId: string | n
   return (
     <div className="space-y-2">
       {permission === "default" && (
-        <button type="button" className={primaryCls} onClick={() => void enable()}>
+        <Button type="button" className="w-full" onClick={() => void enable()}>
           Turn on notifications
-        </button>
+        </Button>
       )}
-      {permission === "granted" && <p className="text-stone-700">Notifications are on.</p>}
+      {permission === "granted" && <p className="text-slate">Notifications are on.</p>}
       {permission === "denied" && (
-        <p className="text-stone-700">
+        <p className="text-slate">
           Notifications are blocked. To turn them on, change this site&apos;s setting in your browser settings.
         </p>
       )}
