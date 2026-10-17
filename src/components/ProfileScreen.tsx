@@ -171,7 +171,7 @@ export default function ProfileScreen() {
           q.key === "logistics" ? (
             <div key={q.key} className="space-y-3">
               <span className="text-sm font-semibold text-ink">{q.text}</span>
-              <LogisticsQuestion value={answers.logistics ?? ""} onChange={(v) => setAnswers({ ...answers, logistics: v })} />
+              <LogisticsQuestion size="compact" value={answers.logistics ?? ""} onChange={(v) => setAnswers({ ...answers, logistics: v })} />
             </div>
           ) : (
           <label key={q.key} className="block space-y-2">
