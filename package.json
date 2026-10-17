@@ -14,6 +14,12 @@
     "@google/genai": "^2.30.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "firebase": "^13.0.0",
+    "next": "^16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
     "libphonenumber-js": "^1.13.15",
     "next": "16.4.2",
     "react": "19.3.0",
@@ -30,5 +36,12 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   }
 }
