@@ -55,3 +55,18 @@ where vapi_call_id = 'demo-call-5';
 update alerts set check_in_id = (select id from check_ins where vapi_call_id = 'demo-call-4')
 where type = 'low_mood' and check_in_id is null
   and senior_id = (select id from seniors where phone_e164 = '+14155550100');
+
+-- A proposed idea from the zucchini call, with three upcoming slots (relative to now, so the
+-- demo never goes stale when re-run). Open it from the dashboard's "Ideas from Hope's calls".
+insert into opportunities (senior_id, check_in_id, type, summary, quote, mentioned_item, interest_tags, urgency, confidence, suggested_kind, status, proposed_slots)
+select s.id, c.id, 'gift_errand',
+  'Margaret has more zucchini than she can use and would love someone to take some.',
+  'My zucchini are out of control.', 'zucchini', array['gardening','cooking'], 'normal', 0.86, 'visit', 'proposed',
+  jsonb_build_array(
+    jsonb_build_object('id','s1','kind','visit','starts_at', to_jsonb(date_trunc('hour', now()) + interval '1 day 4 hours'),  'ends_at', to_jsonb(date_trunc('hour', now()) + interval '1 day 6 hours')),
+    jsonb_build_object('id','s2','kind','visit','starts_at', to_jsonb(date_trunc('hour', now()) + interval '2 days 2 hours'), 'ends_at', to_jsonb(date_trunc('hour', now()) + interval '2 days 4 hours')),
+    jsonb_build_object('id','s3','kind','visit','starts_at', to_jsonb(date_trunc('hour', now()) + interval '3 days 5 hours'), 'ends_at', to_jsonb(date_trunc('hour', now()) + interval '3 days 7 hours'))
+  )
+from seniors s join check_ins c on c.senior_id = s.id and c.vapi_call_id = 'demo-call-5'
+where s.phone_e164 = '+14155550100'
+  and not exists (select 1 from opportunities o where o.check_in_id = c.id);

@@ -20,9 +20,10 @@ type CheckIn = {
 };
 type Alert = { id: string; type: string; severity: "info" | "warn" | "urgent"; message: string; created_at: string; check_in_id: string | null };
 type CallRequest = { id: string; reason: string | null; status: string; created_at: string };
+type Idea = { id: string; type: string; summary: string; quote: string | null; status: string; accepted_by: string | null; created_at: string };
 type Visit = { id: string; kind: "visit" | "call"; starts_at: string; status: string };
 
-const TABLES = ["check_ins", "alerts", "call_requests", "visits"] as const;
+const TABLES = ["check_ins", "alerts", "call_requests", "visits", "opportunities"] as const;
 const RANK = { urgent: 0, warn: 1, info: 2 } as const;
 
 const ALERT_STYLE: Record<Alert["severity"], { card: string; icon: string; label: string; text: string }> = {
@@ -77,12 +78,14 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [requests, setRequests] = useState<CallRequest[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async (id: string) => {
     const db = supabaseBrowser();
-    const [s, c, a, r, v] = await Promise.all([
+    const [s, c, a, r, v, o, m] = await Promise.all([
       db.from("seniors").select("name").eq("id", id).maybeSingle(),
       db.from("check_ins").select("id, started_at, status, summary, mood_score, mood_label, topics, engagement_score")
         .eq("senior_id", id).order("started_at", { ascending: false }).limit(14),
@@ -93,6 +96,9 @@ export default function Dashboard() {
       db.from("visits").select("id, kind, starts_at, status")
         .eq("senior_id", id).in("status", ["proposed", "confirmed"]).gte("starts_at", new Date().toISOString())
         .order("starts_at").limit(10),
+      db.from("opportunities").select("id, type, summary, quote, status, accepted_by, created_at")
+        .eq("senior_id", id).in("status", ["proposed", "confirmed"]).order("created_at", { ascending: false }).limit(5),
+      db.from("family_members").select("id, name").eq("senior_id", id),
     ]);
     if (s.error || c.error) return setError("Couldn't load the dashboard.");
     setError("");
@@ -101,6 +107,8 @@ export default function Dashboard() {
     setAlerts(((a.data ?? []) as Alert[]).sort((x, y) => RANK[x.severity] - RANK[y.severity]));
     setRequests((r.data ?? []) as CallRequest[]);
     setVisits((v.data ?? []) as Visit[]);
+    setIdeas((o.data ?? []) as Idea[]);
+    setNames(Object.fromEntries((m.data ?? []).map((x) => [x.id, x.name.split(" ")[0]])));
     setLoaded(true);
   }, []);
 
@@ -219,6 +227,21 @@ export default function Dashboard() {
                 <p className="mt-1 text-lg font-semibold text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
                 <p className="mt-1 text-sm text-slate">{when(r.created_at)}</p>
               </div>
+            ))}
+          </section>
+        )}
+
+        {ideas.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Hope&apos;s calls</h2>
+            {ideas.map((i) => (
+              <Link key={i.id} href={`/opportunities/${i.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
+                {i.quote && <p className="font-serif text-lg leading-snug text-ink">&ldquo;{i.quote}&rdquo;</p>}
+                <p className="text-slate">{i.summary}</p>
+                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${i.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-peach text-accent"}`}>
+                  {i.status === "confirmed" ? `${i.accepted_by ? names[i.accepted_by] ?? "Someone" : "Someone"} is on it` : "Needs someone"}
+                </span>
+              </Link>
             ))}
           </section>
         )}
