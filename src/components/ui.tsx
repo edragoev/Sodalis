@@ -16,9 +16,9 @@ export const largeLabelCls = `${labelBaseCls} text-2xl`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";
 export const subCls = "mt-3 text-lg leading-relaxed text-slate";
 
-export function Logo({ align = "center" }: { align?: "center" | "right" }) {
+export function Logo({ align = "center" }: { align?: "center" | "left" | "right" }) {
   return (
-    <div className={`flex items-center gap-3 ${align === "right" ? "justify-end" : "justify-center"}`}>
+    <div className={`flex items-center gap-3 ${align === "right" ? "justify-end" : align === "left" ? "justify-start" : "justify-center"}`}>
       <span className="grid h-12 w-12 place-items-center rounded-2xl bg-mist">
         <svg viewBox="0 0 24 24" className="h-7 w-7 text-primary" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />

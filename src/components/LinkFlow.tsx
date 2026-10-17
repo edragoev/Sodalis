@@ -160,7 +160,7 @@ export default function LinkFlow() {
       }
     >
       <div className="pt-4">
-        <Logo align="right" />
+        <Logo align="left" />
       </div>
       <h1 className={`${headingCls} mt-12`}>What&apos;s your loved one&apos;s phone number?</h1>
       <p className={subCls}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
