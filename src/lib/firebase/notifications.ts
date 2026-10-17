@@ -27,17 +27,18 @@ export function getFirebaseMessaging(
 }
 
 /**
- * Register the app's service worker (sw.js), which also handles push. Registering the same
- * worker twice is safe and returns the existing registration.
+ * Register the app's service worker (sw.js), which also handles push, and wait until it is active.
+ * Registering the same worker twice is safe and returns the existing registration.
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof globalThis.navigator === 'undefined' || !globalThis.navigator.serviceWorker) return null
 
   try {
-    return await globalThis.navigator.serviceWorker.register('/sw.js', {
-      scope: '/',
-      updateViaCache: 'none',
-    })
+    const { serviceWorker } = globalThis.navigator
+    const registration = await serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
+    // On a first visit the worker is still installing, and a push token cannot be fetched until it is
+    // active ("no active Service Worker"), so wait for it. `ready` resolves with the active registration.
+    return registration.active || !serviceWorker.ready ? registration : await serviceWorker.ready
   } catch {
     return null
   }

@@ -25,6 +25,28 @@ describe('firebase notifications', () => {
     expect(result).toEqual({ scope: '/' })
   })
 
+  it('waits for the worker to be active, because a push token cannot be fetched before that', async () => {
+    const installing = { scope: '/', active: null }
+    const activated = { scope: '/', active: { state: 'activated' } }
+    const register = vi.fn().mockResolvedValue(installing)
+    Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+      value: { register, ready: Promise.resolve(activated) },
+      configurable: true,
+    })
+
+    await expect(registerServiceWorker()).resolves.toBe(activated)
+  })
+
+  it('does not wait when the worker is already active', async () => {
+    const active = { scope: '/', active: { state: 'activated' } }
+    Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+      value: { register: vi.fn().mockResolvedValue(active), ready: new Promise(() => {}) },
+      configurable: true,
+    })
+
+    await expect(registerServiceWorker()).resolves.toBe(active)
+  })
+
   it('returns null when the browser does not support service worker registration', async () => {
     Object.defineProperty(globalThis.navigator, 'serviceWorker', {
       value: undefined,
