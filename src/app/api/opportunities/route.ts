@@ -1,3 +1,4 @@
+import { bad, isUuid, readJsonObject } from '@/lib/http'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
 const REQUIRED = ['senior_id', 'type', 'summary'] as const
@@ -18,11 +19,6 @@ const TYPES = ['gift_errand', 'activity', 'event', 'wants_contact']
 const URGENCIES = ['low', 'normal', 'high']
 const KINDS = ['visit', 'call']
 const SOURCES = ['extraction', 'hope_tool']
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const bad = (error: string) => Response.json({ error }, { status: 400 })
-
-const isUuid = (v: unknown) => typeof v === 'string' && UUID.test(v)
 const isDate = (v: unknown) =>
   typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) && !Number.isNaN(Date.parse(v))
 
@@ -69,16 +65,9 @@ function validate(body: Record<string, unknown>): string | null {
 }
 
 export async function POST(request: Request) {
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return bad('Request body must be valid JSON')
-  }
-  if (typeof body !== 'object' || body === null || Array.isArray(body))
-    return bad('Request body must be a JSON object')
+  const input = await readJsonObject(request)
+  if (input instanceof Response) return input
 
-  const input = body as Record<string, unknown>
   const problem = validate(input)
   if (problem) return bad(problem)
 

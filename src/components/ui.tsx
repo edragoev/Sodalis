@@ -8,6 +8,9 @@ export const largeInputCls = `${inputBaseCls} text-xl`;
 export const textareaCls =
   "w-full rounded-2xl border border-sand bg-white px-4 py-3 text-lg text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20";
 const labelBaseCls = "mb-2 block font-semibold text-ink";
+// Class-string version of <Button> for plain <button>/<a> elements.
+export const primaryCls =
+  "h-14 w-full rounded-2xl bg-primary px-6 text-lg font-semibold text-white transition-colors hover:bg-primary-dark disabled:bg-primary/40";
 export const labelCls = `${labelBaseCls} text-sm`;
 export const largeLabelCls = `${labelBaseCls} text-2xl`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";

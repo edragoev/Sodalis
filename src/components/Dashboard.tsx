@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
 import InviteCard from "./InviteCard";
+import NotificationsButton from "./NotificationsButton";
 import { Avatar, MoodFace, Screen, TabBar } from "./ui";
 
 type CheckIn = {
@@ -164,6 +165,8 @@ export default function Dashboard() {
       </header>
 
       <div className="mt-6 space-y-4">
+        <NotificationsButton memberId={memberId || null} />
+
         {topAlert && (
           <section aria-label="Alerts" className="space-y-3">
             <div className={`rounded-3xl border p-5 ${ALERT_STYLE[topAlert.severity].card}`}>
