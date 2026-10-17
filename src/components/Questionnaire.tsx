@@ -48,7 +48,7 @@ export default function Questionnaire() {
         body: JSON.stringify({ answers }),
       });
       if (!res.ok) throw new Error();
-      router.push("/profile");
+      router.push("/calendar");
     } catch {
       setError("We couldn't save your answers. Please try again.");
       setSaving(false);

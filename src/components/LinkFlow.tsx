@@ -8,6 +8,7 @@ import { Avatar, BackButton, Button, Logo, Screen, headingCls, inputCls, labelCl
 type Step = "phone" | "confirm" | "newElder" | "you" | "isThisYou";
 
 const RELATIONSHIPS = ["Daughter", "Son", "Granddaughter", "Grandson", "Niece or nephew", "Friend or neighbor", "Other"];
+const PRONOUNS = ["She/her", "He/him", "They/them", "Other"];
 const NOT_FOUND = "We couldn't find that number.";
 
 async function post(url: string, body: unknown) {
@@ -17,6 +18,27 @@ async function post(url: string, body: unknown) {
     body: JSON.stringify(body),
   });
   return { status: res.status, data: await res.json().catch(() => ({})) };
+}
+
+function SelectField({ id, value, onChange, options, placeholder }: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
+  return (
+    <div className="relative">
+      <select
+        id={id}
+        className={`${inputCls} appearance-none pr-12 ${value ? "" : "text-slate/60"}`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="" disabled>{placeholder}</option>
+        {options.map((o) => (
+          <option key={o} value={o}>{o}</option>
+        ))}
+      </select>
+      <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </div>
+  );
 }
 
 /** "(415) •••-0142" from whatever the user typed. */
@@ -34,11 +56,13 @@ export default function LinkFlow() {
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [otherRel, setOtherRel] = useState("");
-  const [memberPhone, setMemberPhone] = useState("");
+  const [pronouns, setPronouns] = useState("");
+  const [otherPronouns, setOtherPronouns] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const relValue = relationship === "Other" ? otherRel.trim() : relationship;
+  const pronounValue = pronouns === "Other" ? otherPronouns.trim() : pronouns;
   const national = (v: string) => (v.trim().startsWith("+") ? v : v ? `+1 ${v}` : "");
 
   async function run(fn: () => Promise<void>) {
@@ -64,7 +88,7 @@ export default function LinkFlow() {
 
   const createElder = () =>
     run(async () => {
-      const { status, data } = await post("/api/link/elders", { name: seniorName, phone: national(phone), timezone });
+      const { status, data } = await post("/api/link/elders", { name: seniorName, phone: national(phone), timezone, pronouns: pronounValue || undefined });
       if (status !== 200) return setError(data.error ?? "Could not create elder");
       setSeniorName(data.senior_first_name);
       setStep("you");
@@ -76,7 +100,6 @@ export default function LinkFlow() {
         phone: national(phone),
         name,
         relationship: relValue,
-        member_phone: memberPhone ? national(memberPhone) : undefined,
         reconnect,
       });
       if (status === 409 && data.exists) return setStep("isThisYou");
@@ -177,21 +200,24 @@ export default function LinkFlow() {
       <Screen
         top={<BackButton onClick={() => setStep("phone")} />}
         footer={
-          <Button className="w-full" disabled={busy || !seniorName.trim()} onClick={createElder}>
-            Create
+          <Button className="w-full" disabled={busy || !seniorName.trim() || (pronouns === "Other" && !otherPronouns.trim())} onClick={createElder}>
+            Continue
           </Button>
         }
       >
         <h1 className={headingCls}>Who will Hope be calling?</h1>
-        <p className={subCls}>Demo setup for the number {national(phone)}.</p>
+        <p className={subCls}>We don&apos;t have {national(phone)} yet. Tell us a little about them.</p>
         <div className="mt-8 space-y-5">
           <div>
-            <label className={labelCls} htmlFor="elder-name">Their name</label>
+            <label className={labelCls} htmlFor="elder-name">Their first name</label>
             <input id="elder-name" className={inputCls} value={seniorName} onChange={(e) => setSeniorName(e.target.value)} />
           </div>
           <div>
-            <label className={labelCls} htmlFor="elder-tz">Timezone</label>
-            <input id="elder-tz" className={inputCls} value={timezone} onChange={(e) => setTimezone(e.target.value)} />
+            <label className={labelCls} htmlFor="elder-pronouns">Their pronouns (optional)</label>
+            <SelectField id="elder-pronouns" value={pronouns} onChange={setPronouns} options={PRONOUNS} placeholder="Choose one" />
+            {pronouns === "Other" && (
+              <input className={`${inputCls} mt-3`} placeholder="Their pronouns, in your words" value={otherPronouns} onChange={(e) => setOtherPronouns(e.target.value)} />
+            )}
           </div>
         </div>
         {errorBox}
@@ -240,32 +266,10 @@ export default function LinkFlow() {
         </div>
         <div>
           <label className={labelCls} htmlFor="relationship">How are you related to {seniorName}?</label>
-          <div className="relative">
-            <select
-              id="relationship"
-              className={`${inputCls} appearance-none pr-12 ${relationship ? "" : "text-slate/60"}`}
-              value={relationship}
-              onChange={(e) => setRelationship(e.target.value)}
-            >
-              <option value="" disabled>Choose one</option>
-              {RELATIONSHIPS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-            <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </div>
+          <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" />
           {relationship === "Other" && (
             <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
           )}
-        </div>
-        <div>
-          <label className={labelCls} htmlFor="your-phone">Your phone (optional)</label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
-            <input id="your-phone" className={`${inputCls} pl-12`} inputMode="tel" placeholder="(555) 000-0000" value={memberPhone} onChange={(e) => setMemberPhone(e.target.value)} />
-          </div>
         </div>
       </div>
       {errorBox}
