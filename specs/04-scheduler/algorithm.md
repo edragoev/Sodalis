@@ -7,7 +7,7 @@ Build this first. The full algorithm below is v2.
 2. Candidates: slots in both sets, with enough contiguous slots for the kind (visit 2 h, call 30 min), not overlapping confirmed visits or Hope calls.
 3. Constraints: max 1 contact per day, min 24 h gap from other contacts.
 4. Order members by least recently contacted, then slots by earliest start. Return the first 3 slots per member.
-5. Opportunity tweaks: `target_date` limits slots to before that date; perishable `gift_errand` prefers the next 3 days.
+5. Opportunity tweaks: `target_date` limits slots to that day or earlier (the day itself counts, in the senior's timezone); perishable `gift_errand` prefers the next 3 days.
 6. No candidates: return nothing and show "needs a quick OK" on the dashboard.
 
 Interface: `getSlots(member_id, kind, days) → [{id, starts_at, ends_at}]`, used by Hope's tools and the coordinator.
