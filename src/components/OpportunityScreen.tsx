@@ -7,7 +7,7 @@ import { loadOpportunity } from "@/lib/load-opportunity";
 import { buildOpportunityView, type OpportunityData, type OpportunityView } from "@/lib/opportunity-view";
 import { getSession, type Session } from "@/lib/session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { primaryCls } from "./ui";
+import { Screen, headingCls, primaryCls, subCls } from "./ui";
 
 type Props = {
   opportunityId: string;
@@ -71,22 +71,35 @@ export default function OpportunityScreen({
     };
   }, [opportunityId, session, load]);
 
-  if (session === undefined) return <p className="p-8 text-stone-600">Loading…</p>;
+  if (session === undefined) return <p className="p-8 text-xl text-slate">Loading…</p>;
   if (!session) {
     return (
-      <div className="mx-auto w-full max-w-xl space-y-4 px-5 py-10">
-        <p className="text-lg text-stone-800">Link your account to see this idea.</p>
-        <Link href="/" className="text-teal-800 underline">Link your account</Link>
-      </div>
+      <Screen>
+        <h1 className={headingCls}>One quick step first</h1>
+        <p className={`${subCls} text-xl`}>Link your account to see this idea.</p>
+        <Link href="/" className={`${primaryCls} mt-8 flex items-center justify-center`}>
+          Link your account
+        </Link>
+      </Screen>
     );
   }
-  if (loadFailed) return <p role="alert" className="p-8 text-red-800">Couldn&apos;t load this idea. Try again.</p>;
-  if (data === undefined) return <p className="p-8 text-stone-600">Loading…</p>;
-  if (data === null) return <p className="p-8 text-stone-700">We couldn&apos;t find that idea.</p>;
+  if (loadFailed) return <p role="alert" className="p-8 text-xl text-danger">Couldn&apos;t load this idea. Try again.</p>;
+  if (data === undefined) return <p className="p-8 text-xl text-slate">Loading…</p>;
+  if (data === null) {
+    return (
+      <Screen>
+        <p className={`${subCls} text-xl`}>We couldn&apos;t find that idea.</p>
+      </Screen>
+    );
+  }
 
   const view = buildOpportunityView(data, session);
   if (view.state === "not_your_family") {
-    return <p className="p-8 text-stone-700">This idea belongs to another family.</p>;
+    return (
+      <Screen>
+        <p className={`${subCls} text-xl`}>This idea belongs to another family.</p>
+      </Screen>
+    );
   }
 
   async function onConfirm(slotId: string, label: string) {
@@ -106,34 +119,53 @@ export default function OpportunityScreen({
 
   const showSlots = view.canConfirm && outcome.kind !== "done" && outcome.kind !== "covered";
 
+  const confirmed = view.state === "claimed" || view.state === "claimed_by_me" || outcome.kind === "done";
+
   return (
-    <div className="mx-auto w-full max-w-xl space-y-6 px-5 py-10">
-      <h1 className="text-3xl font-semibold text-stone-900">{view.title}</h1>
+    <Screen
+      footer={
+        <Link href="/dashboard" className="flex h-12 items-center justify-center text-lg font-semibold text-slate hover:underline">
+          Back to home
+        </Link>
+      }
+    >
+      <h1 className={headingCls}>{view.title}</h1>
       {view.quote && (
-        <blockquote className="border-l-4 border-teal-700 pl-4 text-lg text-stone-700">
+        <blockquote className="mt-6 rounded-3xl bg-mist p-5 font-serif text-2xl leading-snug text-ink">
           “{view.quote}”
         </blockquote>
       )}
-      {status && <p className="text-lg text-stone-900">{status}</p>}
+      {status && (
+        <p
+          className={`mt-6 rounded-2xl p-4 text-xl text-ink ${
+            confirmed ? "border border-good/30 bg-mist" : outcome.kind === "covered" ? "bg-peach" : "bg-cream"
+          }`}
+        >
+          {status}
+        </p>
+      )}
       {outcome.kind === "error" && (
-        <p role="alert" className="text-red-800">Something went wrong. Please try again.</p>
+        <p role="alert" className="mt-4 rounded-2xl bg-danger-bg p-3 text-lg text-danger">Something went wrong. Please try again.</p>
       )}
       {showSlots && (
-        <ul className="space-y-3">
-          {view.slots.map((slot) => (
-            <li key={slot.id}>
-              <button
-                type="button"
-                className={primaryCls}
-                disabled={sending}
-                onClick={() => onConfirm(slot.id, slot.label)}
-              >
-                Confirm {slot.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-8">
+          <h2 className="font-serif text-2xl font-semibold text-ink">Pick a time</h2>
+          <ul className="mt-3 space-y-3">
+            {view.slots.map((slot) => (
+              <li key={slot.id}>
+                <button
+                  type="button"
+                  className={primaryCls}
+                  disabled={sending}
+                  onClick={() => onConfirm(slot.id, slot.label)}
+                >
+                  Confirm {slot.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
-    </div>
+    </Screen>
   );
 }
