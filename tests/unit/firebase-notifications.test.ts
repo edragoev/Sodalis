@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getFirebaseMessaging,
-  registerFirebaseServiceWorker,
+  registerServiceWorker,
   requestFirebaseNotificationPermission,
 } from '@/lib/firebase/notifications'
 
@@ -19,7 +19,7 @@ describe('firebase notifications', () => {
       configurable: true,
     })
 
-    const result = await registerFirebaseServiceWorker()
+    const result = await registerServiceWorker()
 
     expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/', updateViaCache: 'none' })
     expect(result).toEqual({ scope: '/' })
@@ -31,7 +31,7 @@ describe('firebase notifications', () => {
       configurable: true,
     })
 
-    await expect(registerFirebaseServiceWorker()).resolves.toBeNull()
+    await expect(registerServiceWorker()).resolves.toBeNull()
   })
 
   it('requests notification permission and resolves when granted', async () => {

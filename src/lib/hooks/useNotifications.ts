@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { registerFirebaseServiceWorker } from '../firebase/notifications'
+import { registerServiceWorker } from '../firebase/notifications'
 
 export type NotificationPermissionState = 'default' | 'granted' | 'denied' | 'unsupported'
 
@@ -58,11 +58,8 @@ export function useNotifications(): UseNotificationsResult {
 
           // Tie the token to our own worker (sw.js); otherwise Firebase registers its default
           // firebase-messaging-sw.js and taps never reach our notificationclick handler.
-          const serviceWorkerRegistration = await registerFirebaseServiceWorker()
-          const fcmToken = await getToken(getMessaging(), {
-            vapidKey,
-            ...(serviceWorkerRegistration ? { serviceWorkerRegistration: serviceWorkerRegistration as ServiceWorkerRegistration } : {}),
-          })
+          const serviceWorkerRegistration = (await registerServiceWorker()) ?? undefined
+          const fcmToken = await getToken(getMessaging(), { vapidKey, serviceWorkerRegistration })
 
           if (isMounted) {
             setToken(fcmToken)

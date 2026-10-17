@@ -30,7 +30,7 @@ export function getFirebaseMessaging(
  * Register the app's service worker (sw.js), which also handles push. Registering the same
  * worker twice is safe and returns the existing registration.
  */
-export async function registerFirebaseServiceWorker(): Promise<unknown | null> {
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof globalThis.navigator === 'undefined' || !globalThis.navigator.serviceWorker) return null
 
   try {
