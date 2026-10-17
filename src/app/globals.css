@@ -25,3 +25,18 @@ body {
   color: var(--color-ink);
   font-family: var(--font-figtree), system-ui, sans-serif;
 }
+
+/* Bottom tray slide-up. */
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-up {
+    animation: sheet-up 0.22s ease-out;
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
