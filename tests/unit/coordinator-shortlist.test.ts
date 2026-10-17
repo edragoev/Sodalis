@@ -106,7 +106,7 @@ describe('buildShortlist', () => {
   })
 
   it('lets relationship fit and availability break a tie on interest', () => {
-    const a = member('a', { activities_with_elder: ['cooking', 'gardening'], relationship_fit: 0.2, availability: 0.2 })
+    const a = member('a', { activities_with_elder: ['cooking', 'gardening'], relationship_fit: 0.3, availability: 0.3 })
     const b = member('b', { activities_with_elder: ['cooking', 'gardening'], relationship_fit: 0.9, availability: 0.9 })
     expect(buildShortlist(opportunity(), [a, b]).map((m) => m.id)).toEqual(['b', 'a'])
   })
