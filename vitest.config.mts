@@ -3,7 +3,11 @@ import path from 'node:path'
 
 export default defineConfig({
   resolve: {
-    alias: { '@': path.resolve(import.meta.dirname) },
+    alias: [
+      // Routes live under src/app; everything else (lib, utils) is at the repo root.
+      { find: /^@\/app\//, replacement: path.resolve(import.meta.dirname, 'src/app') + '/' },
+      { find: /^@\//, replacement: path.resolve(import.meta.dirname) + '/' },
+    ],
   },
   test: {
     environment: 'node',
