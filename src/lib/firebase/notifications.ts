@@ -27,14 +27,16 @@ export function getFirebaseMessaging(
 }
 
 /**
- * Register the public Firebase service worker required for background notifications.
+ * Register the app's service worker (sw.js), which also handles push. Registering the same
+ * worker twice is safe and returns the existing registration.
  */
 export async function registerFirebaseServiceWorker(): Promise<unknown | null> {
   if (typeof globalThis.navigator === 'undefined' || !globalThis.navigator.serviceWorker) return null
 
   try {
-    return await globalThis.navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+    return await globalThis.navigator.serviceWorker.register('/sw.js', {
       scope: '/',
+      updateViaCache: 'none',
     })
   } catch {
     return null

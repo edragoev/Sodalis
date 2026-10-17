@@ -12,7 +12,7 @@ describe('firebase notifications', () => {
     delete (globalThis as any).navigator?.serviceWorker
   })
 
-  it('registers the app's single service worker (sw.js), which also handles push', async () => {
+  it('registers the single app service worker (sw.js), which also handles push', async () => {
     const register = vi.fn().mockResolvedValue({ scope: '/' })
     Object.defineProperty(globalThis.navigator, 'serviceWorker', {
       value: { register },
