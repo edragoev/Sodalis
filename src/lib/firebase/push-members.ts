@@ -7,14 +7,14 @@ import {
 } from './opportunity-push'
 import { clearDeadTokens } from './token-cleanup'
 
-type Deps = { db: SupabaseClient; messaging: MulticastMessaging }
+type Deps = { db: SupabaseClient; messaging: MulticastMessaging; appUrl?: string | null }
 
 /**
  * Pushes an opportunity to the given members, then clears any token Firebase reports dead.
  * A cleanup failure never hides the send result: the push has already gone out.
  */
 export async function pushToMembers(
-  { db, messaging }: Deps,
+  { db, messaging, appUrl }: Deps,
   memberIds: string[],
   opportunity: PushOpportunity,
   slots: PushSlot[],
@@ -37,6 +37,7 @@ export async function pushToMembers(
     opportunity,
     slots,
     timezone,
+    appUrl,
   )
 
   let clearedCount = 0

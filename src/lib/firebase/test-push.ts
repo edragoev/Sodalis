@@ -1,3 +1,5 @@
+import { absoluteUrl } from '@/lib/app-url'
+
 // The "hello world" push behind POST /api/push/test.
 
 /** The slice of firebase-admin's Messaging that a single-token send needs. */
@@ -10,13 +12,15 @@ export type TestPushMessage = {
   notification: { title: string; body: string }
   data: Record<string, string>
   android: { priority: 'normal' }
-  webpush: { headers: { Urgency: 'normal' }; fcmOptions: { link: string } }
+  webpush: { headers: { Urgency: 'normal' }; fcmOptions?: { link: string } }
 }
 
 export { isDeadTokenError } from './dead-token'
 
-export function buildTestPush(token: string, memberName?: string | null): TestPushMessage {
+export function buildTestPush(token: string, memberName?: string | null, appUrl?: string | null): TestPushMessage {
   const firstName = memberName?.trim().split(/\s+/)[0]
+  // FCM rejects a relative link, so it is left out when the app URL is unknown.
+  const link = absoluteUrl(appUrl, '/')
   return {
     token,
     notification: {
@@ -27,12 +31,17 @@ export function buildTestPush(token: string, memberName?: string | null): TestPu
     },
     data: { type: 'test' },
     android: { priority: 'normal' },
-    webpush: { headers: { Urgency: 'normal' }, fcmOptions: { link: '/' } },
+    webpush: { headers: { Urgency: 'normal' }, ...(link ? { fcmOptions: { link } } : {}) },
   }
 }
 
-export async function sendTestPush(messaging: TokenMessaging, token: string, memberName?: string | null) {
+export async function sendTestPush(
+  messaging: TokenMessaging,
+  token: string,
+  memberName?: string | null,
+  appUrl?: string | null,
+) {
   if (token.trim() === '') throw new Error('A token is required to send a push')
-  const messageId = await messaging.send(buildTestPush(token, memberName))
+  const messageId = await messaging.send(buildTestPush(token, memberName, appUrl))
   return { messageId }
 }

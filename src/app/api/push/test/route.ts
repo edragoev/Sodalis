@@ -1,3 +1,4 @@
+import { getAppUrl } from '@/lib/app-url'
 import { getAdminMessaging } from '@/lib/firebase/admin'
 import { isDeadTokenError, sendTestPush } from '@/lib/firebase/test-push'
 import { bad, isUuid, readJsonObject } from '@/lib/http'
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'This member has no push token registered yet' }, { status: 409 })
 
   try {
-    await sendTestPush(getAdminMessaging(), member.fcm_token, member.name)
+    await sendTestPush(getAdminMessaging(), member.fcm_token, member.name, getAppUrl(process.env))
   } catch (err) {
     if (isDeadTokenError(err)) {
       // Firebase says this token will never work again, so stop keeping it.

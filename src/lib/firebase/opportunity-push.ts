@@ -1,3 +1,4 @@
+import { absoluteUrl } from '@/lib/app-url'
 import { isDeadTokenError } from './dead-token'
 
 // FCM push for a proposed opportunity (specs/06-notifications/conversation-to-visit.md, section 6).
@@ -25,7 +26,7 @@ export type OpportunityPushMessage = {
   notification: { title: string; body: string }
   data: Record<string, string>
   android: { priority: 'high' | 'normal' }
-  webpush: { headers: { Urgency: 'high' | 'normal' }; fcmOptions: { link: string } }
+  webpush: { headers: { Urgency: 'high' | 'normal' }; fcmOptions?: { link: string } }
 }
 
 // Health detail stays on the dashboard, so only a short quote goes in the push.
@@ -65,9 +66,12 @@ export function buildOpportunityPush(
   opportunity: PushOpportunity,
   slots: PushSlot[],
   timezone: string,
+  appUrl?: string | null,
 ): OpportunityPushMessage {
   const priority = opportunity.urgency === 'high' ? 'high' : 'normal'
-  const link = `/opportunities/${opportunity.id}`
+  // FCM rejects a relative link, so it is left out when the app URL is unknown. Taps still
+  // work: the service worker routes from data.opportunity_id.
+  const link = absoluteUrl(appUrl, `/opportunities/${encodeURIComponent(opportunity.id)}`)
   const subject = opportunity.mentioned_item?.trim() || opportunity.summary
   slots = validSlots(slots)
   const slotText = slots.map((s) => formatSlot(s.starts_at, timezone)).join(', ')
@@ -86,7 +90,7 @@ export function buildOpportunityPush(
       urgency: opportunity.urgency,
     },
     android: { priority },
-    webpush: { headers: { Urgency: priority }, fcmOptions: { link } },
+    webpush: { headers: { Urgency: priority }, ...(link ? { fcmOptions: { link } } : {}) },
   }
 }
 
@@ -100,11 +104,12 @@ export async function sendOpportunityPush(
   opportunity: PushOpportunity,
   slots: PushSlot[],
   timezone: string,
+  appUrl?: string | null,
 ) {
   const result = { successCount: 0, failureCount: 0, invalidTokens: [] as string[] }
   if (tokens.length === 0) return result
 
-  const message = buildOpportunityPush(opportunity, slots, timezone)
+  const message = buildOpportunityPush(opportunity, slots, timezone, appUrl)
   for (let i = 0; i < tokens.length; i += MAX_TOKENS_PER_CALL) {
     const batch = tokens.slice(i, i + MAX_TOKENS_PER_CALL)
     const response = await messaging.sendEachForMulticast({ ...message, tokens: batch })
