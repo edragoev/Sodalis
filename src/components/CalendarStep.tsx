@@ -43,7 +43,7 @@ export default function CalendarStep() {
         Connect Google Calendar
         <span className="rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-primary-dark">Coming soon</span>
       </button>
-      <p className="mt-4 text-sm text-slate">You can do this any time from the Availability tab.</p>
+      <p className="mt-4 text-center text-sm text-slate">You can do this any time from the Availability tab.</p>
     </Screen>
   );
 }

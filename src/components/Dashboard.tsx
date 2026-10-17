@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
 import InviteCard from "./InviteCard";
+import { isPushConfigured } from "@/lib/firebase/config";
 import NotificationsButton from "./NotificationsButton";
 import { Avatar, MoodFace, Screen, TabBar } from "./ui";
 
@@ -123,8 +124,9 @@ export default function Dashboard() {
     let db: ReturnType<typeof supabaseBrowser>;
     try {
       db = supabaseBrowser();
-    } catch {
-      return void queueMicrotask(() => setError("Supabase isn't configured yet."));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not initialize the Supabase client.";
+      return void queueMicrotask(() => setError(message));
     }
     queueMicrotask(() => load(s.senior_id));
     // Any change to these tables for this senior triggers a refetch.
@@ -159,13 +161,14 @@ export default function Dashboard() {
           <p className="text-slate">{first ? `${greeting()}, ${first}` : greeting()}</p>
           <h1 className="font-serif text-3xl font-semibold leading-tight text-ink">Here&apos;s how {sName} is</h1>
         </div>
-        <button aria-label="My profile" onClick={() => router.push("/profile")}>
+        <button aria-label="Switch or add profile" onClick={() => router.push("/profiles")}>
           <Avatar name={me || "?"} />
         </button>
       </header>
 
       <div className="mt-6 space-y-4">
-        <NotificationsButton memberId={memberId || null} />
+        {/* Hidden until Firebase is set up, so a missing setting never breaks the page. */}
+        {isPushConfigured() && <NotificationsButton memberId={memberId || null} />}
 
         {topAlert && (
           <section aria-label="Alerts" className="space-y-3">

@@ -23,23 +23,6 @@ export default function TagInput({
     <div>
       <label className={largeLabelCls} htmlFor={id}>{label}</label>
       {hint && <p className="-mt-1 mb-2 text-lg text-slate">{hint}</p>}
-      {values.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {values.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-mist py-1.5 pl-4 pr-2 text-lg text-primary-dark">
-              {t}
-              <button
-                type="button"
-                aria-label={`Remove ${t}`}
-                className="grid h-7 w-7 place-items-center rounded-full hover:bg-primary/10"
-                onClick={() => onChange(values.filter((x) => x !== t))}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
       <div className="flex gap-2">
         <input
           id={id}
@@ -63,6 +46,23 @@ export default function TagInput({
           Add
         </button>
       </div>
+      {values.length > 0 && (
+        <div role="group" className="mt-3 flex flex-wrap gap-2" aria-label={`${label} added`}>
+          {values.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-mist py-1.5 pl-4 pr-2 text-lg text-primary-dark">
+              {t}
+              <button
+                type="button"
+                aria-label={`Remove ${t}`}
+                className="grid h-7 w-7 place-items-center rounded-full hover:bg-primary/10"
+                onClick={() => onChange(values.filter((x) => x !== t))}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       {remaining.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {remaining.map((s) => (

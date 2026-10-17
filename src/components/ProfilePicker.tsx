@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { RELATIONSHIPS } from "@/lib/relationships";
-import { clearElder, getElder, saveSession } from "@/lib/session";
+import { clearElder, getElder, getSession, saveElder, saveSession } from "@/lib/session";
 import { Avatar, BackButton, Button, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls } from "./ui";
 
 type Member = { id: string; name: string; relationship: string; has_answers: boolean };
@@ -25,6 +25,7 @@ export default function ProfilePicker() {
   const [otherRel, setOtherRel] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(async (id: string) => {
     const res = await fetch(`/api/seniors/${id}/members`);
@@ -35,13 +36,15 @@ export default function ProfilePicker() {
     const d = await res.json();
     setSeniorName(d.senior_first_name);
     setMembers(d.members);
-    // Nobody here yet: go straight to adding the first profile.
-    setState(d.members.length ? "ready" : "adding");
+    setState("ready");
   }, [router]);
 
   useEffect(() => {
-    const e = getElder();
+    // Signed in by invite link? Then we know the family from the session even if it was never saved.
+    const session = getSession();
+    const e = getElder() ?? (session ? { senior_id: session.senior_id } : null);
     if (!e) return void router.replace("/");
+    if (session && !getElder()) saveElder(e);
     queueMicrotask(() => {
       setSeniorId(e.senior_id);
       load(e.senior_id).catch(() => setError("Couldn't load the family. Please try again."));
@@ -74,8 +77,15 @@ export default function ProfilePicker() {
         setState("ready");
       } else if (!res.ok) setError(data.error ?? "Could not add the profile");
       else {
-        saveSession({ member_id: data.member_id, senior_id: seniorId, name: name.trim() });
-        router.push("/questionnaire");
+        const added = name.trim().split(/\s+/)[0];
+        setName("");
+        setPronounChoice("");
+        setPronounOther("");
+        setRelationship("");
+        setOtherRel("");
+        await load(seniorId);
+        setNotice(`${added}'s profile is ready. Tap it to answer a few questions.`);
+        setState("ready");
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -88,32 +98,35 @@ export default function ProfilePicker() {
   if (state === "adding")
     return (
       <Screen
-        top={members.length ? <BackButton onClick={() => { setState("ready"); setError(""); }} /> : undefined}
+        top={<BackButton onClick={() => { setState("ready"); setError(""); }} />}
         footer={
           <Button className="w-full" disabled={busy || !canAdd} onClick={add}>
-            {busy ? "Adding…" : "Add my profile"}
+            {busy ? "Adding…" : "Add profile"}
           </Button>
         }
       >
-        <h1 className={headingCls}>Add your profile</h1>
-        <p className={`${subCls} text-xl`}>So {seniorName} and Hope know who&apos;s in their circle. Next we&apos;ll ask a few questions about you.</p>
+        <div className="flex flex-col items-center text-center">
+          <Avatar name={name.trim().split(/\s+/)[0] || "?"} size={96} />
+          <h1 className={`${headingCls} mt-4`}>Add profile</h1>
+          <p className={`${subCls} text-xl`}>Someone who checks in on {seniorName}. Tap their profile afterwards to answer a few questions.</p>
+        </div>
         <div className="mt-8 space-y-6">
           <div>
-            <label className={largeLabelCls} htmlFor="member-name">Your first name</label>
+            <label className={largeLabelCls} htmlFor="member-name">First name</label>
             <input id="member-name" className={largeInputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className={largeLabelCls} htmlFor="member-pronouns">Your pronouns</label>
+            <label className={largeLabelCls} htmlFor="member-pronouns">Pronouns</label>
             <SelectField id="member-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions(MEMBER_SKIP)} placeholder="Choose one" large blackText />
             {pronounChoice === OTHER && (
               <input className={`${inputCls} mt-3`} placeholder="Pronouns, in your words" value={pronounOther} onChange={(e) => setPronounOther(e.target.value)} />
             )}
           </div>
           <div>
-            <label className={largeLabelCls} htmlFor="member-rel">How are you related to {seniorName}?</label>
+            <label className={largeLabelCls} htmlFor="member-rel">How are they related to {seniorName}?</label>
             <SelectField id="member-rel" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" large blackText />
             {relationship === "Other" && (
-              <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
+              <input className={`${inputCls} mt-3`} placeholder="Tell us how they're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
             )}
           </div>
         </div>
@@ -136,8 +149,13 @@ export default function ProfilePicker() {
         </Button>
       }
     >
-      <h1 className={headingCls}>Who&apos;s checking in on {seniorName}?</h1>
-      <p className={`${subCls} text-xl`}>Pick your profile, or add yourself to the circle.</p>
+      <h1 className={headingCls}>{members.length ? `Who's checking in on ${seniorName}?` : "Add your family"}</h1>
+      <p className={`${subCls} text-xl`}>
+        {members.length
+          ? "Pick your profile, or add someone to the circle."
+          : `Create a profile for each person who checks in on ${seniorName}. You can add more any time.`}
+      </p>
+      {notice && <p role="status" className="mt-4 rounded-2xl bg-mist p-3 text-lg text-primary-dark">{notice}</p>}
       {error && <p role="alert" className="mt-4 rounded-2xl bg-danger-bg p-3 text-lg text-danger">{error}</p>}
       <div className="mt-8 grid grid-cols-2 gap-4">
         {members.map((m) => (
@@ -152,7 +170,7 @@ export default function ProfilePicker() {
           </button>
         ))}
         <button
-          onClick={() => { setState("adding"); setError(""); }}
+          onClick={() => { setState("adding"); setError(""); setNotice(""); }}
           className="flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-sand p-5 text-center text-slate transition-colors hover:bg-mist"
         >
           <span className="grid h-[84px] w-[84px] place-items-center rounded-full bg-cream text-5xl text-primary">+</span>

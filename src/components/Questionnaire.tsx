@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QUESTIONS } from "@/lib/profile-questions";
 import { getSession } from "@/lib/session";
+import LogisticsQuestion from "./LogisticsQuestion";
 import { Button, Screen, headingCls, subCls, textareaCls } from "./ui";
 
 const HINTS: Record<string, string> = {
@@ -12,7 +13,7 @@ const HINTS: Record<string, string> = {
   skills: "We'll use this to suggest the right moments.",
   talk_about: "The things that make you both smile.",
   wish: "No pressure. It just helps us spot the right moment.",
-  logistics: "You'll set exact times later in Availability.",
+  logistics: "You'll set your free times next, in Availability.",
 };
 
 export default function Questionnaire() {
@@ -91,13 +92,19 @@ export default function Questionnaire() {
     >
       <h1 className={`${headingCls} mt-4`}>{q.text}</h1>
       <p className={subCls}>{HINTS[q.key]}</p>
-      <textarea
-        aria-label={q.text}
-        className={`${textareaCls} mt-6 min-h-40`}
-        maxLength={2000}
-        value={answers[q.key] ?? ""}
-        onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })}
-      />
+      {q.key === "logistics" ? (
+        <div className="mt-6">
+          <LogisticsQuestion value={answers.logistics ?? ""} onChange={(v) => setAnswers({ ...answers, logistics: v })} />
+        </div>
+      ) : (
+        <textarea
+          aria-label={q.text}
+          className={`${textareaCls} mt-6 min-h-40`}
+          maxLength={2000}
+          value={answers[q.key] ?? ""}
+          onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })}
+        />
+      )}
       {error && (
         <p role="alert" className="mt-4 rounded-2xl bg-danger-bg p-3 text-danger">
           {error}

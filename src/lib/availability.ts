@@ -1,40 +1,49 @@
 // Weekly availability as "[{ dow, start, end }]" (dow 0 = Sunday, 24h local times),
-// the same shape as seniors.preferred_windows. The UI works in coarse blocks.
+// the same shape as seniors.preferred_windows. The UI works in 2-hour slots: that is how long a
+// visit lasts, so a ticked slot is a time a visit can really start. A call fits inside any slot.
 export type Window = { dow: number; start: string; end: string };
 
-export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const DAY_LETTERS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export const BLOCKS = [
-  { label: "Morning", hint: "8–12", start: "08:00", end: "12:00" },
-  { label: "Afternoon", hint: "12–5", start: "12:00", end: "17:00" },
-  { label: "Evening", hint: "5–9", start: "17:00", end: "21:00" },
-] as const;
+const pad = (n: number) => String(n).padStart(2, "0");
+const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? "am" : "pm"}`;
 
-export const cellKey = (dow: number, block: number) => `${dow}-${block}`;
+/** 8-10 am, 10-12, 12-2 pm, ... 8-10 pm. */
+export const SLOTS = Array.from({ length: 7 }, (_, i) => {
+  const h = 8 + i * 2;
+  return { label: hourLabel(h), range: `${hourLabel(h)} to ${hourLabel(h + 2)}`, start: `${pad(h)}:00`, end: `${pad(h + 2)}:00` };
+});
 
-/** Selected cells -> windows, merging touching blocks on the same day. */
+export const cellKey = (dow: number, slot: number) => `${dow}-${slot}`;
+export const dayKeys = (dow: number) => SLOTS.map((_, i) => cellKey(dow, i));
+export const slotKeys = (slot: number) => DAY_LETTERS.map((_, d) => cellKey(d, slot));
+
+/** Selected cells -> windows, merging touching slots on the same day. */
 export function toWindows(selected: Set<string>): Window[] {
   const out: Window[] = [];
   for (let dow = 0; dow < 7; dow++) {
     let current: Window | null = null;
-    BLOCKS.forEach((b, i) => {
+    SLOTS.forEach((s, i) => {
       if (!selected.has(cellKey(dow, i))) return void (current = null);
-      if (current && current.end === b.start) current.end = b.end;
-      else out.push((current = { dow, start: b.start, end: b.end }));
+      if (current && current.end === s.start) current.end = s.end;
+      else out.push((current = { dow, start: s.start, end: s.end }));
     });
   }
   return out;
 }
 
-/** Windows -> selected cells: a block counts when a window fully covers it. */
+/**
+ * Windows -> selected cells. A slot counts only when a window fully covers it, so older, wider
+ * windows never claim time that wasn't offered.
+ */
 export function fromWindows(windows: unknown): Set<string> {
   const selected = new Set<string>();
   if (!Array.isArray(windows)) return selected;
   for (const w of windows as Partial<Window>[]) {
     if (typeof w?.dow !== "number" || typeof w.start !== "string" || typeof w.end !== "string") continue;
-    BLOCKS.forEach((b, i) => {
-      if (w.start! <= b.start && w.end! >= b.end) selected.add(cellKey(w.dow!, i));
+    SLOTS.forEach((s, i) => {
+      if (w.start! <= s.start && w.end! >= s.end) selected.add(cellKey(w.dow!, i));
     });
   }
   return selected;
