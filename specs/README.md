@@ -10,5 +10,6 @@ Next.js PWA (Vercel) + Supabase + Vapi + Gemini Flash + Firebase Cloud Messaging
 | [03-ai](03-ai/hope-persona.md) | Hope persona, Gemini extraction schema |
 | [04-scheduler](04-scheduler/algorithm.md) | Slot matching and greedy scoring |
 | [05-product](05-product/decisions.md) | Decisions, scope, build order, risks |
+| [06-notifications](06-notifications/conversation-to-visit.md) | How conversations become visit notifications |
 
 Source of truth: the approved plan from the planning session. Update these files if decisions change.

@@ -26,9 +26,12 @@ Use `responseMimeType: application/json` plus `responseSchema`. Model id from an
     "confusion_or_memory": "bool"
   },
   "follow_up_topics": ["string"],
+  "opportunities": [{ "type": "gift_errand|activity|event|wants_contact", "summary": "string", "quote": "string", "mentioned_member": "string|null", "mentioned_item": "string|null", "interest_tags": ["string"], "target_date": "ISO date|null", "urgency": "low|normal|high", "confidence": "number 0..1", "suggested_kind": "visit|call" }],
   "summary": "string (2-3 sentences, family-facing, kind)"
 }
 ```
+
+`opportunities[]` is described in [conversation-to-visit](../06-notifications/conversation-to-visit.md).
 
 ## Alert mapping
 - `mood.score < -0.4` or `low_mood` → `low_mood`

@@ -27,6 +27,9 @@ C = {(m, s) : s ∈ S ∩ F_m and the slot run fits the kind}. A visit needs 2 h
 ## Scope
 The scheduler only schedules **family appointments with the elder**: visits and calls (`visits`), matched to Grandma's preferred times and each member's free time. It does not schedule Grandma's availability around Hope.
 
+## What triggers a visit
+Visits are proposed either on the regular rota (above) or in response to something Grandma said in a call. Conversation-driven proposals, including the pre-targeted mode used when she names a family member, are in [conversation-to-visit](../06-notifications/conversation-to-visit.md).
+
 ## Hope check-in calls (outside the scheduler)
 A fixed daily time inside `hope_call_windows` (default late morning), skipping times within 2 h of a confirmed family visit/call. Retry a missed call after 30 min. No scoring. T_s is still computed from Hope check-ins and reused when scoring family slots.
 

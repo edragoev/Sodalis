@@ -12,6 +12,15 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, call_request_id, `outcome_engagement` |
 | `hope_calls` (fixed-cadence queue, not scheduler output) | id, senior_id, scheduled_for, status (scheduled/dialed/answered/missed), attempt, vapi_call_id |
 
+## Conversation-driven visits
+| Table / column | Notes |
+|---|---|
+| `opportunities` | id, senior_id, check_in_id, type (gift_errand/activity/event/wants_contact), summary, quote, `mentioned_member_id` (nullable), mentioned_item, `interest_tags text[]`, target_date, urgency, confidence, suggested_kind, `notified_member_ids uuid[]`, `proposed_slots jsonb`, status (detected/proposed/confirmed/declined/expired), accepted_by, created_at |
+| `family_members.interests`, `.skills` | `text[]`, used to match opportunities to members |
+| `visits.opportunity_id` | nullable FK to `opportunities` |
+
+Enable realtime on `opportunities`. See [conversation-to-visit](../06-notifications/conversation-to-visit.md).
+
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`
