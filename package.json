@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.118.0"
+    "@supabase/supabase-js": "^2.118.0",
+    "firebase": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
