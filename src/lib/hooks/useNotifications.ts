@@ -15,6 +15,8 @@ export type UseNotificationsResult = {
   permission: NotificationPermissionState
   token: string | null
   error: Error | null
+  /** True only once a push token exists AND the server confirmed it saved it for the member. */
+  registered: boolean
   isReady: boolean
   /** Asks for permission (call it from a button press), then fetches and registers the token. */
   enable: () => Promise<void>
@@ -37,6 +39,7 @@ export function useNotifications({ memberId = null, register = registerToken }: 
   const [permission, setPermission] = useState<NotificationPermissionState>('default')
   const [token, setToken] = useState<string | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const [registered, setRegistered] = useState(false)
   const [isReady, setIsReady] = useState(false)
   const mounted = useRef(true)
   const asking = useRef(false)
@@ -53,17 +56,24 @@ export function useNotifications({ memberId = null, register = registerToken }: 
     const { getMessaging, getToken } = await import('firebase/messaging')
     // Tie the token to our own worker (sw.js); otherwise Firebase registers its default
     // firebase-messaging-sw.js and taps never reach our notificationclick handler.
-    const serviceWorkerRegistration = (await registerServiceWorker()) ?? undefined
+    const serviceWorkerRegistration = await registerServiceWorker()
+    if (!serviceWorkerRegistration) throw new Error('Service worker is not available')
     const fcmToken = await getToken(getMessaging(getFirebaseApp()), {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration,
     })
     if (!mounted.current) return
     setToken(fcmToken)
+    setRegistered(false)
 
-    if (memberId) {
-      const saved = await register(memberId, fcmToken)
-      if (!saved.ok && mounted.current) setError(new Error('Could not save your notification settings'))
+    if (!memberId) return
+    const saved = await register(memberId, fcmToken)
+    if (!mounted.current) return
+    if (saved.ok) {
+      setError(null)
+      setRegistered(true)
+    } else {
+      setError(new Error('Could not save your notification settings'))
     }
   }, [memberId, register])
 
@@ -108,5 +118,5 @@ export function useNotifications({ memberId = null, register = registerToken }: 
     }
   }, [fetchAndRegister])
 
-  return { permission, token, error, isReady, enable }
+  return { permission, token, error, registered, isReady, enable }
 }

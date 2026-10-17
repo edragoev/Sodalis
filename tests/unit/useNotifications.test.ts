@@ -90,6 +90,32 @@ describe('useNotifications', () => {
       expect(mockRequestPermission).not.toHaveBeenCalled()
       expect(result.current.permission).toBe('granted')
       expect(register).toHaveBeenCalledWith('m1', 'fcm-token-123')
+      await waitFor(() => expect(result.current.registered).toBe(true))
+    })
+
+    it('is not registered when permission is granted but the token cannot be fetched', async () => {
+      stubNotification('granted')
+      mockGetToken.mockRejectedValue(new Error('push service error'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.isReady).toBe(true))
+
+      expect(result.current.registered).toBe(false)
+      expect(result.current.error).toBeTruthy()
+    })
+
+    it('is not registered when the service worker is unavailable', async () => {
+      stubNotification('granted')
+      mockRegisterSw.mockRejectedValue(new Error('script failed'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.isReady).toBe(true))
+
+      expect(mockGetToken).not.toHaveBeenCalled()
+      expect(result.current.registered).toBe(false)
+      expect(result.current.error).toBeTruthy()
     })
 
     it('reports "denied" without asking again or fetching a token', async () => {
@@ -185,6 +211,7 @@ describe('useNotifications', () => {
 
       expect(result.current.error?.message).toMatch(/save/i)
       expect(result.current.token).toBe('fcm-token-123')
+      expect(result.current.registered).toBe(false)
     })
 
     it('catches errors during setup and handles them gracefully', async () => {
