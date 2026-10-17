@@ -2,18 +2,21 @@
 
 /* Sodalis design tokens */
 @theme inline {
-  --color-primary: #0f5f5c;
-  --color-primary-dark: #0a4543;
-  --color-mist: #e3f1ef;
-  --color-accent: #e8765b;
-  --color-peach: #fce9e2;
-  --color-cream: #faf7f2;
-  --color-ink: #1f2a29;
-  --color-slate: #5f6b6a;
-  --color-sand: #e4ded3;
+  /* Palette sampled from the approved design: soft blue buttons, navy text, pale blue page. */
+  --color-primary: #3b6b94;      /* steel blue: links, icons, progress, selected states */
+  --color-primary-dark: #1d3b57; /* navy: text on blue buttons and tints */
+  --color-btn: #b0cde6;          /* button and logo-tile blue */
+  --color-btn-hover: #9fc1de;
+  --color-mist: #eaf2f9;         /* light tint: selected cards, chips */
+  --color-accent: #a0561a;       /* warm label on peach cards */
+  --color-peach: #fef3e2;
+  --color-cream: #f2f7fb;        /* page background */
+  --color-ink: #1b2733;
+  --color-slate: #5f6b7a;
+  --color-sand: #e3ebf3;         /* borders */
   --color-good: #3f8f5e;
-  --color-warn: #c98a1b;
-  --color-warn-bg: #fbf1dc;
+  --color-warn: #9a5b12;
+  --color-warn-bg: #fef3e2;
   --color-danger: #c8423b;
   --color-danger-bg: #fbe6e4;
   --font-sans: var(--font-figtree);

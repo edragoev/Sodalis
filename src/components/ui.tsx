@@ -10,7 +10,7 @@ export const textareaCls =
 const labelBaseCls = "mb-2 block font-semibold text-ink";
 // Class-string version of <Button> for plain <button>/<a> elements.
 export const primaryCls =
-  "h-14 w-full rounded-2xl bg-primary px-6 text-lg font-semibold text-white transition-colors hover:bg-primary-dark disabled:bg-primary/40";
+  "h-14 w-full rounded-2xl bg-btn px-6 text-lg font-semibold text-primary-dark transition-colors hover:bg-btn-hover disabled:opacity-50";
 export const labelCls = `${labelBaseCls} text-sm`;
 export const largeLabelCls = `${labelBaseCls} text-2xl`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";
@@ -23,8 +23,8 @@ const HANDSET =
 export function Logo({ align = "center" }: { align?: "center" | "left" | "right" }) {
   return (
     <div className={`flex items-center gap-3 ${align === "right" ? "justify-end" : align === "left" ? "justify-start" : "justify-center"}`}>
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-mist">
-        <svg viewBox="0 0 24 24" className="h-8 w-8 text-primary" fill="currentColor" aria-hidden>
+      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-btn">
+        <svg viewBox="0 0 24 24" className="h-8 w-8 text-primary-dark" fill="currentColor" aria-hidden>
           <path d={HANDSET} />
           <circle cx="13.2" cy="5.6" r="1.5" />
           <circle cx="18.2" cy="9.6" r="1.5" />
@@ -48,7 +48,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "text" };
 export function Button({ variant = "primary", className = "", ...props }: BtnProps) {
   const styles = {
-    primary: "bg-primary text-white hover:bg-primary-dark disabled:bg-primary/40",
+    primary: "bg-btn text-primary-dark hover:bg-btn-hover disabled:opacity-50",
     secondary: "border border-sand bg-white text-ink hover:bg-cream disabled:opacity-50",
     text: "text-ink underline-offset-4 hover:underline disabled:opacity-50",
   }[variant];
