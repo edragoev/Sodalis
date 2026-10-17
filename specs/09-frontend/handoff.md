@@ -55,6 +55,7 @@ Invite link /join/<token> ─▶ name, pronouns, relationship ─▶ questionnai
 ## 5. Changes that affect everyone
 
 - **Layout:** all app code lives in `src/` (`src/app`, `src/lib`, `src/components`); a root `app/` folder would shadow `src/app` and break the build. `@/` points at `src/`. Tests are excluded from the app's `tsconfig.json`, and the Vitest `@` alias points at `src/`.
+- **Palette (sampled from the approved design):** buttons and the logo tile `#B0CDE6` with navy `#1D3B57` text, steel-blue accent `#3B6B94`, page `#F2F7FB`, tint `#EAF2F9`, warm alert/request cards `#FEF3E2`, ink `#1B2733`. Change colours in one place: the `@theme` block in `src/app/globals.css`. After editing it, restart `npm run dev` (the dev server can keep serving the old stylesheet).
 - **Design system:** tokens are in `src/app/globals.css`, shared pieces in `src/components/ui.tsx` (Screen, Button, TabBar, Avatar, SelectField, MoodFace, text-size classes). The opportunity screen was restyled to match; its logic and wording are unchanged, and its tests pass.
 - **Invite links:** `/join/<token>` tokens are signed with `INVITE_SECRET`, falling back to `SUPABASE_SERVICE_ROLE_KEY`. Rotating that key invalidates old links, and links cannot be revoked one by one.
 - **Gemini free tier:** rate limits are low, so avoid hammering Save during the demo. The profile view retries a failed structuring. Google may use free-tier content to improve its products, so use fake data only.

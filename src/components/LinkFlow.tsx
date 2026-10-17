@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { saveElder } from "@/lib/session";
+import DatePicker from "./DatePicker";
 import TagInput from "./TagInput";
 import { BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls, textareaCls } from "./ui";
 
@@ -25,6 +26,12 @@ async function post(url: string, body: unknown) {
   return { status: res.status, data: await res.json().catch(() => ({})) };
 }
 
+/** "(415) 677-8345" from whatever the user typed (falls back to what they typed). */
+function prettyPhone(raw: string) {
+  const d = raw.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : raw.trim();
+}
+
 export default function LinkFlow() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
@@ -38,6 +45,14 @@ export default function LinkFlow() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!notFound) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setNotFound(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [notFound]);
 
   const elderPhone = phone.trim().startsWith("+") ? phone : phone ? `+1 ${phone}` : "";
   const phoneReady = phone.replace(/\D/g, "").length >= 10;
@@ -62,7 +77,7 @@ export default function LinkFlow() {
       if (data.found) {
         saveElder({ senior_id: data.senior_id, name: data.senior_first_name });
         router.push("/profiles");
-      } else setStep("about");
+      } else setNotFound(true);
     });
 
   const createElder = () =>
@@ -127,10 +142,10 @@ export default function LinkFlow() {
         }
       >
         <h1 className={headingCls}>Let&apos;s set up your loved one</h1>
-        <p className={`${subCls} text-xl`}>We don&apos;t have {elderPhone} yet. Tell us a little about them.</p>
+        <p className={`${subCls} text-xl`}>We don&apos;t have {prettyPhone(phone)} yet. Tell us a little about them.</p>
         <div className="mt-8 space-y-6">
           <div>
-            <label className={largeLabelCls} htmlFor="elder-name">Their first name</label>
+            <label className={largeLabelCls} htmlFor="elder-name">Their name</label>
             <input id="elder-name" className={largeInputCls} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
@@ -142,7 +157,7 @@ export default function LinkFlow() {
           </div>
           <div>
             <label className={largeLabelCls} htmlFor="elder-birthday">Their birthday (optional)</label>
-            <input id="elder-birthday" type="date" className={largeInputCls} value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+            <DatePicker id="elder-birthday" value={birthday} onChange={setBirthday} placeholder="Select their birthday" startYear={1950} />
           </div>
         </div>
       </Screen>
@@ -155,15 +170,15 @@ export default function LinkFlow() {
           <Button className="w-full" disabled={busy || !phoneReady} onClick={lookup}>
             Continue
           </Button>
-          <p className="text-center text-xl text-slate">Your family&apos;s details stay private and are never sold.</p>
+          <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
         </div>
       }
     >
-      <div className="flex items-center justify-center pt-4 text-center origin-center scale-125">
-        <Logo />
+      <div className="pt-4">
+        <Logo align="left" />
       </div>
       <h1 className={`${headingCls} mt-12`}>What&apos;s your loved one&apos;s phone number?</h1>
-      <p className={`${subCls} text-xl`}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
+      <p className={subCls}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
       <form
         className="mt-8"
         onSubmit={(e) => {
@@ -171,15 +186,47 @@ export default function LinkFlow() {
           if (phoneReady && !busy) lookup();
         }}
       >
-        <label className={largeLabelCls} htmlFor="elder-phone">Their phone number</label>
+        <label className="mb-2 block text-base font-semibold text-ink" htmlFor="elder-phone">Their phone number</label>
         <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-slate">+1</span>
-          <input id="elder-phone" className={`${largeInputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
+          <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
             value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <button type="submit" className="hidden" />
       </form>
       {errorBox}
+      {notFound && (
+        <div className="fixed inset-0 z-20 flex items-end justify-center bg-ink/40" onClick={() => setNotFound(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="not-found-title"
+            className="sheet-up w-full max-w-md rounded-t-[28px] bg-white px-6 pb-8 pt-3 shadow-[0_-8px_40px_rgba(31,42,41,0.18)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-sand" aria-hidden />
+            <h2 id="not-found-title" className="font-serif text-2xl font-semibold text-ink">We couldn&apos;t find that number</h2>
+            <p className="mt-2 text-lg leading-relaxed text-slate">
+              <b className="text-ink">{prettyPhone(phone)}</b> isn&apos;t linked to anyone yet. If it&apos;s a typo, go back and fix it. If it&apos;s right, set up their profile.
+            </p>
+            <div className="mt-6 space-y-1">
+              <Button
+                className="w-full"
+                autoFocus
+                onClick={() => {
+                  setNotFound(false);
+                  setStep("about");
+                }}
+              >
+                Set up their profile
+              </Button>
+              <Button variant="text" onClick={() => setNotFound(false)}>
+                Re-enter the number
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Screen>
   );
 }

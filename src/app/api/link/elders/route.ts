@@ -1,3 +1,4 @@
+import type { CountryCode } from "libphonenumber-js";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/phone";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
@@ -21,10 +22,11 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const name = String(body.name ?? "").trim().slice(0, 80);
   const timezone = String(body.timezone ?? "").trim() || "America/New_York";
+  const region = (process.env.DEFAULT_PHONE_REGION || "US") as CountryCode;
   const pronouns = String(body.pronouns ?? "").trim().slice(0, 30) || null;
   const birthday = body.birthday ? validBirthday(body.birthday) : null;
   const notes = String(body.notes ?? "").trim().slice(0, 2000) || null;
-  const e164 = normalizePhone(body.phone);
+  const e164 = normalizePhone(body.phone, region);
   if (!name) return Response.json({ error: "Name is required." }, { status: 400 });
   if (!e164) return Response.json({ error: "That doesn't look like a valid mobile number." }, { status: 400 });
   if (body.birthday && !birthday) return Response.json({ error: "That birthday doesn't look right." }, { status: 400 });
