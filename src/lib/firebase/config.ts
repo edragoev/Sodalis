@@ -53,8 +53,17 @@ export function getFirebaseVapidKey(): string | undefined {
 }
 
 /**
- * True when browser push can work here: the Firebase web config is complete and there is a web
- * push key. The app uses this to hide the notifications button instead of failing when Firebase
+ * A web push (VAPID) public key is 65 bytes, which is exactly 87 characters of URL-safe base64.
+ * A key with a character missing or added is rejected by the browser ("applicationServerKey is
+ * not valid"), so catch that here instead of after the person has been asked for permission.
+ */
+export function isValidVapidKey(key: string | undefined): boolean {
+  return !!key && /^[A-Za-z0-9_-]{87}$/.test(key)
+}
+
+/**
+ * True when browser push can work here: the Firebase web config is complete and there is a valid
+ * web push key. The app uses this to hide the notifications button instead of failing when Firebase
  * has not been set up (for example a fresh checkout without these variables).
  */
 export function isPushConfigured(): boolean {
@@ -63,5 +72,12 @@ export function isPushConfigured(): boolean {
   } catch {
     return false
   }
-  return !!getFirebaseVapidKey()
+  const vapid = getFirebaseVapidKey()
+  if (vapid && !isValidVapidKey(vapid)) {
+    console.warn(
+      `NEXT_PUBLIC_FIREBASE_VAPID_KEY is not a valid web push key (it has ${vapid.length} characters; it should have 87). ` +
+        'Copy it again from Firebase console > Project settings > Cloud Messaging > Web Push certificates. Notifications are hidden until it is fixed.',
+    )
+  }
+  return isValidVapidKey(vapid)
 }
