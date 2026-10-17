@@ -60,6 +60,36 @@ describe('POST /api/opportunities', () => {
       expect(res.json.error).toContain('type')
     })
 
+    // Bad values must be stopped before the database, so none of these may reach insert().
+    it.each([
+      ['confidence above 1', { confidence: 1.5 }, 'confidence'],
+      ['confidence below 0', { confidence: -0.1 }, 'confidence'],
+      ['confidence that is not a number', { confidence: '0.9' }, 'confidence'],
+      ['a non-UUID senior_id', { senior_id: 'not-a-uuid' }, 'senior_id'],
+      ['a non-UUID check_in_id', { check_in_id: '123' }, 'check_in_id'],
+      ['a non-UUID mentioned_member_id', { mentioned_member_id: 'danny' }, 'mentioned_member_id'],
+      ['interest_tags that is not an array', { interest_tags: 'gardening' }, 'interest_tags'],
+      ['interest_tags with non-string items', { interest_tags: ['gardening', 42] }, 'interest_tags'],
+      ['an unknown urgency', { urgency: 'asap' }, 'urgency'],
+      ['an unknown suggested_kind', { suggested_kind: 'letter' }, 'suggested_kind'],
+      ['a target_date that is not a date', { target_date: 'next tuesday' }, 'target_date'],
+    ])('rejects %s with a clean 400', async (_label, extra, field) => {
+      const res = await post({ ...valid, ...extra })
+
+      expect(res.status).toBe(400)
+      expect(res.json.error).toContain(field)
+      expect(insert).not.toHaveBeenCalled()
+    })
+
+    it.each([['null', null], ['an array', []], ['a string', 'hello']])(
+      'rejects a body that is %s',
+      async (_label, body) => {
+        const res = await post(body)
+        expect(res.status).toBe(400)
+        expect(insert).not.toHaveBeenCalled()
+      }
+    )
+
     it('rejects a body that is not valid JSON', async () => {
       const res = await callRoute(POST, '/api/opportunities', {
         headers: { 'content-type': 'application/json' },
@@ -108,6 +138,12 @@ describe('POST /api/opportunities', () => {
       const res = await post(valid)
       expect(res.status).toBe(500)
       expect(res.json.error).toBeTruthy()
+    })
+
+    it('returns 400, not 500, if a check constraint still rejects the row', async () => {
+      single.mockResolvedValue({ data: null, error: { message: 'check', code: '23514' } })
+      const res = await post(valid)
+      expect(res.status).toBe(400)
     })
 
     it('returns 400 when the referenced senior or check-in does not exist', async () => {

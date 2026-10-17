@@ -11,8 +11,14 @@ async function insert(table: string, values: Row): Promise<Row> {
 }
 
 /** A unique, test-prefixed E.164 number, so cleanup can find it. */
+const usedPhones = new Set<string>()
 export function testPhone(): string {
-  return `${TEST_PHONE_PREFIX}${String(randomInt(0, 10_000)).padStart(4, '0')}`
+  let phone: string
+  do {
+    phone = `${TEST_PHONE_PREFIX}${String(randomInt(0, 10_000)).padStart(4, '0')}`
+  } while (usedPhones.has(phone))
+  usedPhones.add(phone)
+  return phone
 }
 
 export async function createSenior(overrides: Row = {}): Promise<Row> {

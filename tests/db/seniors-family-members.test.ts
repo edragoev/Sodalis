@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { hasTestDb } from '../helpers/env'
+import { track } from '../helpers/cleanup'
 import { adminClient } from '../helpers/supabase'
 import { createFamilyMember, createSenior, testPhone } from '../helpers/factories'
 
@@ -16,9 +17,12 @@ describe.skipIf(!hasTestDb())('seniors and family_members', () => {
 
   it('allows different seniors to have different phone numbers', async () => {
     await createSenior({ phone_e164: testPhone() })
-    const { error } = await adminClient()
+    const { data, error } = await adminClient()
       .from('seniors')
-      .insert({ name: 'Another', phone_e164: '+15550109999', timezone: 'UTC' })
+      .insert({ name: 'Another', phone_e164: testPhone(), timezone: 'UTC' })
+      .select('id')
+      .single()
+    if (data) track('seniors', data.id) // inserted directly, so register it for cleanup
     expect(error).toBeNull()
   })
 
