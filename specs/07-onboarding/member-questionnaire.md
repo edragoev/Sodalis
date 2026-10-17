@@ -53,7 +53,7 @@ In conversation-to-visit section 4, `interest_or_skill` is computed from overlap
 
 - Overlap is the best exact or semantic match, 0..1. A Gemini embedding or short similarity call covers near misses ("zucchini" and "cooking").
 - `activities_with_elder` weighs most, because the member said they enjoy doing it with the elder.
-- `constraints` can filter: for example, an errand that needs a car excludes members with `can_drive = false`.
+- `constraints` is context for the coordinator's message, not a filter: no member is dropped for it in v1.
 
 ## 6. Missing or thin profile
 - Still eligible, with `interest_or_skill = 0.5`.

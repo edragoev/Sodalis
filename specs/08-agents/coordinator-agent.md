@@ -6,14 +6,14 @@ Turns an opportunity into a family notification: who to ask, which slots to offe
 
 ## Triggers
 - `propose_visit` from [Hope's in-call tools](hope-tools.md), immediately (live, during the call).
-- Post-call extraction, for opportunities Hope didn't already create.
+- Post-call extraction, for unnamed opportunities only (named ones are handled live by `propose_visit`).
 
 Runs in `after()` or a separate `POST /api/agent/coordinate` call, so the webhook and tool routes return fast.
 
 ## Shortlist (code, before Gemini)
 - **Named member:** that member (or several if the name or alias is ambiguous).
 - **No name:** the `match` score from conversation-to-visit section 4; the top 3 members above 0.4, or everyone if none qualify or nobody has tags.
-- Members failing hard constraints (for example `can_drive = false` on a pickup errand) are dropped.
+- No hard constraints in v1: every member on the shortlist stays on it. `constraints` (such as `can_drive`) is context for Gemini, not a filter.
 - For each shortlisted member, the [scheduler](../04-scheduler/algorithm.md) returns up to 3 slots.
 
 ## v1: one Gemini call
@@ -31,7 +31,7 @@ Send the opportunity (type, quote, summary, tags, urgency), the elder's first na
 
 Prompt essentials:
 - Prefer named members; otherwise the strongest interest match, but spread contact fairly (last contact date).
-- Warm, short, personal ("you're the cook in the family"). Never mention health.
+- Warm, short, personal ("you're the cook in the family"). Never mention health: not how the elder feels, not pain or illness ("her knee hurts", "not feeling well"), not medication or appointments for them.
 - Never promise the elder anything; Hope already said "I'll ask."
 
 Model id from env (`GEMINI_MODEL`).
@@ -39,7 +39,7 @@ Model id from env (`GEMINI_MODEL`).
 ## Validation (code, after Gemini)
 Reject the output and use the **template fallback** (formula's top member, their first 3 slots, the template push) if:
 - `member_id` is not on the shortlist, or any `slot_id` isn't one of that member's slots;
-- the text mentions health (source check-in has health/safety flags, or a keyword list matches);
+- the title, body or `why` mentions the elder's health: feeling unwell, pain or an injury ("her knee hurts"), illness, medication or a diagnosis. A keyword list catches the obvious words. The source check-in's health/safety flags do not trigger it on their own, because the text is what a family member reads;
 - the call errors, times out (5 s) or returns invalid JSON.
 
 Then send one push with `data: { opportunity_id }` and set the opportunity to `proposed`.
