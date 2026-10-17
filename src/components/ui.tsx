@@ -116,7 +116,8 @@ export function TabBar({ active, name }: { active: "home" | "availability" | "pr
 }
 
 export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
-  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+  // Always the first name's initial, so "Anna Smith" and "Anna" look the same.
+  const initials = name.trim().charAt(0).toUpperCase();
   return (
     <span
       style={{ width: size, height: size, fontSize: size * 0.4 }}
