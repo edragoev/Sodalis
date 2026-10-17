@@ -5,11 +5,10 @@ import { useState } from "react";
 import { saveSession } from "@/lib/session";
 import { Avatar, BackButton, Button, Logo, Screen, headingCls, inputCls, labelCls, subCls } from "./ui";
 
-type Step = "phone" | "confirm" | "newElder" | "you" | "isThisYou";
+type Step = "form" | "confirm" | "newElder" | "isThisYou";
 
 const RELATIONSHIPS = ["Daughter", "Son", "Granddaughter", "Grandson", "Niece or nephew", "Friend or neighbor", "Other"];
 const PRONOUNS = ["She/her", "He/him", "They/them", "Other"];
-const NOT_FOUND = "We couldn't find that number.";
 
 async function post(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -20,7 +19,9 @@ async function post(url: string, body: unknown) {
   return { status: res.status, data: await res.json().catch(() => ({})) };
 }
 
-function SelectField({ id, value, onChange, options, placeholder }: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
+function SelectField({
+  id, value, onChange, options, placeholder,
+}: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
   return (
     <div className="relative">
       <select
@@ -49,13 +50,12 @@ function maskPhone(raw: string) {
 
 export default function LinkFlow() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("");
-  const [seniorName, setSeniorName] = useState("");
-  const [timezone, setTimezone] = useState("America/New_York");
+  const [step, setStep] = useState<Step>("form");
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [otherRel, setOtherRel] = useState("");
+  const [phone, setPhone] = useState("");
+  const [seniorName, setSeniorName] = useState("");
   const [pronouns, setPronouns] = useState("");
   const [otherPronouns, setOtherPronouns] = useState("");
   const [error, setError] = useState("");
@@ -63,7 +63,8 @@ export default function LinkFlow() {
 
   const relValue = relationship === "Other" ? otherRel.trim() : relationship;
   const pronounValue = pronouns === "Other" ? otherPronouns.trim() : pronouns;
-  const national = (v: string) => (v.trim().startsWith("+") ? v : v ? `+1 ${v}` : "");
+  const elderPhone = phone.trim().startsWith("+") ? phone : phone ? `+1 ${phone}` : "";
+  const formReady = name.trim() && relValue && phone.replace(/\D/g, "").length >= 10;
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -76,108 +77,58 @@ export default function LinkFlow() {
     setBusy(false);
   }
 
+  // Joins the elder's circle and moves on (shared by the "found" and "new elder" paths).
+  async function join(reconnect = false) {
+    const { status, data } = await post("/api/link/join", { phone: elderPhone, name, relationship: relValue, reconnect });
+    if (status === 409 && data.exists) return setStep("isThisYou");
+    if (status !== 200) return setError(data.error ?? "Could not join");
+    saveSession({ member_id: data.member_id, senior_id: data.senior_id, name: name.trim() });
+    router.push(data.reconnected ? "/dashboard" : "/questionnaire");
+  }
+
   const lookup = () =>
     run(async () => {
-      const { status, data } = await post("/api/link/lookup", { phone: national(phone) });
+      const { status, data } = await post("/api/link/lookup", { phone: elderPhone });
       if (status !== 200) return setError(data.error ?? "Lookup failed");
       if (data.found) {
         setSeniorName(data.senior_first_name);
         setStep("confirm");
-      } else setError(NOT_FOUND);
+      } else {
+        setSeniorName("");
+        setStep("newElder");
+      }
     });
 
-  const createElder = () =>
+  const createElderAndJoin = () =>
     run(async () => {
-      const { status, data } = await post("/api/link/elders", { name: seniorName, phone: national(phone), timezone, pronouns: pronounValue || undefined });
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+      const { status, data } = await post("/api/link/elders", {
+        name: seniorName,
+        phone: elderPhone,
+        timezone,
+        pronouns: pronounValue || undefined,
+      });
       if (status !== 200) return setError(data.error ?? "Could not create elder");
       setSeniorName(data.senior_first_name);
-      setStep("you");
+      await join();
     });
 
-  const join = (reconnect = false) =>
-    run(async () => {
-      const { status, data } = await post("/api/link/join", {
-        phone: national(phone),
-        name,
-        relationship: relValue,
-        reconnect,
-      });
-      if (status === 409 && data.exists) return setStep("isThisYou");
-      if (status !== 200) return setError(data.error ?? "Could not join");
-      saveSession({ member_id: data.member_id, senior_id: data.senior_id, name: name.trim() });
-      router.push(data.reconnected ? "/dashboard" : "/questionnaire");
-    });
-
-  const errorBox = error && error !== NOT_FOUND && (
+  const errorBox = error && (
     <p role="alert" className="mt-4 rounded-2xl bg-danger-bg p-3 text-danger">
       {error}
     </p>
   );
 
-  if (step === "phone")
-    return (
-      <Screen
-        footer={
-          <div className="space-y-3">
-            <Button className="w-full" disabled={busy || !phone.trim()} onClick={lookup}>
-              Continue
-            </Button>
-            <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
-          </div>
-        }
-      >
-        <div className="pt-4">
-          <Logo />
-        </div>
-        <h1 className={`${headingCls} mt-14`}>What&apos;s your loved one&apos;s phone number?</h1>
-        <p className={subCls}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
-        <form
-          className="mt-8"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (phone.trim()) lookup();
-          }}
-        >
-          <label className={labelCls} htmlFor="elder-phone">Their phone number</label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
-            <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
-              value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-        </form>
-        {error === NOT_FOUND && (
-          <div className="mt-5 space-y-3 rounded-2xl bg-peach p-4">
-            <p role="alert" className="text-ink">
-              {NOT_FOUND} Setting up Hope for someone new?
-            </p>
-            <Button
-              variant="secondary"
-              className="h-11 text-base"
-              onClick={() => {
-                setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || timezone);
-                setSeniorName("");
-                setError("");
-                setStep("newElder");
-              }}
-            >
-              Set up a new elder
-            </Button>
-          </div>
-        )}
-        {errorBox}
-      </Screen>
-    );
-
   if (step === "confirm")
     return (
       <Screen
-        top={<BackButton onClick={() => setStep("phone")} />}
+        top={<BackButton onClick={() => setStep("form")} />}
         footer={
           <div className="space-y-1">
-            <Button className="w-full" onClick={() => setStep("you")}>
+            <Button className="w-full" disabled={busy} onClick={() => run(() => join())}>
               Yes, that&apos;s them
             </Button>
-            <Button variant="text" onClick={() => setStep("phone")}>
+            <Button variant="text" onClick={() => setStep("form")}>
               Use a different number
             </Button>
           </div>
@@ -191,6 +142,7 @@ export default function LinkFlow() {
           <p className="mt-10 max-w-xs text-lg leading-relaxed text-ink">
             Hope calls {seniorName} to check in. Is this the right person?
           </p>
+          {errorBox}
         </div>
       </Screen>
     );
@@ -198,22 +150,26 @@ export default function LinkFlow() {
   if (step === "newElder")
     return (
       <Screen
-        top={<BackButton onClick={() => setStep("phone")} />}
+        top={<BackButton onClick={() => setStep("form")} />}
         footer={
-          <Button className="w-full" disabled={busy || !seniorName.trim() || (pronouns === "Other" && !otherPronouns.trim())} onClick={createElder}>
-            Continue
+          <Button
+            className="w-full"
+            disabled={busy || !seniorName.trim() || !pronouns || (pronouns === "Other" && !otherPronouns.trim())}
+            onClick={createElderAndJoin}
+          >
+            Finish setup
           </Button>
         }
       >
         <h1 className={headingCls}>Who will Hope be calling?</h1>
-        <p className={subCls}>We don&apos;t have {national(phone)} yet. Tell us a little about them.</p>
+        <p className={subCls}>We don&apos;t have {elderPhone} yet. Tell us a little about them.</p>
         <div className="mt-8 space-y-5">
           <div>
             <label className={labelCls} htmlFor="elder-name">Their first name</label>
             <input id="elder-name" className={inputCls} value={seniorName} onChange={(e) => setSeniorName(e.target.value)} />
           </div>
           <div>
-            <label className={labelCls} htmlFor="elder-pronouns">Their pronouns (optional)</label>
+            <label className={labelCls} htmlFor="elder-pronouns">Their pronouns</label>
             <SelectField id="elder-pronouns" value={pronouns} onChange={setPronouns} options={PRONOUNS} placeholder="Choose one" />
             {pronouns === "Other" && (
               <input className={`${inputCls} mt-3`} placeholder="Their pronouns, in your words" value={otherPronouns} onChange={(e) => setOtherPronouns(e.target.value)} />
@@ -227,13 +183,13 @@ export default function LinkFlow() {
   if (step === "isThisYou")
     return (
       <Screen
-        top={<BackButton onClick={() => setStep("you")} />}
+        top={<BackButton onClick={() => setStep("form")} />}
         footer={
           <div className="space-y-1">
-            <Button className="w-full" disabled={busy} onClick={() => join(true)}>
+            <Button className="w-full" disabled={busy} onClick={() => run(() => join(true))}>
               Yes, that&apos;s me
             </Button>
-            <Button variant="text" onClick={() => setStep("you")}>
+            <Button variant="text" onClick={() => setStep("form")}>
               No, use a different name
             </Button>
           </div>
@@ -241,37 +197,58 @@ export default function LinkFlow() {
       >
         <h1 className={headingCls}>Is this you?</h1>
         <p className={subCls}>
-          <b className="text-ink">{name}</b> is already part of {seniorName}&apos;s circle.
+          <b className="text-ink">{name}</b> is already part of {seniorName ? `${seniorName}'s` : "this"} circle.
         </p>
         {errorBox}
       </Screen>
     );
 
-  // step === "you"
+  // step === "form": everything required, on one screen
   return (
     <Screen
-      top={<BackButton onClick={() => setStep("confirm")} />}
       footer={
-        <Button className="w-full" disabled={busy || !name.trim() || !relValue} onClick={() => join()}>
-          Join {seniorName}&apos;s circle
-        </Button>
+        <div className="space-y-3">
+          <Button className="w-full" disabled={busy || !formReady} onClick={lookup}>
+            Continue
+          </Button>
+          <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
+        </div>
       }
     >
-      <h1 className={headingCls}>Who are you?</h1>
-      <p className={subCls}>So {seniorName} and Hope know who&apos;s in their circle.</p>
-      <div className="mt-8 space-y-5">
+      <div className="pt-4">
+        <Logo />
+      </div>
+      <h1 className={`${headingCls} mt-12`}>Stay close to someone you love</h1>
+      <p className={subCls}>A few quick details and you&apos;re in.</p>
+      <form
+        className="mt-8 space-y-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (formReady && !busy) lookup();
+        }}
+      >
         <div>
           <label className={labelCls} htmlFor="your-name">Your first name</label>
           <input id="your-name" className={inputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className={labelCls} htmlFor="relationship">How are you related to {seniorName}?</label>
+          <label className={labelCls} htmlFor="relationship">How are you related to them?</label>
           <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" />
           {relationship === "Other" && (
             <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
           )}
         </div>
-      </div>
+        <div>
+          <label className={labelCls} htmlFor="elder-phone">Their phone number</label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
+            <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
+              value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <p className="mt-2 text-sm text-slate">The number Hope calls to check in on them.</p>
+        </div>
+        <button type="submit" className="hidden" />
+      </form>
       {errorBox}
     </Screen>
   );
