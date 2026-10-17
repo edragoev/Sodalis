@@ -6,6 +6,8 @@
       "dom.iterable",
       "esnext"
     ],
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -26,6 +28,7 @@
       "@/*": [
         "./*"
       ]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
@@ -39,4 +42,8 @@
     "node_modules",
     "tests"
   ]
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
 }
