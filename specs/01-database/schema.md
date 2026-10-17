@@ -5,7 +5,7 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | Table | Key columns |
 |---|---|
 | `seniors` | id, name, phone_e164, timezone, `preferred_windows jsonb` (weekly `[{dow, start, end}]`), `hope_call_windows jsonb`, notes (interests, health context fed to Hope) |
-| `family_members` | id, senior_id→seniors, name, relationship, phone, `fcm_token`, `google_refresh_token`, `manual_availability jsonb`, `calendar_connected bool` |
+| `family_members` | id, senior_id→seniors, name, `pronouns` (text, nullable, e.g. she/her, he/him, they/them), relationship, phone, `fcm_token`, `google_refresh_token`, `manual_availability jsonb`, `calendar_connected bool` |
 | `check_ins` | id, senior_id, `vapi_call_id` UNIQUE (idempotency), `started_at`, ended_at, duration_s, status (completed/no_answer/failed), transcript, summary, `mood_score` (-1..1), mood_label, `topics text[]`, `engagement_score` (0..1), `flags jsonb`, `raw_extraction jsonb` |
 | `call_requests` | id, senior_id, check_in_id, `target_member_id` (nullable = anyone), reason, urgency, status (pending/accepted/declined/done), accepted_by, created_at |
 | `alerts` | id, senior_id, check_in_id, type (low_mood/health/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
@@ -31,6 +31,9 @@ Enable realtime on `opportunities`. See [conversation-to-visit](../06-notificati
 
 See [member-questionnaire](../07-onboarding/member-questionnaire.md).
 
+## Pronouns
+- `family_members.pronouns` is free text, set by the member (never inferred from name). When null, agents and notifications default to they/them.
+
 ## Phone linking
 - `seniors.phone_e164` is UNIQUE (the lookup key for family linking and the Vapi webhook).
 - `family_members.joined_at`; unique `(senior_id, lower(name))`. Members are created through phone linking, not pre-seeded.
@@ -47,7 +50,7 @@ See [member-questionnaire](../07-onboarding/member-questionnaire.md).
 Enable realtime on `agent_runs` for the dashboard trace. See [hope-tools](../08-agents/hope-tools.md) and [coordinator-agent](../08-agents/coordinator-agent.md).
 
 ## v1 seed
-The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`.
+The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`.
 
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
