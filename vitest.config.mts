@@ -3,7 +3,7 @@ import path from 'node:path'
 
 export default defineConfig({
   resolve: {
-    alias: { '@': path.resolve(import.meta.dirname) },
+    alias: { '@': path.resolve(import.meta.dirname, 'src') },
   },
   test: {
     environment: 'node',
