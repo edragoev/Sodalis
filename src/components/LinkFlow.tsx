@@ -5,7 +5,7 @@ import { useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { RELATIONSHIPS } from "@/lib/relationships";
 import { saveSession } from "@/lib/session";
-import { Avatar, BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, labelCls, subCls } from "./ui";
+import { Avatar, BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls } from "./ui";
 
 // Part 1: the loved one (phone, and name + pronouns if we don't know them yet).
 // Part 2: you (name, pronouns, relationship). The loved one is only created at the very end.
@@ -37,7 +37,7 @@ function PronounField({
 }) {
   return (
     <div>
-      <label className={labelCls} htmlFor={id}>{label}</label>
+      <label className={largeLabelCls} htmlFor={id}>{label}</label>
       <SelectField id={id} value={choice} onChange={setChoice} options={pronounOptions(skipLabel)} placeholder="Choose one" />
       {choice === OTHER && (
         <input className={`${inputCls} mt-3`} placeholder="Pronouns, in your words" value={other} onChange={(e) => setOther(e.target.value)} />
@@ -167,7 +167,7 @@ export default function LinkFlow() {
         <p className={subCls}>We don&apos;t have {elderPhone} yet, so let&apos;s set them up first.</p>
         <div className="mt-8 space-y-5">
           <div>
-            <label className={`${labelCls} text-lg`} htmlFor="elder-name">Their first name</label>
+            <label className={largeLabelCls} htmlFor="elder-name">Their first name</label>
             <input id="elder-name" className={inputCls} value={seniorName} onChange={(e) => setSeniorName(e.target.value)} />
           </div>
           <PronounField
@@ -222,8 +222,8 @@ export default function LinkFlow() {
           }}
         >
           <div>
-            <label className={labelCls} htmlFor="your-name">Your first name</label>
-            <input id="your-name" className={inputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
+            <label className={largeLabelCls} htmlFor="your-name">Your first name</label>
+            <input id="your-name" className={largeInputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <PronounField
             id="your-pronouns" label="Your pronouns" skipLabel={MEMBER_SKIP}
@@ -231,8 +231,8 @@ export default function LinkFlow() {
             other={pronounOther} setOther={setPronounOther}
           />
           <div>
-            <label className={labelCls} htmlFor="relationship">How are you related to {seniorName}?</label>
-            <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" />
+            <label className={largeLabelCls} htmlFor="relationship">How are you related to {seniorName}?</label>
+            <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" large blackText />
             {relationship === "Other" && (
               <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
             )}
@@ -259,7 +259,7 @@ export default function LinkFlow() {
         <Logo />
       </div>
       <h1 className={`${headingCls} mt-12`}>Stay close to someone you love</h1>
-      <p className={subCls}>A few quick details and you&apos;re in.</p>
+      <p className={`${subCls} text-xl`}>A few quick details and you&apos;re in.</p>
       <form
         className="mt-8"
         onSubmit={(e) => {
@@ -268,24 +268,24 @@ export default function LinkFlow() {
         }}
       >
         <div>
-          <label className={labelCls} htmlFor="your-name">Your first name</label>
-          <input id="your-name" className={inputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
+          <label className={largeLabelCls} htmlFor="your-name">Your first name</label>
+          <input id="your-name" className={largeInputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className={labelCls} htmlFor="relationship">How are you related to them?</label>
-          <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" />
+          <label className={largeLabelCls} htmlFor="relationship">How are you related to them?</label>
+          <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" large blackText />
           {relationship === "Other" && (
             <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
           )}
         </div>
         <div>
-          <label className={labelCls} htmlFor="elder-phone">Their phone number</label>
+          <label className={largeLabelCls} htmlFor="elder-phone">Their phone number</label>
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
-            <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
+            <input id="elder-phone" className={`${largeInputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
               value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <p className="mt-2 text-sm text-slate">The number Hope calls to check in on them.</p>
+          <p className="mt-2 text-xl text-slate">The number Hope calls to check in on them.</p>
         </div>
         <button type="submit" className="hidden" />
       </form>
