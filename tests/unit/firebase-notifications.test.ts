@@ -12,7 +12,7 @@ describe('firebase notifications', () => {
     delete (globalThis as any).navigator?.serviceWorker
   })
 
-  it('registers the Firebase service worker from the public path', async () => {
+  it('registers the app's single service worker (sw.js), which also handles push', async () => {
     const register = vi.fn().mockResolvedValue({ scope: '/' })
     Object.defineProperty(globalThis.navigator, 'serviceWorker', {
       value: { register },
@@ -21,7 +21,7 @@ describe('firebase notifications', () => {
 
     const result = await registerFirebaseServiceWorker()
 
-    expect(register).toHaveBeenCalledWith('/firebase-messaging-sw.js', { scope: '/' })
+    expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/', updateViaCache: 'none' })
     expect(result).toEqual({ scope: '/' })
   })
 

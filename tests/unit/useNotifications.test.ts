@@ -51,6 +51,7 @@ describe('useNotifications', () => {
   it('calls Notification.requestPermission() and handles the granted state', async () => {
     mockRequestPermission.mockResolvedValue('granted')
     mockGetToken.mockResolvedValue('fcm-token-123')
+    mockRegister.mockResolvedValue({ scope: '/', active: { scriptURL: '/sw.js' } })
 
     const { result } = renderHook(() => useNotifications())
 
@@ -60,8 +61,11 @@ describe('useNotifications', () => {
 
     expect(mockRequestPermission).toHaveBeenCalledTimes(1)
     expect(result.current.permission).toBe('granted')
+    // The token must belong to the app's own worker (sw.js), not Firebase's default
+    // firebase-messaging-sw.js, or taps would never reach our notificationclick handler.
     expect(mockGetToken).toHaveBeenCalledWith(expect.anything(), {
       vapidKey: 'test-vapid-key',
+      serviceWorkerRegistration: { scope: '/', active: { scriptURL: '/sw.js' } },
     })
   })
 
