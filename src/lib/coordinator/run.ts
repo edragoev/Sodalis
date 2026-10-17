@@ -17,6 +17,7 @@ export interface CoordinatorOpportunity extends ShortlistOpportunity {
   mentioned_item: string | null
   /** 'YYYY-MM-DD', or null when the opportunity has no deadline. */
   target_date: string | null
+  suggested_kind?: 'visit' | 'call' | null
   urgency: 'low' | 'normal' | 'high'
   status: string
 }

@@ -1,5 +1,6 @@
 import { after } from 'next/server'
 import { insertCheckIn } from '@/lib/check-ins'
+import { coordinateOpportunity } from '@/lib/coordinator/deps'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { VapiWebhookDeps } from './webhook'
 
@@ -24,8 +25,9 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
       if (error) throw new Error(error.message)
       return (data ?? []).map((row) => row.id as string)
     },
-    // The coordinator (POST /api/agent/coordinate) is the next piece; until it exists there is nothing to run.
-    async propose() {},
+    async propose(opportunityId) {
+      await coordinateOpportunity(opportunityId)
+    },
     after,
     now: () => new Date(),
   }
