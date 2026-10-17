@@ -11,9 +11,9 @@ export async function POST(req: Request) {
   if (!e164) return Response.json({ error: "That doesn't look like a valid mobile number." }, { status: 400 });
 
   const { data, error } = await supabaseAdmin()
-    .from("seniors").select("name").eq("phone_e164", e164).maybeSingle();
+    .from("seniors").select("id, name").eq("phone_e164", e164).maybeSingle();
   if (error) return Response.json({ error: "Lookup failed" }, { status: 500 });
   if (!data) return Response.json({ found: false });
-  // First name only, by design.
-  return Response.json({ found: true, senior_first_name: data.name.split(" ")[0] });
+  // First name and id only: the id lets the profile picker load the family.
+  return Response.json({ found: true, senior_id: data.id, senior_first_name: data.name.split(" ")[0] });
 }

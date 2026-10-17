@@ -3,16 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
-import { RELATIONSHIPS } from "@/lib/relationships";
-import { saveSession } from "@/lib/session";
-import { Avatar, BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls } from "./ui";
+import { saveElder } from "@/lib/session";
+import TagInput from "./TagInput";
+import { BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls, textareaCls } from "./ui";
 
-// Part 1: the loved one (phone, and name + pronouns if we don't know them yet).
-// Part 2: you (name, pronouns, relationship). The loved one is only created at the very end.
-type Step = "elderPhone" | "confirm" | "newElder" | "you" | "isThisYou";
+// 1. Phone number. Found -> the family's profile picker. Not found -> set up the loved one:
+// 2. About them (name, pronouns, birthday), 3. What they're like (interests, skills, things to know).
+// The loved one is only created at the end of step 3.
+type Step = "phone" | "about" | "like";
 
 const ELDER_SKIP = "Not sure";
-const MEMBER_SKIP = "Prefer not to say";
+const INTEREST_IDEAS = ["gardening", "cooking", "cards", "music", "walking", "reading", "knitting", "baking"];
+const SKILL_IDEAS = ["cooking", "baking", "sewing", "gardening", "storytelling", "fixing things"];
 
 async function post(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -23,52 +25,24 @@ async function post(url: string, body: unknown) {
   return { status: res.status, data: await res.json().catch(() => ({})) };
 }
 
-/** "(415) •••-0142" from whatever the user typed. */
-function maskPhone(raw: string) {
-  const d = raw.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
-  return d.length === 10 ? `(${d.slice(0, 3)}) •••-${d.slice(6)}` : "";
-}
-
-function PronounField({
-  id, label, skipLabel, choice, setChoice, other, setOther,
-}: {
-  id: string; label: string; skipLabel: string;
-  choice: string; setChoice: (v: string) => void; other: string; setOther: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className={largeLabelCls} htmlFor={id}>{label}</label>
-      <SelectField id={id} value={choice} onChange={setChoice} options={pronounOptions(skipLabel)} placeholder="Choose one" />
-      {choice === OTHER && (
-        <input className={`${inputCls} mt-3`} placeholder="Pronouns, in your words" value={other} onChange={(e) => setOther(e.target.value)} />
-      )}
-    </div>
-  );
-}
-
 export default function LinkFlow() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("elderPhone");
+  const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
-  const [isNewElder, setIsNewElder] = useState(false);
-  const [seniorName, setSeniorName] = useState("");
-  const [elderPronounChoice, setElderPronounChoice] = useState("");
-  const [elderPronounOther, setElderPronounOther] = useState("");
   const [name, setName] = useState("");
   const [pronounChoice, setPronounChoice] = useState("");
   const [pronounOther, setPronounOther] = useState("");
-  const [relationship, setRelationship] = useState("");
-  const [otherRel, setOtherRel] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const elderPhone = phone.trim().startsWith("+") ? phone : phone ? `+1 ${phone}` : "";
   const phoneReady = phone.replace(/\D/g, "").length >= 10;
-  const relValue = relationship === "Other" ? otherRel.trim() : relationship;
-  const elderPronouns = pronounValue(elderPronounChoice, elderPronounOther, ELDER_SKIP);
-  const myPronouns = pronounValue(pronounChoice, pronounOther, MEMBER_SKIP);
-  const elderPronounsReady = !!elderPronounChoice && (elderPronounChoice !== OTHER || !!elderPronounOther.trim());
-  const myPronounsReady = !!pronounChoice && (pronounChoice !== OTHER || !!pronounOther.trim());
+  const pronouns = pronounValue(pronounChoice, pronounOther, ELDER_SKIP);
+  const aboutReady = !!name.trim() && !!pronounChoice && (pronounChoice !== OTHER || !!pronounOther.trim());
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -85,165 +59,95 @@ export default function LinkFlow() {
     run(async () => {
       const { status, data } = await post("/api/link/lookup", { phone: elderPhone });
       if (status !== 200) return setError(data.error ?? "Lookup failed");
-      setIsNewElder(!data.found);
-      setSeniorName(data.found ? data.senior_first_name : "");
-      setStep(data.found ? "confirm" : "newElder");
+      if (data.found) {
+        saveElder({ senior_id: data.senior_id, name: data.senior_first_name });
+        router.push("/profiles");
+      } else setStep("about");
     });
 
-  // Final step: create the loved one if they're new, then join their circle.
-  const finish = (reconnect = false) =>
+  const createElder = () =>
     run(async () => {
-      if (isNewElder) {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
-        const created = await post("/api/link/elders", {
-          name: seniorName,
-          phone: elderPhone,
-          timezone,
-          pronouns: elderPronouns || undefined,
-        });
-        // "That number is already set up" means someone beat us to it: just join them.
-        if (created.status !== 200 && created.status !== 409) return setError(created.data.error ?? "Could not set up your loved one");
-        if (created.status === 200) setSeniorName(created.data.senior_first_name);
-        setIsNewElder(false);
-      }
-      const { status, data } = await post("/api/link/join", {
-        phone: elderPhone,
-        name,
-        relationship: relValue,
-        pronouns: myPronouns || undefined,
-        reconnect,
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+      const { status, data } = await post("/api/link/elders", {
+        name, phone: elderPhone, timezone, pronouns: pronouns || undefined,
+        birthday: birthday || undefined, interests, skills, notes,
       });
-      if (status === 409 && data.exists) return setStep("isThisYou");
-      if (status !== 200) return setError(data.error ?? "Could not join");
-      saveSession({ member_id: data.member_id, senior_id: data.senior_id, name: name.trim() });
-      router.push(data.reconnected ? "/dashboard" : "/questionnaire");
+      if (status === 409) return void (await lookup()); // someone set them up a moment ago: just find them
+      if (status !== 200) return setError(data.error ?? "Could not set up the profile");
+      saveElder({ senior_id: data.senior_id, name: data.senior_first_name });
+      router.push("/profiles");
     });
 
   const errorBox = error && (
-    <p role="alert" className="mt-4 rounded-2xl bg-danger-bg p-3 text-danger">
+    <p role="alert" className="mt-4 rounded-2xl bg-danger-bg p-3 text-lg text-danger">
       {error}
     </p>
   );
-  const backFromYou = () => setStep(isNewElder ? "newElder" : "confirm");
 
-  if (step === "confirm")
+  if (step === "like")
     return (
       <Screen
-        top={<BackButton onClick={() => setStep("elderPhone")} />}
+        top={<BackButton onClick={() => setStep("about")} />}
         footer={
-          <div className="space-y-1">
-            <Button className="w-full" onClick={() => setStep("you")}>
-              Yes, that&apos;s them
-            </Button>
-            <Button variant="text" onClick={() => setStep("elderPhone")}>
-              Use a different number
-            </Button>
-          </div>
+          <Button className="w-full" disabled={busy} onClick={createElder}>
+            {busy ? "Saving…" : `Save ${name.trim()}'s profile`}
+          </Button>
         }
       >
-        <div className="flex flex-col items-center pt-6 text-center">
-          <Avatar name={seniorName} size={112} />
-          <p className="mt-8 text-lg text-slate">Linking to</p>
-          <h1 className="font-serif text-5xl font-semibold text-ink">{seniorName}</h1>
-          {maskPhone(phone) && <p className="mt-3 text-lg text-slate">{maskPhone(phone)}</p>}
-          <p className="mt-10 max-w-xs text-lg leading-relaxed text-ink">
-            Hope calls {seniorName} to check in. Is this the right person?
-          </p>
+        <h1 className={headingCls}>What is {name.trim()} like?</h1>
+        <p className={`${subCls} text-xl`}>This helps Hope and your family find the right moments. Skip anything you&apos;re unsure about.</p>
+        <div className="mt-8 space-y-7">
+          <TagInput id="elder-interests" label="Interests" hint="Things they love" values={interests} onChange={setInterests} suggestions={INTEREST_IDEAS} />
+          <TagInput id="elder-skills" label="Skills" hint="Things they're good at" values={skills} onChange={setSkills} suggestions={SKILL_IDEAS} />
+          <div>
+            <label className={largeLabelCls} htmlFor="elder-notes">Good to know</label>
+            <p className="-mt-1 mb-2 text-lg text-slate">Routines, health, favourite things, names Hope should know.</p>
+            <textarea
+              id="elder-notes"
+              className={`${textareaCls} min-h-32 text-xl`}
+              maxLength={2000}
+              placeholder="e.g. Naps after lunch. Hard of hearing on the left. Loves her cat, Biscuit."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
         </div>
+        {errorBox}
       </Screen>
     );
 
-  if (step === "newElder")
+  if (step === "about")
     return (
       <Screen
-        top={<BackButton onClick={() => setStep("elderPhone")} />}
+        top={<BackButton onClick={() => setStep("phone")} />}
         footer={
-          <Button className="w-full" disabled={!seniorName.trim() || !elderPronounsReady} onClick={() => setStep("you")}>
+          <Button className="w-full" disabled={!aboutReady} onClick={() => setStep("like")}>
             Continue
           </Button>
         }
       >
-        <h1 className={headingCls}>Tell us about your loved one</h1>
-        <p className={subCls}>We don&apos;t have {elderPhone} yet, so let&apos;s set them up first.</p>
-        <div className="mt-8 space-y-5">
+        <h1 className={headingCls}>Let&apos;s set up your loved one</h1>
+        <p className={`${subCls} text-xl`}>We don&apos;t have {elderPhone} yet. Tell us a little about them.</p>
+        <div className="mt-8 space-y-6">
           <div>
             <label className={largeLabelCls} htmlFor="elder-name">Their first name</label>
-            <input id="elder-name" className={inputCls} value={seniorName} onChange={(e) => setSeniorName(e.target.value)} />
+            <input id="elder-name" className={largeInputCls} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <PronounField
-            id="elder-pronouns" label="Their pronouns" skipLabel={ELDER_SKIP}
-            choice={elderPronounChoice} setChoice={setElderPronounChoice}
-            other={elderPronounOther} setOther={setElderPronounOther}
-          />
+          <div>
+            <label className={largeLabelCls} htmlFor="elder-pronouns">Their pronouns</label>
+            <SelectField id="elder-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions(ELDER_SKIP)} placeholder="Choose one" large blackText />
+            {pronounChoice === OTHER && (
+              <input className={`${inputCls} mt-3`} placeholder="Their pronouns, in your words" value={pronounOther} onChange={(e) => setPronounOther(e.target.value)} />
+            )}
+          </div>
+          <div>
+            <label className={largeLabelCls} htmlFor="elder-birthday">Their birthday (optional)</label>
+            <input id="elder-birthday" type="date" className={largeInputCls} value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+          </div>
         </div>
       </Screen>
     );
 
-  if (step === "isThisYou")
-    return (
-      <Screen
-        top={<BackButton onClick={() => setStep("you")} />}
-        footer={
-          <div className="space-y-1">
-            <Button className="w-full" disabled={busy} onClick={() => finish(true)}>
-              Yes, that&apos;s me
-            </Button>
-            <Button variant="text" onClick={() => setStep("you")}>
-              No, use a different name
-            </Button>
-          </div>
-        }
-      >
-        <h1 className={headingCls}>Is this you?</h1>
-        <p className={subCls}>
-          <b className="text-ink">{name}</b> is already part of {seniorName ? `${seniorName}'s` : "this"} circle.
-        </p>
-        {errorBox}
-      </Screen>
-    );
-
-  if (step === "you")
-    return (
-      <Screen
-        top={<BackButton onClick={backFromYou} />}
-        footer={
-          <Button className="w-full" disabled={busy || !name.trim() || !myPronounsReady || !relValue} onClick={() => finish()}>
-            Join {seniorName}&apos;s circle
-          </Button>
-        }
-      >
-        <h1 className={headingCls}>Now, about you</h1>
-        <p className={subCls}>So {seniorName} and Hope know who&apos;s in their circle.</p>
-        <form
-          className="mt-8 space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (name.trim() && myPronounsReady && relValue && !busy) finish();
-          }}
-        >
-          <div>
-            <label className={largeLabelCls} htmlFor="your-name">Your first name</label>
-            <input id="your-name" className={largeInputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <PronounField
-            id="your-pronouns" label="Your pronouns" skipLabel={MEMBER_SKIP}
-            choice={pronounChoice} setChoice={setPronounChoice}
-            other={pronounOther} setOther={setPronounOther}
-          />
-          <div>
-            <label className={largeLabelCls} htmlFor="relationship">How are you related to {seniorName}?</label>
-            <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" large blackText />
-            {relationship === "Other" && (
-              <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
-            )}
-          </div>
-          <button type="submit" className="hidden" />
-        </form>
-        {errorBox}
-      </Screen>
-    );
-
-  // step === "elderPhone"
   return (
     <Screen
       footer={
@@ -258,8 +162,8 @@ export default function LinkFlow() {
       <div className="flex items-center justify-center pt-4 text-center origin-center scale-125">
         <Logo />
       </div>
-      <h1 className={`${headingCls} mt-12`}>Stay close to someone you love</h1>
-      <p className={`${subCls} text-xl`}>A few quick details and you&apos;re in.</p>
+      <h1 className={`${headingCls} mt-12`}>What&apos;s your loved one&apos;s phone number?</h1>
+      <p className={`${subCls} text-xl`}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
       <form
         className="mt-8"
         onSubmit={(e) => {
@@ -267,25 +171,11 @@ export default function LinkFlow() {
           if (phoneReady && !busy) lookup();
         }}
       >
-        <div>
-          <label className={largeLabelCls} htmlFor="your-name">Your first name</label>
-          <input id="your-name" className={largeInputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div>
-          <label className={largeLabelCls} htmlFor="relationship">How are you related to them?</label>
-          <SelectField id="relationship" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" large blackText />
-          {relationship === "Other" && (
-            <input className={`${inputCls} mt-3`} placeholder="Tell us how you're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
-          )}
-        </div>
-        <div>
-          <label className={largeLabelCls} htmlFor="elder-phone">Their phone number</label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
-            <input id="elder-phone" className={`${largeInputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
-              value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-          <p className="mt-2 text-xl text-slate">The number Hope calls to check in on them.</p>
+        <label className={largeLabelCls} htmlFor="elder-phone">Their phone number</label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-slate">+1</span>
+          <input id="elder-phone" className={`${largeInputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
+            value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <button type="submit" className="hidden" />
       </form>

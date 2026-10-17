@@ -168,10 +168,10 @@ export default function ProfileScreen() {
           className="text-slate"
           onClick={() => {
             clearSession();
-            router.push("/");
+            router.push("/profiles");
           }}
         >
-          Not you? Switch person
+          Switch profile
         </Button>
       </section>
     </Screen>
