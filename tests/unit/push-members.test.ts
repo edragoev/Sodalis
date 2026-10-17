@@ -61,7 +61,8 @@ function replyFor(dead: string[]) {
   }))
 }
 
-const run = (memberIds = ['m1', 'm2']) => pushToMembers({ db, messaging }, memberIds, opportunity, slots, TZ)
+const run = (memberIds = ['m1', 'm2'], appUrl?: string | null) =>
+  pushToMembers({ db, messaging, appUrl }, memberIds, opportunity, slots, TZ)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -84,6 +85,18 @@ describe('pushToMembers', () => {
 
     expect(sendEachForMulticast).toHaveBeenCalledTimes(1)
     expect(sendEachForMulticast.mock.calls[0][0].tokens).toEqual(['tok-a', 'tok-b'])
+  })
+
+  it('gives the push an absolute link when the app URL is known', async () => {
+    await run(['m1', 'm2'], 'https://app.example.com')
+    expect(sendEachForMulticast.mock.calls[0][0].webpush.fcmOptions?.link).toBe(
+      'https://app.example.com/opportunities/opp-1',
+    )
+  })
+
+  it('omits the link when there is no app URL', async () => {
+    await run()
+    expect(sendEachForMulticast.mock.calls[0][0].webpush).not.toHaveProperty('fcmOptions')
   })
 
   it('skips members with no token and sends each distinct token once', async () => {

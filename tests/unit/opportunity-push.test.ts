@@ -117,8 +117,35 @@ describe('buildOpportunityPush', () => {
     expect(Object.values(data).every((v) => typeof v === 'string')).toBe(true)
   })
 
-  it('opens /opportunities/[id] when tapped', () => {
-    expect(buildOpportunityPush(opportunity, slots, TZ).webpush.fcmOptions.link).toBe('/opportunities/opp-1')
+  describe('click link (FCM requires an absolute HTTPS URL)', () => {
+    const APP = 'https://app.example.com'
+    const linkOf = (appUrl?: string | null, opp: PushOpportunity = opportunity) =>
+      buildOpportunityPush(opp, slots, TZ, appUrl).webpush.fcmOptions?.link
+
+    it('opens the opportunity page on the app\'s origin', () => {
+      expect(linkOf(APP)).toBe('https://app.example.com/opportunities/opp-1')
+    })
+
+    it('tolerates a trailing slash on the app URL', () => {
+      expect(linkOf(`${APP}/`)).toBe('https://app.example.com/opportunities/opp-1')
+    })
+
+    it('encodes the id so it cannot change the path', () => {
+      expect(linkOf(APP, { ...opportunity, id: 'a/b?x=1' })).toBe('https://app.example.com/opportunities/a%2Fb%3Fx%3D1')
+    })
+
+    it.each([undefined, null, '', 'http://localhost:3000', '/relative', 'not a url'])(
+      'leaves fcmOptions out entirely for %j, instead of sending a link FCM would reject',
+      (appUrl) => {
+        const message = buildOpportunityPush(opportunity, slots, TZ, appUrl as never)
+        expect(message.webpush).not.toHaveProperty('fcmOptions')
+        expect(message.webpush.headers).toEqual({ Urgency: 'normal' }) // the rest is intact
+      },
+    )
+
+    it('never depends on the link for routing: data still carries the opportunity id', () => {
+      expect(buildOpportunityPush(opportunity, slots, TZ).data.opportunity_id).toBe('opp-1')
+    })
   })
 
   it('maps high urgency to high FCM priority and everything else to normal', () => {
@@ -144,6 +171,16 @@ describe('sendOpportunityPush', () => {
       tokens: ['tok-danny', 'tok-maya'],
     })
     expect(result).toEqual({ successCount: 2, failureCount: 0, invalidTokens: [] })
+  })
+
+  it('passes the app URL through so the multicast message carries an absolute link', async () => {
+    const { messaging, sendEachForMulticast } = fakeMessaging()
+
+    await sendOpportunityPush(messaging, ['tok'], opportunity, slots, TZ, 'https://app.example.com')
+
+    expect(sendEachForMulticast.mock.calls[0][0].webpush.fcmOptions?.link).toBe(
+      'https://app.example.com/opportunities/opp-1',
+    )
   })
 
   it('sends high priority for a high urgency opportunity', async () => {

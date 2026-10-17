@@ -22,10 +22,23 @@ describe('buildTestPush', () => {
     expect(message.notification.body).toMatch(/\S/)
   })
 
-  it('opens the dashboard when tapped and marks itself as a test', () => {
-    const message = buildTestPush('tok-1')
-    expect(message.data).toEqual({ type: 'test' })
-    expect(message.webpush.fcmOptions.link).toBe('/')
+  it('marks itself as a test', () => {
+    expect(buildTestPush('tok-1').data).toEqual({ type: 'test' })
+  })
+
+  describe('click link (FCM requires an absolute HTTPS URL)', () => {
+    it('opens the dashboard on the app\'s origin', () => {
+      expect(buildTestPush('tok-1', null, 'https://app.example.com').webpush.fcmOptions?.link).toBe(
+        'https://app.example.com/',
+      )
+    })
+
+    it.each([undefined, null, '', 'http://localhost:3000', '/relative'])(
+      'leaves fcmOptions out entirely for %j',
+      (appUrl) => {
+        expect(buildTestPush('tok-1', null, appUrl as never).webpush).not.toHaveProperty('fcmOptions')
+      },
+    )
   })
 
   it('uses normal priority, since a test is never urgent', () => {
@@ -52,6 +65,12 @@ describe('sendTestPush', () => {
 
     expect(send).toHaveBeenCalledTimes(1)
     expect(send).toHaveBeenCalledWith(buildTestPush('tok-1', 'Danny'))
+  })
+
+  it('passes the app URL through to the message', async () => {
+    const { messaging, send } = fakeMessaging()
+    await sendTestPush(messaging, 'tok-1', 'Danny', 'https://app.example.com')
+    expect(send).toHaveBeenCalledWith(buildTestPush('tok-1', 'Danny', 'https://app.example.com'))
   })
 
   it('returns the message id Firebase gave back', async () => {

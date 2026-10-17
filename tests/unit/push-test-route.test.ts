@@ -53,6 +53,21 @@ describe('POST /api/push/test', () => {
     })
   })
 
+  it('gives the push an absolute link when NEXT_PUBLIC_APP_URL is set', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://app.example.com')
+    await post({ member_id: memberId })
+    expect(send.mock.calls[0][0].webpush.fcmOptions.link).toBe('https://app.example.com/')
+    vi.unstubAllEnvs()
+  })
+
+  it('omits the link when no valid app URL is configured', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '')
+    vi.stubEnv('VERCEL_PROJECT_PRODUCTION_URL', '')
+    await post({ member_id: memberId })
+    expect(send.mock.calls[0][0].webpush).not.toHaveProperty('fcmOptions')
+    vi.unstubAllEnvs()
+  })
+
   it('never returns the token', async () => {
     const res = await post({ member_id: memberId })
     expect(JSON.stringify(res.json)).not.toContain('tok-danny')
