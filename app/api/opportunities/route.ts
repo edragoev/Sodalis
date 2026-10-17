@@ -1,7 +1,10 @@
 import { createAdminClient } from '@/utils/supabase/admin'
 
-const REQUIRED = ['senior_id', 'check_in_id', 'type', 'summary'] as const
+const REQUIRED = ['senior_id', 'type', 'summary'] as const
 const OPTIONAL = [
+  'check_in_id',
+  'check_in_vapi_call_id',
+  'source',
   'quote',
   'mentioned_member_id',
   'mentioned_item',
@@ -14,6 +17,7 @@ const OPTIONAL = [
 const TYPES = ['gift_errand', 'activity', 'event', 'wants_contact']
 const URGENCIES = ['low', 'normal', 'high']
 const KINDS = ['visit', 'call']
+const SOURCES = ['extraction', 'hope_tool']
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const bad = (error: string) => Response.json({ error }, { status: 400 })
@@ -29,11 +33,20 @@ function validate(body: Record<string, unknown>): string | null {
     if (typeof value !== 'string' || value.trim() === '') return `${field} is required`
   }
   if (!isUuid(body.senior_id)) return 'senior_id must be a UUID'
-  if (!isUuid(body.check_in_id)) return 'check_in_id must be a UUID'
+  // The check-in row may not exist yet (Hope proposes visits mid-call), so a Vapi call id will do.
+  const given = (field: string) => body[field] !== undefined && body[field] !== null
+  if (!given('check_in_id') && !given('check_in_vapi_call_id'))
+    return 'check_in_id or check_in_vapi_call_id is required'
+  if (given('check_in_id') && !isUuid(body.check_in_id)) return 'check_in_id must be a UUID'
+  if (given('check_in_vapi_call_id')) {
+    const id = body.check_in_vapi_call_id
+    if (typeof id !== 'string' || id.trim() === '') return 'check_in_vapi_call_id must be a non-empty string'
+  }
+  if (given('source') && !SOURCES.includes(body.source as string))
+    return `source must be one of: ${SOURCES.join(', ')}`
   if (!TYPES.includes(body.type as string)) return `type must be one of: ${TYPES.join(', ')}`
 
   // Optional fields: absent or null is fine; anything else must be well formed.
-  const given = (field: string) => body[field] !== undefined && body[field] !== null
   if (given('mentioned_member_id') && !isUuid(body.mentioned_member_id))
     return 'mentioned_member_id must be a UUID'
   if (given('confidence')) {
@@ -84,6 +97,9 @@ export async function POST(request: Request) {
   if (error) {
     // 23503 = foreign key violation (the senior or check-in doesn't exist);
     // 23514 = check constraint. Both are the caller's input, not a server fault.
+    // 23505 = unique violation: Hope already proposed this for the same call, member and type.
+    if (error.code === '23505')
+      return Response.json({ error: 'This opportunity was already created for this call' }, { status: 409 })
     if (error.code === '23503') return bad('senior_id or check_in_id does not exist')
     if (error.code === '23514') return bad('One of the values is out of range')
     return Response.json({ error: 'Could not save the opportunity' }, { status: 500 })

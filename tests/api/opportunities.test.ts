@@ -34,7 +34,7 @@ beforeEach(() => {
 
 describe('POST /api/opportunities', () => {
   describe('validation (400 Bad Request)', () => {
-    it.each(['senior_id', 'check_in_id', 'type', 'summary'])(
+    it.each(['senior_id', 'type', 'summary'])(
       'rejects a payload missing %s',
       async (field) => {
         const body: Record<string, unknown> = { ...valid }
@@ -50,6 +50,32 @@ describe('POST /api/opportunities', () => {
 
     it('rejects a blank required field', async () => {
       const res = await post({ ...valid, summary: '   ' })
+      expect(res.status).toBe(400)
+      expect(insert).not.toHaveBeenCalled()
+    })
+
+    it('rejects a payload with neither check_in_id nor check_in_vapi_call_id', async () => {
+      const body: Record<string, unknown> = { ...valid }
+      delete body.check_in_id
+
+      const res = await post(body)
+
+      expect(res.status).toBe(400)
+      expect(res.json.error).toContain('check_in_id')
+      expect(res.json.error).toContain('check_in_vapi_call_id')
+      expect(insert).not.toHaveBeenCalled()
+    })
+
+    it('rejects an unknown source', async () => {
+      const res = await post({ ...valid, source: 'magic' })
+      expect(res.status).toBe(400)
+      expect(res.json.error).toContain('source')
+      expect(insert).not.toHaveBeenCalled()
+    })
+
+    it('rejects a blank check_in_vapi_call_id', async () => {
+      const { check_in_id: _omit, ...rest } = valid
+      const res = await post({ ...rest, check_in_vapi_call_id: '  ' })
       expect(res.status).toBe(400)
       expect(insert).not.toHaveBeenCalled()
     })
@@ -120,6 +146,27 @@ describe('POST /api/opportunities', () => {
       const res = await post(required)
       expect(res.status).toBe(201)
       expect(insert).toHaveBeenCalledWith(required)
+    })
+
+    it('accepts an opportunity Hope created mid-call, with no check-in yet', async () => {
+      const midCall = {
+        senior_id: valid.senior_id,
+        type: 'wants_contact',
+        summary: 'Misses Danny',
+        source: 'hope_tool',
+        check_in_vapi_call_id: 'call-abc',
+        mentioned_member_id: '33333333-3333-4333-8333-333333333333',
+      }
+      const res = await post(midCall)
+      expect(res.status).toBe(201)
+      expect(insert).toHaveBeenCalledWith(midCall)
+    })
+
+    it('returns 409 when the same call + member + type was already proposed', async () => {
+      single.mockResolvedValue({ data: null, error: { message: 'dup', code: '23505' } })
+      const res = await post({ ...valid, source: 'hope_tool', check_in_vapi_call_id: 'call-abc' })
+      expect(res.status).toBe(409)
+      expect(res.json.error).toBeTruthy()
     })
 
     it('ignores fields the client is not allowed to set', async () => {
