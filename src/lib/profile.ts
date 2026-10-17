@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { QUESTIONS, QUESTION_KEYS, type QuestionKey } from "@/lib/profile-questions";
 import { parseLogistics } from "@/lib/logistics";
+import { backoffFor } from "@/lib/gemini-backoff";
 
 export { QUESTIONS, QUESTION_KEYS };
 export type { QuestionKey };
@@ -88,7 +89,8 @@ export type StructureResult = "ok" | "failed" | "skipped";
 
 const inFlight = new Set<string>(); // a member being structured right now (this server instance)
 const retryAfter = new Map<string, number>(); // after a failure, wait before asking Gemini again
-const COOLDOWN_MS = 60_000;
+// A refused quota is not about one member: while it lasts, nobody asks (this server instance).
+let quotaBlockedUntil = 0;
 
 /** The answers that changed since the last successful structuring (empty when nothing is pending). */
 async function pendingChanges(memberId: string) {
@@ -114,7 +116,7 @@ export async function hasPendingStructuring(memberId: string): Promise<boolean> 
  */
 export async function restructureMember(memberId: string): Promise<StructureResult> {
   if (inFlight.has(memberId)) return "skipped";
-  if ((retryAfter.get(memberId) ?? 0) > Date.now()) return "failed";
+  if (quotaBlockedUntil > Date.now() || (retryAfter.get(memberId) ?? 0) > Date.now()) return "failed";
 
   const { answers, changed } = await pendingChanges(memberId);
   if (!changed.size) return "skipped";
@@ -137,8 +139,13 @@ export async function restructureMember(memberId: string): Promise<StructureResu
     retryAfter.delete(memberId);
     return "ok";
   } catch (e) {
-    retryAfter.set(memberId, Date.now() + COOLDOWN_MS);
-    console.error("profile structuring failed", e instanceof Error ? e.message : e);
+    const { waitMs, quota } = backoffFor(e);
+    retryAfter.set(memberId, Date.now() + waitMs);
+    if (quota) quotaBlockedUntil = Date.now() + waitMs;
+    console.error(
+      quota ? `Gemini quota reached; not asking again for ${Math.round(waitMs / 60_000)} min` : "profile structuring failed",
+      quota ? "" : e instanceof Error ? e.message.slice(0, 200) : e,
+    );
     return "failed";
   } finally {
     inFlight.delete(memberId);
