@@ -10,6 +10,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const name = String(body.name ?? "").trim();
   const relationship = String(body.relationship ?? "").trim();
+  const pronouns = String(body.pronouns ?? "").trim().slice(0, 30) || null;
   const e164 = normalizePhone(body.phone);
   const memberPhone = body.member_phone ? normalizePhone(body.member_phone) : null;
   if (!e164) return Response.json({ error: "Invalid elder phone number." }, { status: 400 });
@@ -19,5 +20,5 @@ export async function POST(req: Request) {
   const { data: senior } = await supabaseAdmin().from("seniors").select("id").eq("phone_e164", e164).maybeSingle();
   if (!senior) return Response.json({ error: "We couldn't find that number." }, { status: 404 });
 
-  return joinCircle({ seniorId: senior.id, name, relationship, memberPhone, reconnect: !!body.reconnect });
+  return joinCircle({ seniorId: senior.id, name, relationship, memberPhone, pronouns, reconnect: !!body.reconnect });
 }

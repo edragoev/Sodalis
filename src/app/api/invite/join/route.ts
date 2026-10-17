@@ -11,6 +11,7 @@ export async function POST(req: Request) {
   if (!seniorId) return Response.json({ error: "This invite link isn't valid." }, { status: 404 });
   const name = String(body.name ?? "").trim();
   const relationship = String(body.relationship ?? "").trim();
+  const pronouns = String(body.pronouns ?? "").trim().slice(0, 30) || null;
   if (!name || !relationship) return Response.json({ error: "Name and relationship are required." }, { status: 400 });
-  return joinCircle({ seniorId, name, relationship, reconnect: !!body.reconnect });
+  return joinCircle({ seniorId, name, relationship, pronouns, reconnect: !!body.reconnect });
 }
