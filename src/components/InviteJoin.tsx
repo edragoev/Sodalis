@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { RELATIONSHIPS } from "@/lib/relationships";
 import { saveSession } from "@/lib/session";
 import { Avatar, BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, labelCls, subCls } from "./ui";
@@ -15,6 +16,8 @@ export default function InviteJoin({ token }: { token: string }) {
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [otherRel, setOtherRel] = useState("");
+  const [pronounChoice, setPronounChoice] = useState("");
+  const [pronounOther, setPronounOther] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -31,6 +34,8 @@ export default function InviteJoin({ token }: { token: string }) {
   }, [token]);
 
   const relValue = relationship === "Other" ? otherRel.trim() : relationship;
+  const myPronouns = pronounValue(pronounChoice, pronounOther, "Prefer not to say");
+  const pronounsReady = !!pronounChoice && (pronounChoice !== OTHER || !!pronounOther.trim());
 
   async function join(reconnect = false) {
     setBusy(true);
@@ -39,7 +44,7 @@ export default function InviteJoin({ token }: { token: string }) {
       const res = await fetch("/api/invite/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, name, relationship: relValue, reconnect }),
+        body: JSON.stringify({ token, name, relationship: relValue, pronouns: myPronouns || undefined, reconnect }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 409 && data.exists) setState("isThisYou");
@@ -99,7 +104,7 @@ export default function InviteJoin({ token }: { token: string }) {
   return (
     <Screen
       footer={
-        <Button className="w-full" disabled={busy || !name.trim() || !relValue} onClick={() => join()}>
+        <Button className="w-full" disabled={busy || !name.trim() || !pronounsReady || !relValue} onClick={() => join()}>
           Join {seniorName}&apos;s circle
         </Button>
       }
@@ -117,12 +122,19 @@ export default function InviteJoin({ token }: { token: string }) {
         className="mt-8 space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
-          if (name.trim() && relValue && !busy) join();
+          if (name.trim() && pronounsReady && relValue && !busy) join();
         }}
       >
         <div>
           <label className={labelCls} htmlFor="invite-name">Your first name</label>
           <input id="invite-name" className={inputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="invite-pronouns">Your pronouns</label>
+          <SelectField id="invite-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions("Prefer not to say")} placeholder="Choose one" />
+          {pronounChoice === OTHER && (
+            <input className={`${inputCls} mt-3`} placeholder="Pronouns, in your words" value={pronounOther} onChange={(e) => setPronounOther(e.target.value)} />
+          )}
         </div>
         <div>
           <label className={labelCls} htmlFor="invite-rel">How are you related to {seniorName}?</label>
