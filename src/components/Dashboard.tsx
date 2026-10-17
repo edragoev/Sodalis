@@ -123,8 +123,9 @@ export default function Dashboard() {
     let db: ReturnType<typeof supabaseBrowser>;
     try {
       db = supabaseBrowser();
-    } catch {
-      return void queueMicrotask(() => setError("Supabase isn't configured yet."));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not initialize the Supabase client.";
+      return void queueMicrotask(() => setError(message));
     }
     queueMicrotask(() => load(s.senior_id));
     // Any change to these tables for this senior triggers a refetch.
