@@ -50,6 +50,23 @@ const untouched = (deps: ReturnType<typeof setup>['deps']) => {
 }
 
 describe('POST /api/vapi/webhook', () => {
+  describe('alerts raised during the call (flag_concern)', () => {
+    it('are linked to the new check-in by the Vapi call id', async () => {
+      const linkAlerts = vi.fn().mockResolvedValue(undefined)
+      const { post } = setup({ linkAlerts })
+      expect((await post(report())).status).toBe(200)
+      expect(linkAlerts).toHaveBeenCalledWith('call-1', 'ci-1')
+    })
+
+    it('a failed link still saves the call', async () => {
+      const linkAlerts = vi.fn().mockRejectedValue(new Error('db down'))
+      const { post } = setup({ linkAlerts })
+      const res = await post(report())
+      expect(res.status).toBe(200)
+      expect(res.json).toEqual({ ok: true, check_in_id: 'ci-1' })
+    })
+  })
+
   describe('the event planner', () => {
     it('runs after the response for a call with a transcript', async () => {
       const extract = vi.fn().mockResolvedValue(undefined)

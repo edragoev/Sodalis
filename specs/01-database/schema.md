@@ -7,7 +7,7 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `seniors` | id, name, phone_e164, timezone, `preferred_windows jsonb` (weekly `[{dow, start, end}]`), `hope_call_windows jsonb`, notes (interests, health context fed to Hope) |
 | `family_members` | id, senior_id→seniors, name, `pronouns` (text, nullable, e.g. she/her, he/him, they/them), relationship, phone, `fcm_token`, `google_refresh_token`, `manual_availability jsonb`, `calendar_connected bool` |
 | `check_ins` | id, senior_id, `vapi_call_id` UNIQUE (idempotency), `started_at`, ended_at, duration_s, status (completed/no_answer/failed), transcript, summary, `mood_score` (-1..1), mood_label, `topics text[]`, `engagement_score` (0..1), `flags jsonb`, `raw_extraction jsonb` |
-| `alerts` | id, senior_id, check_in_id, type (low_mood/health/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
+| `alerts` | id, senior_id, check_in_id, `vapi_call_id` (set by `flag_concern` during the call; the webhook then fills check_in_id), type (low_mood/health/safety/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
 | `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, `outcome_engagement` |
 | `calendar_events` | id, member_id→family_members, `uid`, `recurrence_id`, title, notes, `starts_at`/`ends_at` (UTC), `all_day`, raw `rrule`, `exdates`, `source_tz`, `import_batch_id`. See [google-calendar-import](../10-calendar/google-calendar-import.md) |
 

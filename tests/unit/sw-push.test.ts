@@ -207,3 +207,52 @@ describe('one service worker for the app', () => {
     }
   })
 })
+
+describe('alert pushes (flag_concern): tapping calls the elder', () => {
+  const alert = { type: 'alert', urgency: 'high', elder_phone: '+14155550142' }
+  const click = (url: string) => ({ notification: { close: vi.fn(), data: { url } }, waitUntil: vi.fn() })
+
+  it("targets the phone app with the elder's number", () => {
+    expect(load().resolveNotificationTarget(alert)).toBe('tel:+14155550142')
+  })
+
+  it.each(['4155550142', '+1 415 555 0142', 'javascript:alert(1)', '+14155550142?x', ''])(
+    'never dials something that is not an E.164 number (%j)',
+    (elder_phone) => {
+      expect(load().resolveNotificationTarget({ ...alert, elder_phone })).toBe('/')
+    },
+  )
+
+  it('stays on screen until the person acts', () => {
+    const { options } = load().buildNotification({ notification: { title: 'Jane may need help' }, data: alert })
+    expect(options.requireInteraction).toBe(true)
+    expect(options.data.url).toBe('tel:+14155550142')
+    expect(options.tag).toBe('alert')
+  })
+
+  it('opens the dialer instead of navigating the open app away', async () => {
+    const open = { focus: vi.fn(), navigate: vi.fn() }
+    const clients = { matchAll: vi.fn().mockResolvedValue([open]), openWindow: vi.fn().mockResolvedValue(null) }
+
+    await load().handleNotificationClick(click('tel:+14155550142'), clients)
+
+    expect(clients.openWindow).toHaveBeenCalledWith('tel:+14155550142')
+    expect(open.navigate).not.toHaveBeenCalled()
+  })
+
+  it('opens the dashboard when the browser cannot dial', async () => {
+    const openWindow = vi.fn().mockRejectedValueOnce(new TypeError('not allowed')).mockResolvedValue(null)
+    const e = click('tel:+14155550142')
+
+    await load().handleNotificationClick(e, { matchAll: vi.fn(), openWindow })
+
+    expect(openWindow).toHaveBeenLastCalledWith('/')
+    expect(e.waitUntil).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a tel: link that is not a plain number', async () => {
+    const clients = { matchAll: vi.fn().mockResolvedValue([]), openWindow: vi.fn().mockResolvedValue(null) }
+    await load().handleNotificationClick(click('tel:+1415;ext=evil'), clients)
+    expect(clients.openWindow).toHaveBeenCalledWith('/')
+  })
+})
