@@ -99,8 +99,9 @@ export default function Availability() {
   return (
     <Screen
       top={
-        <Link href="/schedule" className="text-sm font-semibold text-primary hover:underline">
-          ← Calendar
+        <Link href="/schedule" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+          <span aria-hidden>←</span>
+          Calendar
         </Link>
       }
       tabs={<TabBar active="calendar" name={name} />}
