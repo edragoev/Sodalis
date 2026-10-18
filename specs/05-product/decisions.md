@@ -26,7 +26,7 @@
 | Choosing who to notify | Code shortlist → one Gemini call → code validation → template fallback | Coordinator agent loop with tools |
 | "Why Danny?" trace | Input/output of the Gemini call in `agent_runs`; `why` shown on the dashboard | Full step-by-step tool trace |
 | Scheduler | [v1 simple version](../04-scheduler/algorithm.md#v1-demo) | Full scoring and greedy loop |
-| Family availability | Manual weekly grid | Google Calendar free/busy |
+| Family availability | Manual weekly grid | Google Calendar free/busy, or an uploaded `.ics`/`.zip` export ([import](../10-calendar/google-calendar-import.md), no OAuth needed) |
 | Push (FCM) | Web push on Chrome desktop/Android; tap opens `/opportunities/[id]`; test-push button | Notification action buttons, iOS install, reminders, escalation, expiry, digest, rate limits |
 | Confirming | First accept wins; others see "already covered by [name]" | — |
 | Family members | Seeded 4 members with tags + "Who are you?" picker | Phone-number linking |

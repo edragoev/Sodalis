@@ -10,6 +10,7 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `call_requests` | id, senior_id, check_in_id, `target_member_id` (nullable = anyone), reason, urgency, status (pending/accepted/declined/done), accepted_by, created_at |
 | `alerts` | id, senior_id, check_in_id, type (low_mood/health/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
 | `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, call_request_id, `outcome_engagement` |
+| `calendar_events` | id, member_id→family_members, `uid`, `recurrence_id`, title, notes, `starts_at`/`ends_at` (UTC), `all_day`, raw `rrule`, `exdates`, `source_tz`, `import_batch_id`. See [google-calendar-import](../10-calendar/google-calendar-import.md) |
 | `hope_calls` (fixed-cadence queue, not scheduler output) | id, senior_id, scheduled_for, status (scheduled/dialed/answered/missed), attempt, vapi_call_id |
 
 ## Conversation-driven visits
@@ -69,12 +70,13 @@ Long-lived Google refresh tokens are stored encrypted at rest. Never store or lo
 - Deleting a senior cascades to their family members and so to their tokens.
 
 ## v1 seed
-The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`.
+The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`, `calendar_events`.
 
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`
 - `alerts (senior_id, created_at DESC)`
+- `calendar_events (member_id, starts_at)`; unique `(member_id, uid, coalesce(recurrence_id, 'epoch'))`
 - `call_requests (status) WHERE status = 'pending'`
 
 ## Realtime
