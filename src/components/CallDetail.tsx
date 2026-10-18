@@ -54,12 +54,12 @@ function Transcript({ text, name }: { text: string; name: string }) {
   return (
     <div className="mt-4 space-y-3">
       {lines.map((line, i) => {
-        const m = line.match(/^(AI|Assistant|Hope|User|Customer|Caller)\s*:\s*(.*)$/i);
+        const m = line.match(/^(AI|Assistant|Sodalis|Hope|User|Customer|Caller)\s*:\s*(.*)$/i);
         if (!m) return <p key={i} className="text-ink">{line}</p>;
-        const hope = /^(ai|assistant|hope)$/i.test(m[1]);
+        const hope = /^(ai|assistant|sodalis|hope)$/i.test(m[1]);
         return (
           <div key={i} className={hope ? "" : "pl-6"}>
-            <p className={`text-xs font-semibold ${hope ? "text-primary" : "text-slate"}`}>{hope ? "Hope" : name}</p>
+            <p className={`text-xs font-semibold ${hope ? "text-primary" : "text-slate"}`}>{hope ? "Sodalis" : name}</p>
             <p className="leading-relaxed text-ink">{m[2]}</p>
           </div>
         );
@@ -128,7 +128,7 @@ export default function CallDetail({ id }: { id: string }) {
 
       {!answered && (
         <p className={subCls}>
-          Hope {call.status === "failed" ? "couldn't connect" : "got no answer"} this time. It will try again later.
+          Sodalis {call.status === "failed" ? "couldn't connect" : "got no answer"} this time. It will try again later.
         </p>
       )}
 
@@ -195,7 +195,7 @@ export default function CallDetail({ id }: { id: string }) {
 
           {followUps.length > 0 && (
             <section className="mt-6">
-              <h2 className="font-serif text-2xl font-semibold text-ink">Hope will follow up on</h2>
+              <h2 className="font-serif text-2xl font-semibold text-ink">Sodalis will follow up on</h2>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-lg text-ink">
                 {followUps.map((t) => (
                   <li key={t}>{t}</li>

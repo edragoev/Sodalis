@@ -28,7 +28,7 @@ const defaultLoad = (id: string) => loadOpportunity(supabaseBrowser(), id);
 const CLOSED_MESSAGES: Partial<Record<OpportunityView["state"], string>> = {
   declined: "This idea was declined.",
   expired: "This idea has expired.",
-  preparing: "Hope is still working on this idea. Check back soon.",
+  preparing: "Sodalis is still working on this idea. Check back soon.",
 };
 
 // The one line of status under the quote: what just happened, or how the idea stands.

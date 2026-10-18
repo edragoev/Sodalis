@@ -116,7 +116,7 @@ export default function Schedule() {
         ) : (
           <div className={`${card} text-center`}>
             <p className="font-semibold text-ink">Nothing scheduled yet</p>
-            <p className="mt-1 text-sm text-slate">When Hope hears about a good time to visit, it will show up here.</p>
+            <p className="mt-1 text-sm text-slate">When Sodalis hears about a good time to visit, it will show up here.</p>
           </div>
         )}
       </div>

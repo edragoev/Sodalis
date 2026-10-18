@@ -110,13 +110,13 @@ export default function LinkFlow() {
         }
       >
         <h1 className={headingCls}>What is {name.trim()} like?</h1>
-        <p className={`${subCls} text-xl`}>This helps Hope and your family find the right moments. Skip anything you&apos;re unsure about.</p>
+        <p className={`${subCls} text-xl`}>This helps Sodalis and your family find the right moments. Skip anything you&apos;re unsure about.</p>
         <div className="mt-8 space-y-7">
           <TagInput id="elder-interests" label="Interests" hint="Things they love" values={interests} onChange={setInterests} suggestions={INTEREST_IDEAS} />
           <TagInput id="elder-skills" label="Skills" hint="Things they're good at" values={skills} onChange={setSkills} suggestions={SKILL_IDEAS} />
           <div>
             <label className={largeLabelCls} htmlFor="elder-notes">Good to know</label>
-            <p className="-mt-1 mb-2 text-lg text-slate">Routines, health, favourite things, names Hope should know.</p>
+            <p className="-mt-1 mb-2 text-lg text-slate">Routines, health, favourite things, names Sodalis should know.</p>
             <textarea
               id="elder-notes"
               className={`${textareaCls} min-h-32 text-xl`}
@@ -178,7 +178,7 @@ export default function LinkFlow() {
         <Logo align="left" />
       </div>
       <h1 className={`${headingCls} mt-12`}>What&apos;s your loved one&apos;s phone number?</h1>
-      <p className={subCls}>We&apos;ll find the person Hope already calls each day, so you can stay close to how they&apos;re doing.</p>
+      <p className={subCls}>We&apos;ll find the person Sodalis already calls each day, so you can stay close to how they&apos;re doing.</p>
       <form
         className="mt-8"
         onSubmit={(e) => {

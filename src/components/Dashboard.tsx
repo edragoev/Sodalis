@@ -216,7 +216,7 @@ export default function Dashboard() {
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-primary">Call request · {when(r.created_at)}</p>
-                  <p className="mt-1 text-lg font-semibold leading-snug text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
+                  <p className="mt-1 text-lg font-semibold leading-snug text-ink">{r.reason ?? `${sName} asked Sodalis to reach out to family`}</p>
                 </div>
               </div>
             ))}
@@ -240,7 +240,7 @@ export default function Dashboard() {
               <p className="mt-2 border-t border-sand pt-3 text-sm text-slate">From the call · {when(latest.started_at)}</p>
             </>
           ) : (
-            <p className="mt-2 text-slate">No calls yet. Hope&apos;s first summary will show up here.</p>
+            <p className="mt-2 text-slate">No calls yet. Sodalis&apos;s first summary will show up here.</p>
           )}
         </section>
 
@@ -267,7 +267,7 @@ export default function Dashboard() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-serif text-2xl font-semibold text-ink">Last call with Hope</h2>
+          <h2 className="font-serif text-2xl font-semibold text-ink">Last call with Sodalis</h2>
           {checkIns[0] ? (
             <>
               <Link href={`/calls/${checkIns[0].id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
@@ -322,7 +322,7 @@ export default function Dashboard() {
 
         {ideas.length > 0 && (
           <section className="space-y-3">
-            <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Hope&apos;s calls</h2>
+            <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Sodalis&apos;s calls</h2>
             {ideas.map((i) => (
               <Link key={i.id} href={`/opportunities/${i.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
                 {i.quote && <p className="font-serif text-lg leading-snug text-ink">&ldquo;{i.quote}&rdquo;</p>}

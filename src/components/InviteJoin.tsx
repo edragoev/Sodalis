@@ -117,7 +117,7 @@ export default function InviteJoin({ token }: { token: string }) {
         <Avatar name={seniorName} size={88} />
         <p className="mt-5 text-lg text-slate">You&apos;re invited to join</p>
         <h1 className={headingCls}>{seniorName}&apos;s circle</h1>
-        <p className={`${subCls} max-w-xs`}>Hope calls {seniorName} to check in, and you&apos;ll see how it&apos;s going.</p>
+        <p className={`${subCls} max-w-xs`}>Sodalis calls {seniorName} to check in, and you&apos;ll see how it&apos;s going.</p>
       </div>
       <form
         className="mt-8 space-y-5"
