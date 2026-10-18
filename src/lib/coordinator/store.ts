@@ -88,6 +88,7 @@ export function createCoordinatorStore(db: SupabaseClient) {
         ...(run.output && { output: run.output }),
         ...(run.fallback_reason && { fallback_reason: run.fallback_reason }),
         ...(run.reason && { reason: run.reason }),
+        ...(run.push && { push: run.push }),
       },
       used_fallback: run.used_fallback ?? false,
     })

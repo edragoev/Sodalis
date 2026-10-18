@@ -62,6 +62,8 @@ export interface RunRecord {
   used_fallback?: boolean
   fallback_reason?: string
   reason?: string
+  /** What Firebase said about the push: devices reached, devices that failed, or why it could not be sent. */
+  push?: { sent: number; failed: number; error?: string }
 }
 
 export interface CoordinatorDeps {
@@ -172,6 +174,9 @@ export function createCoordinator(deps: CoordinatorDeps) {
     await deps.saveProposal(opportunity.id, { notified_member_ids: [final.member_id], proposed_slots: slots })
 
     let pushed = false
+    // Kept with the run, so "did the push go out?" can be answered afterwards. 0 sent and 0 failed means the
+    // member has no device registered.
+    let delivery: NonNullable<RunRecord['push']>
     try {
       const result = await deps.push([final.member_id], {
         opportunity_id: opportunity.id,
@@ -182,8 +187,10 @@ export function createCoordinator(deps: CoordinatorDeps) {
         timezone: senior.timezone,
       })
       pushed = result.successCount > 0
+      delivery = { sent: result.successCount, failed: result.failureCount }
     } catch (err) {
       console.error('coordinator: the push failed', errorMessage(err))
+      delivery = { sent: 0, failed: 0, error: errorMessage(err).slice(0, 200) }
     }
 
     await record({
@@ -192,6 +199,7 @@ export function createCoordinator(deps: CoordinatorDeps) {
       output: final,
       used_fallback: usedFallback,
       ...(fallbackReason && { fallback_reason: fallbackReason }),
+      push: delivery,
     })
     return { status: 'proposed', usedFallback, pushed }
   }

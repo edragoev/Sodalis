@@ -112,8 +112,9 @@ export default function Dashboard() {
       db.from("opportunities").select("id, summary, created_at")
         .eq("senior_id", id).eq("type", "wants_contact").in("status", ["detected", "proposed"]).contains("notified_member_ids", [member])
         .order("created_at", { ascending: false }),
+      // "Next up" is this member's own visits only, like the calendar.
       db.from("visits").select("id, kind, starts_at, status")
-        .eq("senior_id", id).in("status", ["proposed", "confirmed"]).gte("starts_at", new Date().toISOString())
+        .eq("senior_id", id).eq("member_id", member).in("status", ["proposed", "confirmed"]).gte("starts_at", new Date().toISOString())
         .order("starts_at").limit(10),
       db.from("opportunities").select("id, type, summary, quote, status, accepted_by, created_at")
         .eq("senior_id", id).neq("type", "wants_contact").in("status", ["proposed", "confirmed"]).contains("notified_member_ids", [member]).order("created_at", { ascending: false }).limit(5),

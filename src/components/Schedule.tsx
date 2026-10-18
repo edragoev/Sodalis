@@ -42,8 +42,9 @@ export default function Schedule() {
     }
     Promise.all([
       db.from("seniors").select("name").eq("id", s.senior_id).maybeSingle(),
+      // Only this person's own visits: someone else's booking is theirs to see.
       db.from("visits").select("id, kind, starts_at, ends_at, status, member_id")
-        .eq("senior_id", s.senior_id).in("status", ["proposed", "confirmed"]).gte("starts_at", today.toISOString())
+        .eq("senior_id", s.senior_id).eq("member_id", s.member_id).in("status", ["proposed", "confirmed"]).gte("starts_at", today.toISOString())
         .order("starts_at").limit(60),
       db.from("family_members").select("id, name").eq("senior_id", s.senior_id),
     ]).then(([sen, v, m]) => {
