@@ -37,8 +37,7 @@ export default function Availability() {
     >
       <h1 className={headingCls}>When you&apos;re free</h1>
       <p className={subCls}>
-        Upload your calendar and we&apos;ll suggest times between 9am and 8pm when you&apos;re not busy. Without one, any time in
-        those hours can be suggested, and you always pick the one that works.
+        Upload your Google Calendar and we&apos;ll suggest times between 9am and 8pm when you&apos;re not busy.
       </p>
 
       <ImportedCalendar memberId={memberId} />

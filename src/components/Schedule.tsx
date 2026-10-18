@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
+import { timeRange } from "@/lib/time-range";
 import { Screen, TabBar, headingCls, subCls } from "./ui";
 
-type Visit = { id: string; kind: "visit" | "call"; starts_at: string; status: string; member_id: string };
+type Visit = { id: string; kind: "visit" | "call"; starts_at: string; ends_at: string | null; status: string; member_id: string };
 
 const dayHeading = (d: Date, today: Date) => {
   const tomorrow = new Date(today.getTime() + 864e5);
@@ -41,7 +42,7 @@ export default function Schedule() {
     }
     Promise.all([
       db.from("seniors").select("name").eq("id", s.senior_id).maybeSingle(),
-      db.from("visits").select("id, kind, starts_at, status, member_id")
+      db.from("visits").select("id, kind, starts_at, ends_at, status, member_id")
         .eq("senior_id", s.senior_id).in("status", ["proposed", "confirmed"]).gte("starts_at", today.toISOString())
         .order("starts_at").limit(60),
       db.from("family_members").select("id, name").eq("senior_id", s.senior_id),
@@ -86,7 +87,7 @@ export default function Schedule() {
                       <span className="capitalize">{v.kind}</span> with {names[v.member_id] ?? "family"}
                     </p>
                     <p className="text-sm text-slate">
-                      {new Date(v.starts_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                      {timeRange(v.starts_at, v.ends_at)}
                     </p>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${v.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-warn-bg text-warn"}`}>
