@@ -10,6 +10,7 @@ const MAX_SUMMARY = 300
 const MAX_QUOTE = 200
 const MAX_TAGS = 8
 const MAX_TAG = 40
+const MAX_ACTIVITY = 40
 
 export type DropReason =
   | 'not_an_object'
@@ -70,12 +71,20 @@ function validateIdea(raw: unknown, ctx: { transcript: string; today: string }):
   // Health and safety are alerts, not visit ideas, and the summary is what a push falls back to.
   if (mentionsHealth(summary)) return 'health_in_summary'
 
+  // Only the push title uses it, so a bad one is dropped (the title falls back to "Visit") rather than the idea.
+  const rawActivity = typeof raw.activity === 'string' ? raw.activity.trim().replace(/\s+/g, ' ').replace(/[.?!]+$/, '') : ''
+  const activity =
+    rawActivity && rawActivity.length <= MAX_ACTIVITY && !mentionsHealth(rawActivity)
+      ? rawActivity[0].toUpperCase() + rawActivity.slice(1)
+      : null
+
   return {
     type: raw.type,
     summary,
     quote,
     mentioned_member: member,
     mentioned_item: item,
+    activity,
     interest_tags: [...new Set(tags)],
     target_date: normalizeTargetDate(raw.target_date, ctx.today),
     urgency: raw.urgency,

@@ -41,7 +41,12 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
       await coordinateOpportunity(opportunityId)
     },
     async summarize(checkInId) {
-      return summarizeCheckIn(checkInId)
+      const result = await summarizeCheckIn(checkInId)
+      // The summary keeps no status column, so a failure must reach the logs to be seen at all.
+      if (result.status === 'failed') {
+        console.error('call summary failed:', result.reason, result.quota ? '(Gemini quota)' : '')
+      }
+      return result
     },
     pendingSummary,
     async extract(checkInId) {

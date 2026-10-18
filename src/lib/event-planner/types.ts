@@ -14,6 +14,8 @@ export interface ExtractedIdea {
   quote: string
   mentioned_member: string | null
   mentioned_item: string | null
+  /** A short verb phrase for the push title ("Bake apple pie"), or null when Gemini gave none usable. */
+  activity: string | null
   interest_tags: string[]
   /** 'YYYY-MM-DD' in the elder's timezone, or null when no usable date was given. */
   target_date: string | null

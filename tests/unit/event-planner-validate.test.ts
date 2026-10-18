@@ -128,3 +128,23 @@ describe('matchMentionedMember', () => {
     expect(matchMentionedMember('  ', members)).toEqual({ kind: 'none' })
   })
 })
+
+describe('activity (the push title phrase)', () => {
+  const activityOf = (activity: unknown) => {
+    const r = parse(idea({ activity }))
+    return r.ok ? r.ideas[0]?.activity : 'refused'
+  }
+
+  it('keeps a short verb phrase, capitalised and without end punctuation', () => {
+    expect(activityOf('bake apple pie.')).toBe('Bake apple pie')
+    expect(activityOf('  Bring   extra tomatoes ')).toBe('Bring extra tomatoes')
+  })
+
+  it.each([undefined, null, '', 42, 'x'.repeat(41)])('drops an unusable activity (%j) but keeps the idea', (activity) => {
+    expect(activityOf(activity)).toBeNull()
+  })
+
+  it('never lets a health word into the push title', () => {
+    expect(activityOf('Check on the sore knee')).toBeNull()
+  })
+})
