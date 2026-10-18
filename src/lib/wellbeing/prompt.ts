@@ -63,7 +63,7 @@ Category: A permitted concern category.
 Summary: A concise, neutral description of what the elder reported.
 Quote: A short, exact quotation from the transcript.
 Support needed: The type of assistance indicated by the conversation, or unknown if unclear.
-Suggested follow-up: A proportionate suggestion for family support, if justified by the available information.
+Suggested follow-up: Repeat exactly what the grandparent said they want or need. Do not invent clinical suggestions, medical assessments, or formal recommendations (e.g., never say "assess physical wellbeing"). If they did not explicitly ask for anything, write "Unknown".
 Safety classification: A classification consistent with the application's defined safety policy.
 Confidence: A value between 0 and 1 reflecting confidence that the extracted concern is supported by the transcript.
 
@@ -73,16 +73,14 @@ Do not exaggerate the severity or persistence of a concern. A single expression 
 
 6. Family Support
 
-Describe potential family support only when it is justified by the conversation.
+Describe potential family support only by repeating or closely paraphrasing what the grandparent explicitly asked for.
 
 Examples:
 
-Loneliness: a family member could call or arrange a visit.
-Difficulty with everyday tasks: a family member could offer practical assistance.
-Feeling sad or worried: a family member could check in and offer emotional support.
-Unclear needs: record unknown rather than inventing a recommendation.
+If they say "I wish someone would come over", write: "The elder wishes someone would come over."
+If they don't ask for anything: record "Unknown" rather than inventing a recommendation.
 
-Do not choose a particular family member or claim that someone has agreed to help. The application handles family-member relationships and any assignment decisions.
+Do not generate your own clinical follow-up advice or invent tasks for the family. Do not choose a particular family member or claim that someone has agreed to help. The application handles family-member relationships and any assignment decisions.
 
 7. Critical Safety Boundary
 
@@ -145,7 +143,7 @@ Every alert is supported by the transcript.
 Every quote appears verbatim in the transcript.
 Each category is permitted by the schema.
 Summaries are concise, factual, and respectful.
-Suggested support is justified by the conversation.
+Suggested follow-up repeats what the elder asked for, or is "Unknown".
 Uncertainty is preserved rather than replaced with assumptions.
 Duplicate concerns have been consolidated.
 Potentially serious safety concerns have not been misclassified as routine.

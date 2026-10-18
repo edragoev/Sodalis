@@ -9,6 +9,8 @@ const MAX_SUMMARY = 300
 const MAX_QUOTE = 200
 const MAX_SUPPORT = 200
 const MAX_FOLLOWUP = 300
+/** Written when the elder asked for nothing; we never invent a follow-up. */
+const UNKNOWN = 'Unknown'
 
 export type DropReason =
   | 'not_an_object'
@@ -53,8 +55,9 @@ function validateAlert(raw: unknown, ctx: { transcript: string }): WellbeingAler
 
   const support = raw.support_needed === '' || raw.support_needed === null || raw.support_needed === undefined ? 'unknown' : text(raw.support_needed, MAX_SUPPORT)
   if (support === null) return fail('bad_support')
-  const followup = raw.suggested_followup === null || raw.suggested_followup === undefined || raw.suggested_followup === '' ? null : text(raw.suggested_followup, MAX_FOLLOWUP)
-  if (followup === null && raw.suggested_followup !== null && raw.suggested_followup !== undefined && raw.suggested_followup !== '') return fail('bad_followup')
+  const noFollowup = raw.suggested_followup === null || raw.suggested_followup === undefined || (typeof raw.suggested_followup === 'string' && raw.suggested_followup.trim() === '')
+  const followup = noFollowup ? UNKNOWN : text(raw.suggested_followup, MAX_FOLLOWUP)
+  if (followup === null) return fail('bad_followup')
   if (!oneOf(SAFETY_LEVELS, raw.safety)) return fail('bad_safety')
   const confidence = raw.confidence
   if (typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) return fail('bad_confidence')
@@ -81,7 +84,7 @@ function salvage(raw: unknown, ctx: { transcript: string }): WellbeingAlert | nu
     summary: clip(raw.summary, MAX_SUMMARY) ?? 'The elder said something that may need a closer look.',
     quote,
     support_needed: 'unknown',
-    suggested_followup: null,
+    suggested_followup: UNKNOWN,
     safety: floor(level, true),
     confidence: typeof raw.confidence === 'number' && raw.confidence >= 0 && raw.confidence <= 1 ? raw.confidence : 0.5,
   }

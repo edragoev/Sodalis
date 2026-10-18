@@ -14,7 +14,7 @@ const row = (over: Partial<NewAlert> = {}): NewAlert => ({
   category: 'loneliness',
   quote: 'I feel so lonely.',
   support_needed: 'companionship',
-  suggested_followup: null,
+  suggested_followup: 'Unknown',
   safety: 'routine',
   confidence: 0.9,
   ...over,

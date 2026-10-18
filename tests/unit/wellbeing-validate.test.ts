@@ -12,7 +12,7 @@ const alert = (over: Record<string, unknown> = {}) => ({
   summary: 'The elder says she feels lonely and that nobody calls.',
   quote: 'I feel so lonely these days.',
   support_needed: 'companionship',
-  suggested_followup: 'A family member could call or arrange a visit.',
+  suggested_followup: 'The elder wishes someone would call.',
   safety: 'routine',
   confidence: 0.9,
   ...over,
@@ -51,9 +51,10 @@ describe('parseWellbeing', () => {
     expect(parse(alert(over))).toEqual({ ok: true, alerts: [], dropped: [{ index: 0, reason }] })
   })
 
-  it('treats a missing follow-up as null and blank support as unknown', () => {
-    const r = parse(alert({ suggested_followup: null, support_needed: '' }))
-    if (r.ok) expect(r.alerts[0]).toMatchObject({ suggested_followup: null, support_needed: 'unknown' })
+  it.each([null, undefined, '', '   '])('records a missing follow-up (%j) as Unknown and blank support as unknown', (followup) => {
+    const r = parse(alert({ suggested_followup: followup, support_needed: '' }))
+    expect(r.ok).toBe(true)
+    if (r.ok) expect(r.alerts[0]).toMatchObject({ suggested_followup: 'Unknown', support_needed: 'unknown' })
   })
 
   it('never stores a fall as routine', () => {

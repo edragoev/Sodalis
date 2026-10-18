@@ -40,9 +40,10 @@ A second Gemini call per phone call (`src/lib/wellbeing/`, `GEMINI_MODEL`, 20 s,
 { "alerts": [{
   "category": "loneliness|emotional_wellbeing|physical_incident|daily_living|family_support|other",
   "summary": "string", "quote": "string (verbatim)", "support_needed": "string|unknown",
-  "suggested_followup": "string|null", "safety": "routine|needs_review|urgent", "confidence": "number 0..1"
+  "suggested_followup": "string (elder's own ask, or Unknown)", "safety": "routine|needs_review|urgent", "confidence": "number 0..1"
 }] }
 ```
+- `suggested_followup` repeats or closely paraphrases what the elder explicitly asked for ("I wish someone would come over" → "The elder wishes someone would come over."), else `Unknown` (a missing or blank value is normalised to `Unknown`). No clinical advice or assessments, no invented family tasks, no chosen family member.
 - The quote must appear in the transcript, else the alert is dropped. Duplicate quotes merge, keeping the higher safety level; at most 5 alerts, most serious first.
 - **Safety floor:** an alert whose quote or summary matches a serious-risk word list (a fall, chest pain, self-harm, abuse...) is never `routine`; it becomes `needs_review`. A malformed alert with a verified serious quote is kept, not dropped.
 - `safety` is a routing signal, not a diagnosis: routine→`info`, needs_review→`warn`, urgent→`urgent`. `needs_review` and `urgent` send one push to the family (no health or feeling detail in it; it opens `/calls/[id]`).

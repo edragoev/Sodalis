@@ -20,7 +20,7 @@ export const responseSchema = {
           summary: { type: Type.STRING },
           quote: { type: Type.STRING },
           support_needed: { type: Type.STRING },
-          suggested_followup: { type: Type.STRING, nullable: true },
+          suggested_followup: { type: Type.STRING, description: "What the elder said they want or need, in their words, or 'Unknown'" },
           safety: { type: Type.STRING, enum: [...SAFETY_LEVELS] },
           confidence: { type: Type.NUMBER },
         },

@@ -32,7 +32,7 @@ export interface NewAlert {
   category: Category
   quote: string
   support_needed: string
-  suggested_followup: string | null
+  suggested_followup: string
   safety: Safety
   confidence: number
 }
@@ -68,7 +68,7 @@ const SEVERITY_FOR: Record<Safety, AlertSeverity> = { routine: 'info', needs_rev
 export const toRow = (a: WellbeingAlert): NewAlert => ({
   type: TYPE_FOR[a.category],
   severity: SEVERITY_FOR[a.safety],
-  message: a.suggested_followup ? `${a.summary} ${a.suggested_followup}` : a.summary,
+  message: a.suggested_followup !== 'Unknown' ? `${a.summary} ${a.suggested_followup}` : a.summary,
   category: a.category,
   quote: a.quote,
   support_needed: a.support_needed,

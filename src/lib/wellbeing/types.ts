@@ -15,7 +15,8 @@ export interface WellbeingAlert {
   quote: string
   /** What help the conversation points to, or 'unknown'. */
   support_needed: string
-  suggested_followup: string | null
+  /** What the elder asked for, in their words, or 'Unknown'. Never our own advice. */
+  suggested_followup: string
   safety: Safety
   confidence: number
 }

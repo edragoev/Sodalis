@@ -7,7 +7,7 @@ const alert = (over: Record<string, unknown> = {}) => ({
   summary: 'The elder feels lonely.',
   quote: 'I feel so lonely these days.',
   support_needed: 'companionship',
-  suggested_followup: 'A family member could call.',
+  suggested_followup: 'The elder wishes someone would call.',
   safety: 'routine',
   confidence: 0.9,
   ...over,
@@ -107,7 +107,7 @@ describe('wellbeing planner', () => {
   })
 
   it('maps categories and safety to the legacy columns', () => {
-    const base = { summary: 's', quote: 'q', support_needed: 'unknown', suggested_followup: null, confidence: 1 } as const
+    const base = { summary: 's', quote: 'q', support_needed: 'unknown', suggested_followup: 'Unknown', confidence: 1 } as const
     expect(toRow({ ...base, category: 'daily_living', safety: 'urgent' })).toMatchObject({ type: 'wellbeing', severity: 'urgent', message: 's' })
     expect(toRow({ ...base, category: 'family_support', safety: 'routine' })).toMatchObject({ type: 'wants_contact', severity: 'info' })
   })
