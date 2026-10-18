@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { QUESTIONS } from "@/lib/profile-questions";
 import { clearSession, getSession } from "@/lib/session";
 import LogisticsQuestion from "./LogisticsQuestion";
+import SignOutButton from "./SignOutButton";
 import { Avatar, Button, Screen, TabBar, inputCls, textareaCls } from "./ui";
 
 type TagField = "activities_with_elder" | "interests" | "skills" | "conversation_topics";
@@ -213,6 +214,7 @@ export default function ProfileScreen() {
         >
           Switch profile
         </Button>
+        <SignOutButton />
       </section>
     </Screen>
   );

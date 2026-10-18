@@ -68,6 +68,16 @@ describe('number not found', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
+  it('an invalid-number message goes away when the number is edited or cleared', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: "That doesn't look like a valid mobile number." }), { status: 400 })))
+    render(createElement(LinkFlow))
+    await enterNumber('1234567890')
+    expect(await screen.findByText(/doesn.t look like a valid mobile number/i)).toBeTruthy()
+
+    fireEvent.change(screen.getByLabelText(/their phone number/i), { target: { value: '' } })
+    expect(screen.queryByText(/doesn.t look like a valid mobile number/i)).toBeNull()
+  })
+
   it('a known number skips the tray and goes to the profile picker', async () => {
     vi.stubGlobal('fetch', lookup({ found: true, senior_id: 'abc', senior_first_name: 'Margaret' }))
     render(createElement(LinkFlow))

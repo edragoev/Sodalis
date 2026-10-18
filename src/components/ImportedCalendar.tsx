@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Occurrence } from "@/lib/calendar/expand";
 import { wallClock } from "@/lib/calendar/tz";
+import { timeRange } from "@/lib/time-range";
 import { Button } from "./ui";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -116,15 +117,11 @@ export default function ImportedCalendar({ memberId }: { memberId: string }) {
     setMonth({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 });
   };
   const todayKey = dayKey(today.year, today.month, today.day);
-  const time = (ev: Occurrence) =>
-    ev.all_day ? "All day" : new Date(ev.starts_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const time = (ev: Occurrence) => (ev.all_day ? "All day" : timeRange(ev.starts_at, ev.ends_at));
 
   return (
-    <section id="your-calendar" className="mt-8 scroll-mt-6" aria-label="Your calendar">
-      <h2 className="font-serif text-2xl font-semibold text-ink">Your calendar</h2>
-      <p className="mt-1 text-slate">
-        Upload your exported Google Calendar (.ics or .zip) and we&apos;ll show what you already have on.
-      </p>
+    // The page above explains what the upload is for, so this section is just the button and the month.
+    <section id="your-calendar" className="mt-6 scroll-mt-6" aria-label="Your calendar">
 
       <input
         ref={fileRef}
@@ -138,7 +135,7 @@ export default function ImportedCalendar({ memberId }: { memberId: string }) {
           if (f) void upload(f);
         }}
       />
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="secondary" disabled={busy} onClick={() => fileRef.current?.click()}>
           {busy ? "Working…" : "Upload calendar"}
         </Button>
