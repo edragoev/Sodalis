@@ -5,7 +5,7 @@ import type { ShortlistMember } from './shortlist'
 // The coordinator's reads and writes against Supabase (service-role client, server only).
 
 const OPPORTUNITY_COLUMNS =
-  'id, senior_id, type, summary, quote, mentioned_member_id, mentioned_item, interest_tags, target_date, suggested_kind, urgency, status'
+  'id, senior_id, type, summary, quote, mentioned_member_id, mentioned_item, activity, interest_tags, target_date, suggested_kind, urgency, status'
 
 // Never select fcm_token or google_refresh_token here: members' data is sent to Gemini.
 const MEMBER_COLUMNS =
@@ -42,6 +42,7 @@ export function createCoordinatorStore(db: SupabaseClient) {
         quote: opportunity.quote,
         mentioned_member_id: opportunity.mentioned_member_id,
         mentioned_item: opportunity.mentioned_item,
+        activity: opportunity.activity ?? null,
         interest_tags: opportunity.interest_tags ?? [],
         target_date: opportunity.target_date,
         suggested_kind: opportunity.suggested_kind ?? null,

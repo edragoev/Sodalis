@@ -42,6 +42,7 @@ export interface NewOpportunity {
   quote: string
   mentioned_member_id: string | null
   mentioned_item: string | null
+  activity: string | null
   interest_tags: string[]
   target_date: string | null
   urgency: ExtractedIdea['urgency']
@@ -83,7 +84,8 @@ export interface PlannedIdea {
   /** Who the elder meant: a family member id, or null when unnamed, unknown or ambiguous. */
   matched_member_id: string | null
   member_note: 'unknown_member' | 'ambiguous_member' | null
-  skipped: 'duplicate' | null
+  /** duplicate: the same idea already exists; covered: a specific plan in this call already answers this wish. */
+  skipped: 'duplicate' | 'covered' | null
 }
 
 export type PlannerResult =
@@ -106,6 +108,18 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
     timer = setTimeout(() => reject(new Error('timeout')), ms)
   })
   return Promise.race([work, timeout]).finally(() => clearTimeout(timer))
+}
+
+/**
+ * One push per wish: a general "wants contact" idea is dropped when the same call also has a specific plan
+ * (activity, event, gift or errand) for the same member, or for anyone when the wish names no one, because
+ * that plan already answers it ("I miss Sarah" + "we used to bake together" is one push: bake with Sarah).
+ */
+function coveredByPlan(row: NewOpportunity, rows: NewOpportunity[]): boolean {
+  if (row.type !== 'wants_contact') return false
+  return rows.some(
+    (other) => other.type !== 'wants_contact' && (row.mentioned_member_id === null || other.mentioned_member_id === row.mentioned_member_id),
+  )
 }
 
 /** Same type and item (or, with no item, the same member) is the same idea (section 8). */
@@ -160,6 +174,7 @@ export function createEventPlanner(deps: PlannerDeps) {
     const ideas: PlannedIdea[] = []
     const rows: NewOpportunity[] = []
     const seen: Parameters<typeof sameIdea>[0][] = [...context.recent]
+    const candidates: { planned: PlannedIdea; row: NewOpportunity }[] = []
 
     for (const idea of parsed.ideas) {
       const match = matchMentionedMember(idea.mentioned_member, members)
@@ -173,6 +188,7 @@ export function createEventPlanner(deps: PlannerDeps) {
         quote: idea.quote,
         mentioned_member_id: memberId,
         mentioned_item: idea.mentioned_item,
+        activity: idea.activity,
         interest_tags: idea.interest_tags,
         target_date: idea.target_date,
         urgency: idea.urgency,
@@ -180,7 +196,7 @@ export function createEventPlanner(deps: PlannerDeps) {
         suggested_kind: idea.suggested_kind,
       }
       const duplicate = seen.some((s) => sameIdea(s, row))
-      ideas.push({
+      const planned: PlannedIdea = {
         type: idea.type,
         summary: idea.summary,
         quote: idea.quote,
@@ -190,11 +206,19 @@ export function createEventPlanner(deps: PlannerDeps) {
         matched_member_id: memberId,
         member_note: memberNote,
         skipped: duplicate ? 'duplicate' : null,
-      })
+      }
+      ideas.push(planned)
       if (!duplicate) {
-        rows.push(row)
+        candidates.push({ planned, row })
         seen.push(row)
       }
+    }
+
+    // After the loop, so a specific plan later in the call still covers an earlier general wish.
+    const callRows = candidates.map((c) => c.row)
+    for (const { planned, row } of candidates) {
+      if (coveredByPlan(row, callRows)) planned.skipped = 'covered'
+      else rows.push(row)
     }
 
     try {

@@ -68,7 +68,9 @@ const SEVERITY_FOR: Record<Safety, AlertSeverity> = { routine: 'info', needs_rev
 export const toRow = (a: WellbeingAlert): NewAlert => ({
   type: TYPE_FOR[a.category],
   severity: SEVERITY_FOR[a.safety],
-  message: a.suggested_followup !== 'Unknown' ? `${a.summary} ${a.suggested_followup}` : a.summary,
+  // The card shows the third-person summary only. suggested_followup is in the elder's own words, so joining
+  // it on mixed voices ("...together. I wish we can do that again."); it keeps its own column.
+  message: a.summary,
   category: a.category,
   quote: a.quote,
   support_needed: a.support_needed,

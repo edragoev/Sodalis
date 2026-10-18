@@ -1,12 +1,13 @@
 import { GoogleGenAI, Type } from '@google/genai'
-import { backoffFor } from '@/lib/gemini-backoff'
+import { backoffFor, withOneRetry } from '@/lib/gemini-backoff'
 import { SYSTEM_PROMPT } from './prompt'
 import { CATEGORIES, SAFETY_LEVELS, type ExtractionInput } from './types'
 
 // The second Gemini call per phone call: wellbeing concerns, separate from the event planner's
 // opportunities. Model id from GEMINI_MODEL.
 
-export const GEMINI_TIMEOUT_MS = 20_000
+// Per attempt; a timeout or Google-side error is asked once more (withOneRetry), so allow two of these.
+export const GEMINI_TIMEOUT_MS = 30_000
 
 export const responseSchema = {
   type: Type.OBJECT,
@@ -56,11 +57,13 @@ export async function extractWellbeing(input: ExtractionInput): Promise<unknown>
 
   const ai = new GoogleGenAI({ apiKey, httpOptions: { timeout: GEMINI_TIMEOUT_MS, retryOptions: { attempts: 1 } } })
   try {
-    const res = await ai.models.generateContent({
-      model,
-      contents: buildContents(input),
-      config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: 'application/json', responseSchema, temperature: 0 },
-    })
+    const res = await withOneRetry(() =>
+      ai.models.generateContent({
+        model,
+        contents: buildContents(input),
+        config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: 'application/json', responseSchema, temperature: 0 },
+      }),
+    )
     return JSON.parse(res.text ?? '')
   } catch (err) {
     const { waitMs, quota } = backoffFor(err)

@@ -157,6 +157,56 @@ describe('POST /api/vapi/webhook', () => {
     })
   })
 
+  describe('the call summary (mood, topics, summary)', () => {
+    it('runs first after the response, then the planner, then wellbeing, one at a time', async () => {
+      const order: string[] = []
+      const step = (name: string) => vi.fn(async () => void order.push(name))
+      const { post, runAfter } = setup({ summarize: step('summary'), extract: step('planner'), wellbeing: step('wellbeing') })
+      expect((await post(report())).status).toBe(200)
+      expect(order).toEqual([])
+      await runAfter()
+      expect(order).toEqual(['summary', 'planner', 'wellbeing'])
+    })
+
+    it('a failed summary still lets the planner and wellbeing run', async () => {
+      const extract = vi.fn().mockResolvedValue(undefined)
+      const wellbeing = vi.fn().mockResolvedValue(undefined)
+      const { post, runAfter } = setup({ summarize: vi.fn().mockRejectedValue(new Error('boom')), extract, wellbeing })
+      await post(report())
+      await expect(runAfter()).resolves.toBeUndefined()
+      expect(extract).toHaveBeenCalledWith('ci-1')
+      expect(wellbeing).toHaveBeenCalledWith('ci-1')
+    })
+
+    it('is skipped for a call without a transcript', async () => {
+      const summarize = vi.fn()
+      const { post, runAfter } = setup({ summarize })
+      await post(report({ artifact: {} }))
+      await runAfter()
+      expect(summarize).not.toHaveBeenCalled()
+    })
+
+    it('is skipped for a call nobody answered', async () => {
+      const summarize = vi.fn()
+      const { post, runAfter } = setup({ summarize })
+      await post(report({ endedReason: 'customer-did-not-answer' }))
+      await runAfter()
+      expect(summarize).not.toHaveBeenCalled()
+    })
+
+    it('summarises a call that never was when Vapi redelivers it', async () => {
+      const summarize = vi.fn().mockResolvedValue(undefined)
+      const { post, runAfter } = setup({
+        summarize,
+        insertCheckIn: vi.fn().mockRejectedValue({ code: '23505' }),
+        pendingSummary: vi.fn().mockResolvedValue('ci-9'),
+      })
+      expect((await post(report())).json.duplicate).toBe(true)
+      await runAfter()
+      expect(summarize).toHaveBeenCalledWith('ci-9')
+    })
+  })
+
   describe('the shared secret (401 Unauthorized)', () => {
     it('accepts a request carrying the secret in x-vapi-secret', async () => {
       const { post } = setup()

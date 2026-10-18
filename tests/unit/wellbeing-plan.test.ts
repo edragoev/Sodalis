@@ -111,4 +111,18 @@ describe('wellbeing planner', () => {
     expect(toRow({ ...base, category: 'daily_living', safety: 'urgent' })).toMatchObject({ type: 'wellbeing', severity: 'urgent', message: 's' })
     expect(toRow({ ...base, category: 'family_support', safety: 'routine' })).toMatchObject({ type: 'wants_contact', severity: 'info' })
   })
+
+  it("shows only the third-person summary on the card, never the elder's own words joined on", () => {
+    const row = toRow({
+      summary: 'Jane misses baking apple pie with Sarah.',
+      quote: 'We used to bake apple pie together.',
+      support_needed: 'company',
+      suggested_followup: 'I wish we can do that again.',
+      category: 'family_support',
+      safety: 'routine',
+      confidence: 0.9,
+    })
+    expect(row.message).toBe('Jane misses baking apple pie with Sarah.')
+    expect(row.suggested_followup).toBe('I wish we can do that again.')
+  })
 })

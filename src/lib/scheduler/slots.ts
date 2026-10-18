@@ -1,12 +1,17 @@
 import type { Window } from '@/lib/availability'
 
 // The v1 scheduler (specs/04-scheduler/algorithm.md "v1 (demo)"): pure slot math, no database.
-// Windows are the elder's `preferred_windows` and a member's `manual_availability`: local 24 h times per
+// Free time is FREE_HOURS (9am-8pm every day, in the elder's timezone) minus the member's calendar busy times,
+// the elder's confirmed visits and Hope's calls. Neither the member's old availability grid nor the elder's
+// `preferred_windows` is used. Windows are local 24 h times per
 // weekday. Everything is computed in UTC and returned as ISO strings.
 
 export type Interval = { starts_at: string; ends_at: string }
 export type Slot = Interval & { id: string }
 export type Kind = 'visit' | 'call'
+
+/** When anyone might be free, before calendar events, visits and calls are taken out: 9am-8pm every day. */
+export const FREE_HOURS: Window[] = [0, 1, 2, 3, 4, 5, 6].map((dow) => ({ dow, start: '09:00', end: '20:00' }))
 
 export type OpportunityTweaks = {
   /** 'YYYY-MM-DD': slots on that day (in the elder's timezone) or earlier. */
@@ -21,8 +26,7 @@ export type SlotInput = {
   days: number
   timezone: string
   kind: Kind
-  seniorWindows: Window[]
-  memberWindows: Window[]
+  freeWindows: Window[]
   /** Google busy time blocks from the member's calendar. */
   busyWindows?: Interval[]
   /** Confirmed visits for the elder, with anyone: they block their time and the 24 h either side. */
@@ -83,22 +87,16 @@ const overlaps = (start: number, end: number, other: Interval) =>
   start < Date.parse(other.ends_at) && end > Date.parse(other.starts_at)
 
 /** Free windows in minutes of the day, where both the elder and the member are free on this weekday. */
-function sharedRanges(dow: number, a: Window[], b: Window[]): [number, number][] {
-  const ranges: [number, number][] = []
-  for (const x of a) {
-    if (x.dow !== dow) continue
-    for (const y of b) {
-      if (y.dow !== dow) continue
-      const start = Math.max(toMinutes(x.start), toMinutes(y.start))
-      const end = Math.min(toMinutes(x.end), toMinutes(y.end))
-      if (start < end) ranges.push([start, end])
-    }
-  }
-  return ranges
+/** The free ranges on that weekday, in minutes from local midnight. */
+function freeRanges(dow: number, windows: Window[]): [number, number][] {
+  return windows
+    .filter((w) => w.dow === dow)
+    .map((w): [number, number] => [toMinutes(w.start), toMinutes(w.end)])
+    .filter(([start, end]) => start < end)
 }
 
 export function computeSlots(input: SlotInput): Slot[] {
-  const { memberId, now, days, timezone, kind, seniorWindows, memberWindows, busyWindows = [], visits, hopeCalls, opportunity } = input
+  const { memberId, now, days, timezone, kind, freeWindows, busyWindows = [], visits, hopeCalls, opportunity } = input
   const length = LENGTH_MINUTES[kind]
   const nowMs = now.getTime()
   const horizon = nowMs + days * DAY
@@ -109,7 +107,7 @@ export function computeSlots(input: SlotInput): Slot[] {
   for (let offset = 0; offset <= days + 1; offset++) {
     const d = new Date(Date.UTC(today.year, today.month - 1, today.day + offset))
     const [year, month, day] = [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]
-    for (const [from, to] of sharedRanges(d.getUTCDay(), seniorWindows, memberWindows)) {
+    for (const [from, to] of freeRanges(d.getUTCDay(), freeWindows)) {
       const first = Math.ceil(from / GRID_MINUTES) * GRID_MINUTES
       for (let m = first; m + length <= to; m += GRID_MINUTES) {
         candidates.set(wallToUtc(year, month, day, m, timezone), dateKey(year, month, day))

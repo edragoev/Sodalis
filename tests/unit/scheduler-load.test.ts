@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSchedulerLoader } from '@/lib/scheduler/load'
+import { FREE_HOURS } from '@/lib/scheduler/slots'
 
 // Reads what getSlots needs from Supabase: the elder's and the member's free hours, and what is already booked.
 
@@ -40,13 +41,11 @@ const seed = () => ({
 })
 
 describe('createSchedulerLoader', () => {
-  it("returns the elder's timezone and both sets of free hours", async () => {
+  it("returns the elder's timezone and the fixed 9am-8pm free hours, whatever the old availability grid says", async () => {
     const data = await createSchedulerLoader(fakeDb(seed()))('danny')
-    expect(data).toMatchObject({
-      timezone: 'America/Toronto',
-      seniorWindows: [{ dow: 6, start: '08:00', end: '20:00' }],
-      memberWindows: windows,
-    })
+    expect(data).toMatchObject({ timezone: 'America/Toronto', freeWindows: FREE_HOURS })
+    expect(FREE_HOURS).toHaveLength(7)
+    expect(FREE_HOURS.every((w) => w.start === '09:00' && w.end === '20:00')).toBe(true)
   })
 
   it('returns null for a member who does not exist', async () => {
@@ -72,24 +71,6 @@ describe('createSchedulerLoader', () => {
       { starts_at: '2026-10-16T14:00:00.000Z', ends_at: '2026-10-16T16:00:00.000Z' },
       { starts_at: '2026-10-17T14:00:00.000Z', ends_at: '2026-10-17T14:30:00.000Z' },
     ])
-  })
-
-  it.each([{}, null, 'oops', 5])('treats %j availability as no free hours instead of failing', async (bad) => {
-    const data = seed()
-    data.family_members = [{ id: 'danny', senior_id: 'senior-1', manual_availability: bad }] as never
-    data.seniors[0].preferred_windows = bad as never
-    const loaded = await createSchedulerLoader(fakeDb(data))('danny')
-    expect(loaded!.memberWindows).toEqual([])
-    expect(loaded!.seniorWindows).toEqual([])
-  })
-
-  it('drops windows that are not well formed', async () => {
-    const data = seed()
-    data.family_members = [
-      { id: 'danny', senior_id: 'senior-1', manual_availability: [{ dow: 9, start: '09:00', end: '17:00' }, { dow: 1, start: 'noon', end: '17:00' }, { dow: 2, start: '09:00', end: '17:00' }] },
-    ] as never
-    const loaded = await createSchedulerLoader(fakeDb(data))('danny')
-    expect(loaded!.memberWindows).toEqual([{ dow: 2, start: '09:00', end: '17:00' }])
   })
 
   it('uses UTC when the elder has no timezone', async () => {

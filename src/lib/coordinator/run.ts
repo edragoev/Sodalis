@@ -15,6 +15,8 @@ export interface CoordinatorOpportunity extends ShortlistOpportunity {
   summary: string
   quote: string | null
   mentioned_item: string | null
+  /** Short verb phrase for the push title ("Bake apple pie"); null for ideas saved before it existed. */
+  activity?: string | null
   /** 'YYYY-MM-DD', or null when the opportunity has no deadline. */
   target_date: string | null
   suggested_kind?: 'visit' | 'call' | null
@@ -161,7 +163,7 @@ export function createCoordinator(deps: CoordinatorDeps) {
     const input = buildGeminiInput(context, entries)
     const { decision, fallbackReason } = await chooseDecision(deps, input, shortlist)
     const usedFallback = !decision
-    const final = decision ?? templateFallback(opportunity, shortlist)
+    const final = decision ?? templateFallback(opportunity, shortlist, senior)
 
     const chosen = entries.find((e) => e.member.id === final.member_id)!
     const slots = final.slot_ids.map((id) => chosen.slots.find((s) => s.id === id)!)

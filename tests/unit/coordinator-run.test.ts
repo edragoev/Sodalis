@@ -25,6 +25,7 @@ const opportunity = (over: Record<string, unknown> = {}) => ({
   summary: 'Has extra zucchini',
   quote: 'My zucchini are out of control.',
   mentioned_item: 'zucchini',
+  activity: 'Bring extra zucchini',
   interest_tags: ['gardening', 'cooking'],
   mentioned_member_id: null,
   target_date: null,
@@ -166,7 +167,7 @@ describe('coordinator run', () => {
         notified_member_ids: ['danny'],
         proposed_slots: slotsFor('danny'),
       })
-      expect(deps.push.mock.calls[0][1].title).toContain('zucchini')
+      expect(deps.push.mock.calls[0][1].title).toBe('Bring extra zucchini to Rose?')
       expect(deps.recordRun.mock.calls[0][0]).toMatchObject({ used_fallback: true })
       expect(deps.recordRun.mock.calls[0][0].fallback_reason).toEqual(expect.any(String))
     })
