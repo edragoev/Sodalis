@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
-import { BackButton, MoodFace, Screen, headingCls, subCls } from "./ui";
+import { MoodFace } from "./MoodFace";
+import { BackButton, Screen, headingCls, subCls } from "./ui";
 
 type Flag = { present?: boolean; detail?: string | null; severity?: string; who?: string | null; reason?: string | null };
 type Call = {
@@ -149,7 +150,7 @@ export default function CallDetail({ id }: { id: string }) {
               <MoodFace score={call.mood_score} />
               <div>
                 <p className="text-sm font-medium text-slate">Mood on this call</p>
-                <p className="font-serif text-3xl font-semibold capitalize text-ink">{call.mood_label ?? "Not recorded"}</p>
+                <p className="font-serif text-3xl font-semibold text-ink first-letter:uppercase">{call.mood_label ?? "Not recorded"}</p>
               </div>
             </div>
             {call.engagement_score != null && (

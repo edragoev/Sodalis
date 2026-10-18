@@ -9,7 +9,8 @@ import AlertCard, { type Alert } from "./AlertCard";
 import InviteCard from "./InviteCard";
 import { isPushConfigured } from "@/lib/firebase/config";
 import NotificationsButton from "./NotificationsButton";
-import { Avatar, MoodFace, Screen, TabBar } from "./ui";
+import { MOOD_COLORS, MoodFace, MoodGlyph, moodLevel } from "./MoodFace";
+import { Avatar, Screen, TabBar } from "./ui";
 
 type CheckIn = {
   id: string;
@@ -43,7 +44,8 @@ const greeting = () => {
 
 function Trend({ points }: { points: { score: number; date: Date }[] }) {
   if (points.length < 2) return null;
-  const W = 300, H = 84, pad = 20, top = 10, base = 56;
+  // Each day is its own small mood face on the line; today's is a little bigger.
+  const W = 300, H = 96, pad = 22, top = 14, base = 62;
   const x = (i: number) => pad + (i * (W - pad * 2)) / (points.length - 1);
   const y = (s: number) => top + ((1 - s) / 2) * (base - top);
   const path = points.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.score)}`).join(" ");
@@ -55,7 +57,7 @@ function Trend({ points }: { points: { score: number; date: Date }[] }) {
         const isToday = p.date.toDateString() === today;
         return (
           <g key={i}>
-            <circle cx={x(i)} cy={y(p.score)} r={isToday ? 5 : 3.5} fill={isToday ? "var(--color-primary)" : "#fff"} stroke="var(--color-primary)" strokeWidth="2" />
+            <MoodDot cx={x(i)} cy={y(p.score)} score={p.score} big={isToday} />
             <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="11" fontWeight={isToday ? 700 : 400} fill={isToday ? "var(--color-ink)" : "var(--color-slate)"}>
               {isToday ? "Today" : p.date.toLocaleDateString(undefined, { weekday: "short" })}
             </text>
@@ -63,6 +65,22 @@ function Trend({ points }: { points: { score: number; date: Date }[] }) {
         );
       })}
     </svg>
+  );
+}
+
+function MoodDot({ cx, cy, score, big }: { cx: number; cy: number; score: number; big: boolean }) {
+  const level = moodLevel(score);
+  const c = MOOD_COLORS[level];
+  const r = big ? 11 : 9;
+  const s = (r * 2) / 24; // the 24-unit face scaled to fill the circle
+  return (
+    <g>
+      <title>{c.label}</title>
+      <circle cx={cx} cy={cy} r={r} fill={c.bg} stroke={c.fg} strokeWidth={big ? 2 : 1.4} />
+      <g transform={`translate(${cx - r} ${cy - r}) scale(${s})`} color={c.fg} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <MoodGlyph level={level} />
+      </g>
+    </g>
   );
 }
 
@@ -207,7 +225,7 @@ export default function Dashboard() {
               <div className="mt-3 flex items-center gap-4">
                 <MoodFace score={latest.mood_score} />
                 <div>
-                  <p className="font-serif text-3xl font-semibold capitalize text-ink">{latest.mood_label ?? "Mood unknown"}</p>
+                  <p className="font-serif text-3xl font-semibold text-ink first-letter:uppercase">{latest.mood_label ?? "Mood unknown"}</p>
                   {latest.engagement_score != null && (
                     <p className="text-slate">Engaged {Math.round(latest.engagement_score * 100)}% on the last call</p>
                   )}
