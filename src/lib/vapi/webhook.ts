@@ -4,7 +4,8 @@ import { secretMatches } from '@/lib/shared-secret'
 
 // POST /api/vapi/webhook, `end-of-call-report` (specs/02-api/routes.md "Webhook flow").
 // The handler only orchestrates; every collaborator is injected so it can be tested without a database.
-// Not here yet: Gemini mood/topic/flag analysis and alerts. The event planner (opportunities from the
+// Not here yet: Gemini mood/topic/flag analysis. Alerts that flag_concern raised during the call
+// (src/lib/vapi/tools.ts) are linked to the new check-in. The event planner (opportunities from the
 // transcript) runs after the response, through `extract`.
 
 export interface VapiWebhookDeps {
@@ -20,6 +21,8 @@ export interface VapiWebhookDeps {
   /** Ties the opportunities Hope created during the call to the new check-in; returns their ids. */
   linkHopeOpportunities(vapiCallId: string, checkInId: string): Promise<string[]>
   propose(opportunityId: string): Promise<void>
+  /** Points the alerts flag_concern raised during the call (by Vapi call id) at the new check-in. */
+  linkAlerts?(vapiCallId: string, checkInId: string): Promise<void>
   /** The event planner for a saved check-in: finds opportunities in the transcript and proposes them. */
   extract?(checkInId: string): Promise<unknown>
   /** For a redelivered call: the check-in whose extraction never finished, or null. */
@@ -126,6 +129,15 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
       }
       console.error('vapi webhook: could not save the check-in', (err as Error).message)
       return Response.json({ error: 'Could not save the check-in' }, { status: 500 })
+    }
+
+    if (deps.linkAlerts) {
+      try {
+        await deps.linkAlerts(callId, saved.id)
+      } catch (err) {
+        // The alerts were already saved and pushed during the call; only the link to the call is missing.
+        console.error('vapi webhook: could not link the alerts', (err as Error).message)
+      }
     }
 
     if (status !== 'no_answer') {

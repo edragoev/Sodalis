@@ -27,6 +27,14 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
       if (error) throw new Error(error.message)
       return (data ?? []).map((row) => row.id as string)
     },
+    async linkAlerts(vapiCallId, checkInId) {
+      const { error } = await db
+        .from('alerts')
+        .update({ check_in_id: checkInId })
+        .eq('vapi_call_id', vapiCallId)
+        .is('check_in_id', null)
+      if (error) throw new Error(error.message)
+    },
     async propose(opportunityId) {
       await coordinateOpportunity(opportunityId)
     },
