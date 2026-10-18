@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DAY_NAMES, fromWindows } from "@/lib/availability";
+import { fromWindows } from "@/lib/availability";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
 import { Screen, TabBar, headingCls, subCls } from "./ui";
@@ -103,7 +103,6 @@ export default function Schedule() {
                       <span className="capitalize">{v.kind}</span> with {names[v.member_id] ?? "family"}
                     </p>
                     <p className="text-sm text-slate">
-                      {DAY_NAMES[new Date(v.starts_at).getDay()]},{" "}
                       {new Date(v.starts_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
                     </p>
                   </div>
