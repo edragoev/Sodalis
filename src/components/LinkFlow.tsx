@@ -181,9 +181,13 @@ export default function LinkFlow() {
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
           <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
-            value={phone} onChange={(e) => setPhone(e.target.value)} />
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              setError(""); // a message about the old number no longer applies
+            }} />
         </div>
-        {errorBox}
+        {phone.trim() && errorBox}
         {/* Right under the number, so it sits within reach and isn't pushed off screen by the keyboard. */}
         <Button type="submit" className="mt-4 w-full" disabled={busy || !phoneReady}>
           Continue
