@@ -9,6 +9,7 @@ export interface SchedulerData {
   timezone: string
   seniorWindows: Window[]
   memberWindows: Window[]
+  busyWindows?: Interval[]
   visits: Interval[]
   hopeCalls: Interval[]
 }

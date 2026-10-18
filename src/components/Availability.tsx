@@ -4,7 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DAY_LETTERS, DAY_NAMES, SLOTS, cellKey, dayKeys, fromWindows, slotKeys, toWindows } from "@/lib/availability";
 import { getSession } from "@/lib/session";
+import { PublicCalendarEmbed } from "./PublicCalendarEmbed";
 import { Button, Screen, TabBar, headingCls, subCls } from "./ui";
+
+const PUBLIC_CALENDAR_URL = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL || "";
 
 // "After work" on weekdays (4 to 8 pm), and the daytime on weekends (8 am to 8 pm).
 const PRESETS = [
@@ -158,6 +161,8 @@ export default function Availability() {
         ))}
       </div>
       <p className="mt-4 text-sm text-slate">Each row starts at the time on the left. Tap a day or a time to fill its whole row or column.</p>
+
+      {PUBLIC_CALENDAR_URL && <PublicCalendarEmbed url={PUBLIC_CALENDAR_URL} />}
     </Screen>
   );
 }
