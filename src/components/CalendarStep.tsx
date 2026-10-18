@@ -29,7 +29,9 @@ export default function CalendarStep() {
   const handlePreviewPublicCalendar = () => {
     const trimmed = publicCalendarUrl.trim();
     if (!trimmed) return;
-    setCalendarEmbedUrl(normalizeGoogleCalendarEmbedUrl(trimmed));
+    const normalized = normalizeGoogleCalendarEmbedUrl(trimmed);
+    setCalendarEmbedUrl(normalized);
+    window.open(normalized, "_blank", "noopener,noreferrer");
   };
 
   return (
