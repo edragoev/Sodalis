@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { decryptToken, encryptToken } from '@/lib/google/crypto'
+import { fetchBusyWindows, refreshGoogleAccessToken } from '@/lib/google/calendar'
 import { consentUrl, SCOPE } from '@/lib/google/oauth'
 import { createState, readNonce, verifyState } from '@/lib/google/state'
 
@@ -54,5 +55,56 @@ describe('consent url', () => {
     expect(url.searchParams.get('prompt')).toBe('consent')
     expect(url.searchParams.get('scope')).toBe(SCOPE)
     expect(url.searchParams.get('state')).toBe('s')
+  })
+})
+
+describe('calendar free/busy fetch', () => {
+  it('refreshes the token and parses busy windows', async () => {
+    const calls: { url: string; init?: RequestInit }[] = []
+    const fetchFn = async (input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      calls.push({ url, init })
+
+      if (url.includes('oauth2.googleapis.com/token')) {
+        return new Response(JSON.stringify({ access_token: 'token-123' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+
+      if (url.includes('www.googleapis.com/calendar/v3/freeBusy')) {
+        return new Response(
+          JSON.stringify({
+            calendars: {
+              primary: {
+                busy: [
+                  { start: '2026-10-18T09:00:00Z', end: '2026-10-18T10:00:00Z' },
+                  { start: '2026-10-18T14:00:00Z', end: '2026-10-18T15:30:00Z' },
+                ],
+              },
+            },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        )
+      }
+
+      throw new Error(`unexpected URL: ${url}`)
+    }
+
+    const token = await refreshGoogleAccessToken('refresh-token-1', fetchFn)
+    expect(token).toBe('token-123')
+
+    const windows = await fetchBusyWindows({
+      refreshToken: 'refresh-token-1',
+      timeMin: '2026-10-18T00:00:00Z',
+      timeMax: '2026-10-19T00:00:00Z',
+      fetchFn,
+    })
+
+    expect(windows).toEqual([
+      { start: '2026-10-18T09:00:00Z', end: '2026-10-18T10:00:00Z' },
+      { start: '2026-10-18T14:00:00Z', end: '2026-10-18T15:30:00Z' },
+    ])
+    expect(calls.length).toBeGreaterThanOrEqual(2)
   })
 })

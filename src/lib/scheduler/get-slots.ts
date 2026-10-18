@@ -9,6 +9,8 @@ export interface SchedulerData {
   timezone: string
   seniorWindows: Window[]
   memberWindows: Window[]
+  /** Busy timestamps from Google Calendar, when connected. They block candidate slots just like visits. */
+  busyWindows?: Interval[]
   visits: Interval[]
   hopeCalls: Interval[]
 }

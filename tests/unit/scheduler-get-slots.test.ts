@@ -12,6 +12,7 @@ const data = (over: Partial<SchedulerData> = {}): SchedulerData => ({
   timezone: 'America/Toronto',
   seniorWindows: everyDay('09:00', '17:00'),
   memberWindows: everyDay('09:00', '17:00'),
+  busyWindows: [],
   visits: [],
   hopeCalls: [],
   ...over,
@@ -62,6 +63,16 @@ describe('getSlots', () => {
     )
     const [first] = await getSlots('danny', 'visit', 7)
     expect(first.starts_at).toBe('2026-10-17T16:00:00.000Z')
+  })
+
+  it('avoids Google busy windows without treating them as a contact gap', async () => {
+    const { getSlots } = setup(async () =>
+      data({
+        busyWindows: [{ starts_at: '2026-10-15T15:00:00.000Z', ends_at: '2026-10-15T16:00:00.000Z' }],
+      }),
+    )
+    const [first] = await getSlots('danny', 'visit', 7)
+    expect(first.starts_at).toBe('2026-10-15T16:00:00.000Z')
   })
 
   it("passes the opportunity's target day through, and includes that day", async () => {

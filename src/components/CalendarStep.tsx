@@ -14,6 +14,12 @@ export default function CalendarStep() {
     if (!getSession()) router.replace("/");
   }, [router]);
 
+  const connectGoogleCalendar = () => {
+    const session = getSession();
+    if (!session?.member_id) return;
+    window.location.href = `/api/auth/google?member_id=${session.member_id}`;
+  };
+
   return (
     <Screen
       footer={
@@ -37,11 +43,10 @@ export default function CalendarStep() {
         Share your availability and we&apos;ll suggest visits and calls that fit your week. We only look at when you&apos;re busy, never what the events are.
       </p>
       <button
-        disabled
-        className="mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-sand bg-white text-lg font-semibold text-slate opacity-70"
+        onClick={connectGoogleCalendar}
+        className="mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-sand bg-white text-lg font-semibold text-slate"
       >
         Connect Google Calendar
-        <span className="rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-primary-dark">Coming soon</span>
       </button>
       <p className="mt-4 text-center text-sm text-slate">You can do this any time from the Availability tab.</p>
     </Screen>

@@ -54,6 +54,9 @@ export function createSchedulerLoader(db: SupabaseClient) {
       timezone: senior.data?.timezone ?? 'UTC',
       seniorWindows: cleanWindows(senior.data?.preferred_windows),
       memberWindows: cleanWindows(member.manual_availability),
+      // Google busy time is fetched live when the member connects Calendar; the scheduler accepts it
+      // here without changing the slot algorithm or the manual availability fallback.
+      busyWindows: [],
       visits: (visits.data ?? []).map(
         (v): Interval => ({
           starts_at: v.starts_at,

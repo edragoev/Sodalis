@@ -1,4 +1,5 @@
 import { encryptToken } from '@/lib/google/crypto'
+import { fetchBusyWindows } from '@/lib/google/calendar'
 import { exchangeCode, SCOPE } from '@/lib/google/oauth'
 import { clearNonceCookie, readNonce, verifyState } from '@/lib/google/state'
 import { supabaseAdmin } from '@/lib/supabase/server'
@@ -36,6 +37,17 @@ export async function GET(request: Request) {
   }
   // Without the free/busy scope or a refresh token there is nothing usable to keep.
   if (!tokens.refreshToken || !tokens.scope.split(' ').includes(SCOPE)) return back('error')
+
+  try {
+    const now = Date.now()
+    await fetchBusyWindows({
+      refreshToken: tokens.refreshToken,
+      timeMin: new Date(now).toISOString(),
+      timeMax: new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    })
+  } catch {
+    return back('error')
+  }
 
   const { data, error } = await supabaseAdmin()
     .from('family_members')
