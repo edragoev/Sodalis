@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { largeLabelCls } from "./ui";
+import { fieldLabelCls } from "./ui";
 
 // Chips you can add (Enter, comma or the Add button) and remove, with tap-to-add suggestions.
 export default function TagInput({
@@ -21,12 +21,12 @@ export default function TagInput({
 
   return (
     <div>
-      <label className={largeLabelCls} htmlFor={id}>{label}</label>
-      {hint && <p className="-mt-1 mb-2 text-lg text-slate">{hint}</p>}
+      <label className={fieldLabelCls} htmlFor={id}>{label}</label>
+      {hint && <p className="-mt-1 mb-2 text-sm text-slate">{hint}</p>}
       <div className="flex gap-2">
         <input
           id={id}
-          className="h-14 w-full rounded-2xl border border-sand bg-white px-4 text-xl text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-14 w-full rounded-2xl border border-sand bg-white px-4 text-lg text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
           placeholder={placeholder}
           value={draft}
           onChange={(e) => (e.target.value.includes(",") ? e.target.value.split(",").forEach(add) : setDraft(e.target.value))}
@@ -49,7 +49,7 @@ export default function TagInput({
       {values.length > 0 && (
         <div role="group" className="mt-3 flex flex-wrap gap-2" aria-label={`${label} added`}>
           {values.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-mist py-1.5 pl-4 pr-2 text-lg text-primary-dark">
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-mist py-1.5 pl-4 pr-2 text-base text-primary-dark">
               {t}
               <button
                 type="button"
@@ -66,7 +66,7 @@ export default function TagInput({
       {remaining.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {remaining.map((s) => (
-            <button key={s} type="button" onClick={() => add(s)} className="rounded-full border border-sand px-4 py-1.5 text-lg text-slate hover:bg-mist">
+            <button key={s} type="button" onClick={() => add(s)} className="rounded-full border border-sand px-4 py-1.5 text-base text-slate hover:bg-mist">
               + {s}
             </button>
           ))}

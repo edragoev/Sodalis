@@ -4,7 +4,6 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 const inputBaseCls =
   "w-full h-14 rounded-2xl border border-sand bg-white px-4 text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20";
 export const inputCls = `${inputBaseCls} text-lg`;
-export const largeInputCls = `${inputBaseCls} text-xl`;
 export const textareaCls =
   "w-full rounded-2xl border border-sand bg-white px-4 py-3 text-lg text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20";
 const labelBaseCls = "mb-2 block font-semibold text-ink";
@@ -12,7 +11,8 @@ const labelBaseCls = "mb-2 block font-semibold text-ink";
 export const primaryCls =
   "h-14 w-full rounded-2xl bg-btn px-6 text-lg font-semibold text-primary-dark transition-colors hover:bg-btn-hover disabled:opacity-50";
 export const labelCls = `${labelBaseCls} text-sm`;
-export const largeLabelCls = `${labelBaseCls} text-2xl`;
+// Every form label on the setup screens: the same size as the phone number label.
+export const fieldLabelCls = `${labelBaseCls} text-base`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";
 export const subCls = "mt-3 text-lg leading-relaxed text-slate";
 
@@ -141,13 +141,13 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
 }
 
 export function SelectField({
-  id, value, onChange, options, placeholder, large = false, blackText = false,
-}: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; large?: boolean; blackText?: boolean }) {
+  id, value, onChange, options, placeholder, blackText = false,
+}: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; blackText?: boolean }) {
   return (
     <div className="relative">
       <select
         id={id}
-        className={`${large ? largeInputCls : inputCls} appearance-none pr-12 ${!value && !blackText ? "text-slate/60" : ""}`}
+        className={`${inputCls} appearance-none pr-12 ${!value && !blackText ? "text-slate/60" : ""}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
