@@ -1,5 +1,5 @@
 -- Demo data for the Sodalis dashboard. Fake data only.
--- Creates one elder (Margaret, +14155550100) with check-ins, an alert and a call request.
+-- Creates one elder (Margaret, +14155550100) with check-ins, an alert and two opportunities.
 -- Family members are NOT seeded: join through the app using the number above.
 -- Safe to re-run.
 
@@ -26,12 +26,15 @@ select s.id, c.id, 'low_mood', 'warn', 'Margaret sounded lonely on Tuesday''s ca
 from s, c
 where not exists (select 1 from alerts a where a.senior_id = s.id and a.type = 'low_mood');
 
+-- "Wants contact" is an opportunity (it replaced the old call_requests table). The dashboard
+-- shows it as "Margaret would love to hear from you".
 with s as (select id from seniors where phone_e164 = '+14155550100'),
      c as (select id from check_ins where vapi_call_id = 'demo-call-4')
-insert into call_requests (senior_id, check_in_id, reason, urgency, status)
-select s.id, c.id, 'Would love a call from one of the grandchildren.', 'normal', 'pending'
+insert into opportunities (senior_id, check_in_id, type, summary, quote, interest_tags, urgency, confidence, suggested_kind, status)
+select s.id, c.id, 'wants_contact', 'Would love a call from one of the grandchildren.',
+  'I wish the grandchildren would call.', array['family'], 'high', 0.9, 'call', 'detected'
 from s, c
-where not exists (select 1 from call_requests r where r.senior_id = s.id and r.status = 'pending');
+where not exists (select 1 from opportunities o where o.check_in_id = c.id);
 
 -- Richer detail for the call screen (idempotent: plain UPDATEs keyed on vapi_call_id).
 update check_ins set

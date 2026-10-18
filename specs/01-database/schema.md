@@ -7,11 +7,11 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `seniors` | id, name, phone_e164, timezone, `preferred_windows jsonb` (weekly `[{dow, start, end}]`), `hope_call_windows jsonb`, notes (interests, health context fed to Hope) |
 | `family_members` | id, senior_id→seniors, name, `pronouns` (text, nullable, e.g. she/her, he/him, they/them), relationship, phone, `fcm_token`, `google_refresh_token`, `manual_availability jsonb`, `calendar_connected bool` |
 | `check_ins` | id, senior_id, `vapi_call_id` UNIQUE (idempotency), `started_at`, ended_at, duration_s, status (completed/no_answer/failed), transcript, summary, `mood_score` (-1..1), mood_label, `topics text[]`, `engagement_score` (0..1), `flags jsonb`, `raw_extraction jsonb` |
-| `call_requests` | id, senior_id, check_in_id, `target_member_id` (nullable = anyone), reason, urgency, status (pending/accepted/declined/done), accepted_by, created_at |
 | `alerts` | id, senior_id, check_in_id, type (low_mood/health/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
-| `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, call_request_id, `outcome_engagement` |
+| `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, `outcome_engagement` |
 | `calendar_events` | id, member_id→family_members, `uid`, `recurrence_id`, title, notes, `starts_at`/`ends_at` (UTC), `all_day`, raw `rrule`, `exdates`, `source_tz`, `import_batch_id`. See [google-calendar-import](../10-calendar/google-calendar-import.md) |
-| `hope_calls` (fixed-cadence queue, not scheduler output) | id, senior_id, scheduled_for, status (scheduled/dialed/answered/missed), attempt, vapi_call_id |
+
+"The elder wants contact with someone" is an `opportunities` row of type `wants_contact`; the old `call_requests` table was dropped. `hope_calls` (the v2 daily-call queue) was dropped until the cron is built.
 
 ## Conversation-driven visits
 | Table / column | Notes |
@@ -43,7 +43,6 @@ See [member-questionnaire](../07-onboarding/member-questionnaire.md).
 ## Agents
 | Table / column | Notes |
 |---|---|
-| `hope_calls.availability_cache` | `jsonb`, per-member free slots computed before dialing (v2) |
 | `agent_runs` | id, opportunity_id, step, tool, args `jsonb`, result `jsonb`, model_text, used_fallback bool, created_at (v1: one row per run with input/output; v2: one row per step) |
 
 Enable realtime on `agent_runs` for the dashboard trace. See [coordinator-agent](../08-agents/coordinator-agent.md).
@@ -70,17 +69,16 @@ Long-lived Google refresh tokens are stored encrypted at rest. Never store or lo
 - Deleting a senior cascades to their family members and so to their tokens.
 
 ## v1 seed
-The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`, `calendar_events`.
+The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `calendar_events`.
 
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`
 - `alerts (senior_id, created_at DESC)`
 - `calendar_events (member_id, starts_at)`; unique `(member_id, uid, recurrence_id)` `NULLS NOT DISTINCT`
-- `call_requests (status) WHERE status = 'pending'`
 
 ## Realtime
-Enable on `call_requests`, `check_ins`, `alerts`, `visits` (add to the `supabase_realtime` publication). The dashboard subscribes with the anon key.
+Enable on `check_ins`, `alerts`, `visits`, `opportunities` (add to the `supabase_realtime` publication). The dashboard subscribes with the anon key.
 
 ## Security (no auth)
 - All writes go through Next.js API routes using the service-role key (server only).
