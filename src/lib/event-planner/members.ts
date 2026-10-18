@@ -35,9 +35,11 @@ export function matchMentionedMember(mention: string | null, members: PlannerMem
   const said = norm(mention ?? '').replace(/^(?:my|our|the)\s+/, '')
   if (!said) return { kind: 'none' }
 
+  // "Sarah", "Sarah Lee", and also "daughter Sarah" or "my son Sam": a first name anywhere in what was said.
+  const words = said.split(' ')
   const byName = members.filter((m) => {
     const full = norm(m.name)
-    return full === said || full.split(' ')[0] === said
+    return full === said || words.includes(full.split(' ')[0])
   })
   const hits = byName.length > 0 ? byName : members.filter((m) => relationshipWords(m.relationship).includes(said))
 

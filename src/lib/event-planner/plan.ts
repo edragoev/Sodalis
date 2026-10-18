@@ -26,6 +26,7 @@ export interface RecentOpportunity {
   type: string
   mentioned_member_id: string | null
   mentioned_item: string | null
+  activity?: string | null
 }
 
 export interface PlannerContext {
@@ -122,11 +123,20 @@ function coveredByPlan(row: NewOpportunity, rows: NewOpportunity[]): boolean {
   )
 }
 
-/** Same type and item (or, with no item, the same member) is the same idea (section 8). */
-function sameIdea(a: { type: string; mentioned_item: string | null; mentioned_member_id: string | null }, b: typeof a) {
+/**
+ * Same type and item (or, with no item, the same activity and member) is the same idea (section 8), so
+ * "go fishing" is not a repeat of "bake cookies" just because neither names an item or a person.
+ */
+function sameIdea(
+  a: { type: string; mentioned_item: string | null; mentioned_member_id: string | null; activity?: string | null },
+  b: typeof a,
+) {
   if (a.type !== b.type) return false
   const [x, y] = [norm(a.mentioned_item), norm(b.mentioned_item)]
-  return x || y ? x === y : a.mentioned_member_id === b.mentioned_member_id
+  if (x || y) return x === y
+  const [p, q] = [norm(a.activity ?? null), norm(b.activity ?? null)]
+  if ((p || q) && p !== q) return false
+  return a.mentioned_member_id === b.mentioned_member_id
 }
 
 export function createEventPlanner(deps: PlannerDeps) {
@@ -176,12 +186,24 @@ export function createEventPlanner(deps: PlannerDeps) {
     const seen: Parameters<typeof sameIdea>[0][] = [...context.recent]
     const candidates: { planned: PlannedIdea; row: NewOpportunity }[] = []
 
+    // "I miss Sarah" and "we love baking" in one call is baking with Sarah: a plan that names no one goes to
+    // the one person the elder said she wants to see, so the push reaches her rather than the best match.
+    const wanted = new Set(
+      parsed.ideas.flatMap((idea) => {
+        if (idea.type !== 'wants_contact') return []
+        const match = matchMentionedMember(idea.mentioned_member, members)
+        return match.kind === 'one' ? [match.member.id] : []
+      }),
+    )
+    const wantedId = wanted.size === 1 ? [...wanted][0] : null
+
     for (const idea of parsed.ideas) {
       const match = matchMentionedMember(idea.mentioned_member, members)
       // Section 12: an unknown name is treated as unnamed and noted; so is an ambiguous one, because a single
       // opportunity can name only one member and two bookings for one idea would double-book the elder.
       const memberNote = idea.mentioned_member && match.kind === 'none' ? 'unknown_member' : match.kind === 'several' ? 'ambiguous_member' : null
-      const memberId = match.kind === 'one' ? match.member.id : null
+      const memberId =
+        match.kind === 'one' ? match.member.id : !idea.mentioned_member && idea.type !== 'wants_contact' ? wantedId : null
       const row: NewOpportunity = {
         type: idea.type,
         summary: memberNote ? `${idea.summary} (The elder mentioned "${idea.mentioned_member}".)` : idea.summary,
@@ -211,19 +233,6 @@ export function createEventPlanner(deps: PlannerDeps) {
       if (!duplicate) {
         candidates.push({ planned, row })
         seen.push(row)
-      }
-    }
-
-    // "I miss Sarah" and "we love baking" in one call is baking with Sarah: a plan that names no one goes to
-    // the one person the elder said she wants to see, so the push reaches her rather than the best match.
-    const wanted = new Set(candidates.flatMap((c) => (c.row.type === 'wants_contact' && c.row.mentioned_member_id ? [c.row.mentioned_member_id] : [])))
-    if (wanted.size === 1) {
-      const [memberId] = wanted
-      for (const c of candidates) {
-        if (c.row.type !== 'wants_contact' && c.row.mentioned_member_id === null) {
-          c.row.mentioned_member_id = memberId
-          c.planned.matched_member_id = memberId
-        }
       }
     }
 

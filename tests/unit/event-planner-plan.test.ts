@@ -233,6 +233,15 @@ describe('event planner', () => {
     expect(saved).toEqual([expect.objectContaining({ type: 'activity', mentioned_member_id: 'danny' })])
   })
 
+  it('does not treat a different activity as a repeat just because neither names an item or a person', async () => {
+    const { deps, plan } = setup(
+      { extract: vi.fn().mockResolvedValue({ opportunities: [idea({ type: 'activity', mentioned_member: null, mentioned_item: null, activity: 'Go fishing' })] }) },
+      { recent: [{ type: 'activity', mentioned_member_id: null, mentioned_item: null, activity: 'Bake cookies' }] },
+    )
+    await plan('ci-1')
+    expect(deps.saveIdeas.mock.calls[0][1]).toEqual([expect.objectContaining({ activity: 'Go fishing' })])
+  })
+
   it('matches "my kids" to every child, never silently to one of them', async () => {
     const { matchMentionedMember } = await import('@/lib/event-planner/members')
     const family = [
@@ -241,6 +250,9 @@ describe('event planner', () => {
     ]
     expect(matchMentionedMember('my kids', family)).toEqual({ kind: 'several', members: family })
     expect(matchMentionedMember('my daughter', family)).toEqual({ kind: 'one', member: family[0] })
+    // Gemini often returns the relationship and the name together.
+    expect(matchMentionedMember('daughter Sarah', family)).toEqual({ kind: 'one', member: family[0] })
+    expect(matchMentionedMember('my son Sam', family)).toEqual({ kind: 'one', member: family[1] })
   })
 
   it('pushes only the best idea: stops after the first one the coordinator proposes', async () => {

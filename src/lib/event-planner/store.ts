@@ -31,7 +31,7 @@ export function createPlannerStore(db: SupabaseClient): Pick<PlannerDeps, 'load'
       // block the same idea from a later call.
       db
         .from('opportunities')
-        .select('type, mentioned_member_id, mentioned_item')
+        .select('type, mentioned_member_id, mentioned_item, activity')
         .eq('senior_id', checkIn.senior_id)
         .in('status', ['proposed', 'confirmed'])
         .gte('created_at', since),
