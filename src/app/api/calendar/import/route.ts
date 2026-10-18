@@ -2,8 +2,6 @@ import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ImportError, MAX_UPLOAD_BYTES, parseUpload } from "@/lib/calendar/import";
 
-export const runtime = "nodejs";
-
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CHUNK = 500;
 const keyOf = (uid: string, recurrenceId: string | null) => `${uid}|${recurrenceId ? new Date(recurrenceId).toISOString() : ""}`;
