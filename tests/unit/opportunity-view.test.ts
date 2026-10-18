@@ -105,6 +105,12 @@ describe('buildOpportunityView', () => {
       expect(view.state).toBe('preparing')
       expect(view.canConfirm).toBe(false)
     })
+
+    it('does not crash on an idea with no times yet (proposed_slots is null in the database)', () => {
+      const view = buildOpportunityView(data({ status: 'detected', proposed_slots: null }), me)
+      expect(view.state).toBe('preparing')
+      expect(view.slots).toEqual([])
+    })
   })
 
   describe('who is looking', () => {
