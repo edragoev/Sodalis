@@ -85,5 +85,8 @@ export function buildOpportunityView({ opportunity, members, timezone }: Opportu
       return { ...base, state: 'declined' }
     case 'expired':
       return { ...base, state: 'expired' }
+    default:
+      // A status this screen doesn't know must not return undefined and crash the page.
+      return { ...base, state: 'preparing' }
   }
 }

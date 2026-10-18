@@ -23,7 +23,10 @@
     var d = data && typeof data === "object" ? data : {};
     if (d.type === "alert" && E164.test(text(d.elder_phone))) return "tel:" + d.elder_phone;
     var id = text(d.opportunity_id);
-    return id ? "/opportunities/" + encodeURIComponent(id) : "/";
+    if (id) return "/opportunities/" + encodeURIComponent(id);
+    // A wellbeing note opens the call it came from.
+    var checkInId = text(d.check_in_id);
+    return checkInId ? "/calls/" + encodeURIComponent(checkInId) : "/";
   }
 
   function buildNotification(payload) {
@@ -74,9 +77,14 @@
     var done = clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (open) {
       var existing = open[0];
       if (!existing) return clients.openWindow(url);
-      return Promise.resolve(existing.focus()).then(function () {
-        return existing.navigate ? existing.navigate(url) : undefined;
-      });
+      // navigate() rejects for a window this worker doesn't control, so open a new one instead.
+      return Promise.resolve(existing.focus())
+        .then(function () {
+          return existing.navigate ? existing.navigate(url) : clients.openWindow(url);
+        })
+        .catch(function () {
+          return clients.openWindow(url);
+        });
     });
     event.waitUntil(done);
     return done;

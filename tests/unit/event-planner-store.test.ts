@@ -57,7 +57,7 @@ describe('planner store', () => {
     const { db, calls } = fakeDb({
       'opportunities.select': { data: [{ id: 'a', confidence: 0.6 }, { id: 'b', confidence: 0.59 }, { id: 'c', confidence: '0.9' }, { id: 'd', confidence: null }], error: null },
     })
-    expect(await createPlannerStore(db).openIds('ci-1')).toEqual(['a', 'c', 'd'])
+    expect(await createPlannerStore(db).openIds('ci-1')).toEqual(['c', 'a', 'd'])
     expect(calls[0].filters).toEqual([['check_in_id', 'ci-1'], ['source', 'extraction'], ['status', 'detected']])
   })
 

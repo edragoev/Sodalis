@@ -12,9 +12,7 @@ export function planEvents(checkInId: string, options: { force?: boolean } = {})
   return createEventPlanner({
     ...createPlannerStore(supabaseAdmin()),
     extract: extractWithGemini,
-    propose: async (id) => {
-      await coordinateOpportunity(id)
-    },
+    propose: async (id) => (await coordinateOpportunity(id)).status === 'proposed',
     now: () => new Date(),
     timeoutMs: PLANNER_TIMEOUT_MS,
   })(checkInId, options)

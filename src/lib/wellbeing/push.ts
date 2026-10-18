@@ -14,7 +14,7 @@ export function buildWellbeingPush(checkInId: string, level: Exclude<Safety, 'ro
   const priority = level === 'urgent' ? 'high' : 'normal'
   return {
     notification: {
-      title: level === 'urgent' ? 'Please check on your family member' : 'A note from Hope’s latest call',
+      title: level === 'urgent' ? 'Please check on your family member' : 'A note from Soladis’s latest call',
       body: 'Open CareChain to read the details.',
     },
     data: { check_in_id: checkInId, safety: level },
