@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
+import AlertCard, { type Alert } from "./AlertCard";
 import InviteCard from "./InviteCard";
 import { isPushConfigured } from "@/lib/firebase/config";
 import NotificationsButton from "./NotificationsButton";
@@ -20,7 +21,6 @@ type CheckIn = {
   topics: string[] | null;
   engagement_score: number | null;
 };
-type Alert = { id: string; type: string; severity: "info" | "warn" | "urgent"; message: string; created_at: string; check_in_id: string | null };
 // An open 'wants_contact' opportunity: the elder would love to hear from family.
 type ContactRequest = { id: string; summary: string; created_at: string };
 type Idea = { id: string; type: string; summary: string; quote: string | null; status: string; accepted_by: string | null; created_at: string };
@@ -28,12 +28,6 @@ type Visit = { id: string; kind: "visit" | "call"; starts_at: string; status: st
 
 const TABLES = ["check_ins", "alerts", "visits", "opportunities"] as const;
 const RANK = { urgent: 0, warn: 1, info: 2 } as const;
-
-const ALERT_STYLE: Record<Alert["severity"], { card: string; icon: string; label: string; text: string }> = {
-  urgent: { card: "border-danger/30 bg-danger-bg", icon: "bg-danger/15 text-danger", label: "Needs attention", text: "text-danger" },
-  warn: { card: "border-warn/30 bg-warn-bg", icon: "bg-warn/15 text-warn", label: "Worth a look", text: "text-warn" },
-  info: { card: "border-sand bg-white", icon: "bg-mist text-primary", label: "Update", text: "text-primary" },
-};
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -148,7 +142,6 @@ export default function Dashboard() {
     .slice(0, 7)
     .reverse()
     .map((c) => ({ score: c.mood_score as number, date: new Date(c.started_at) }));
-  const [topAlert, ...otherAlerts] = alerts;
   const first = me.split(" ")[0];
   const sName = seniorName || "your loved one";
 
@@ -173,36 +166,18 @@ export default function Dashboard() {
         {/* Hidden until Firebase is set up, so a missing setting never breaks the page. */}
         {isPushConfigured() && <NotificationsButton memberId={memberId || null} />}
 
-        {topAlert && (
+        {alerts.length > 0 && (
           <section aria-label="Alerts" className="space-y-3">
-            <div className={`rounded-3xl border p-5 ${ALERT_STYLE[topAlert.severity].card}`}>
-              <div className="flex items-start gap-3">
-                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${ALERT_STYLE[topAlert.severity].icon}`}>
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 3l10 18H2L12 3ZM12 10v5M12 18v.5" />
-                  </svg>
-                </span>
-                <div>
-                  <p className={`text-xs font-semibold ${ALERT_STYLE[topAlert.severity].text}`}>
-                    {ALERT_STYLE[topAlert.severity].label} · {when(topAlert.created_at)}
-                  </p>
-                  <p className="mt-1 text-lg font-semibold leading-snug text-ink">{topAlert.message}</p>
-                  {topAlert.check_in_id && (
-                    <Link
-                      href={`/calls/${topAlert.check_in_id}`}
-                      className="mt-3 inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-semibold text-ink hover:bg-cream"
-                    >
-                      Read the call
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-            {otherAlerts.map((a) => (
-              <div key={a.id} className={`rounded-2xl border px-4 py-3 ${ALERT_STYLE[a.severity].card}`}>
-                <p className="text-ink">{a.message}</p>
-                <p className="text-xs text-slate">{when(a.created_at)}</p>
-              </div>
+            {/* The most important alert is the large card; the rest are compact. */}
+            {alerts.map((a, i) => (
+              <AlertCard
+                key={a.id}
+                alert={a}
+                memberId={memberId}
+                time={when(a.created_at)}
+                prominent={i === 0}
+                onDismissed={(id) => setAlerts((list) => list.filter((x) => x.id !== id))}
+              />
             ))}
           </section>
         )}
