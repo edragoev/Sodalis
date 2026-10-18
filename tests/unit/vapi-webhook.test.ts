@@ -101,6 +101,45 @@ describe('POST /api/vapi/webhook', () => {
     })
   })
 
+  describe('the wellbeing agent', () => {
+    it('runs after the response, even when the event planner fails', async () => {
+      const wellbeing = vi.fn().mockResolvedValue(undefined)
+      const extract = vi.fn().mockRejectedValue(new Error('boom'))
+      const { post, runAfter } = setup({ extract, wellbeing })
+      expect((await post(report())).status).toBe(200)
+      expect(wellbeing).not.toHaveBeenCalled()
+      await runAfter()
+      expect(wellbeing).toHaveBeenCalledWith('ci-1')
+    })
+
+    it('does not break the webhook when it throws', async () => {
+      const wellbeing = vi.fn().mockRejectedValue(new Error('boom'))
+      const { post, runAfter } = setup({ wellbeing })
+      expect((await post(report())).status).toBe(200)
+      await expect(runAfter()).resolves.toBeUndefined()
+    })
+
+    it('is skipped for a call without a transcript', async () => {
+      const wellbeing = vi.fn()
+      const { post, runAfter } = setup({ wellbeing })
+      await post(report({ artifact: {} }))
+      await runAfter()
+      expect(wellbeing).not.toHaveBeenCalled()
+    })
+
+    it('finishes an unfinished run when Vapi redelivers the call', async () => {
+      const wellbeing = vi.fn().mockResolvedValue(undefined)
+      const { post, runAfter } = setup({
+        wellbeing,
+        insertCheckIn: vi.fn().mockRejectedValue({ code: '23505' }),
+        pendingWellbeing: vi.fn().mockResolvedValue('ci-9'),
+      })
+      expect((await post(report())).json.duplicate).toBe(true)
+      await runAfter()
+      expect(wellbeing).toHaveBeenCalledWith('ci-9')
+    })
+  })
+
   describe('the shared secret (401 Unauthorized)', () => {
     it('accepts a request carrying the secret in x-vapi-secret', async () => {
       const { post } = setup()

@@ -4,8 +4,8 @@ import { secretMatches } from '@/lib/shared-secret'
 
 // POST /api/vapi/webhook, `end-of-call-report` (specs/02-api/routes.md "Webhook flow").
 // The handler only orchestrates; every collaborator is injected so it can be tested without a database.
-// Not here yet: Gemini mood/topic/flag analysis and alerts. The event planner (opportunities from the
-// transcript) runs after the response, through `extract`.
+// Not here yet: Gemini mood/topic/flag analysis. The event planner (opportunities from the transcript) and
+// the wellbeing agent (alerts from the transcript) run after the response, through `extract` and `wellbeing`.
 
 export interface VapiWebhookDeps {
   /** Shared secret Vapi sends in x-vapi-secret. When unset, every request is refused. */
@@ -19,6 +19,10 @@ export interface VapiWebhookDeps {
   extract?(checkInId: string): Promise<unknown>
   /** For a redelivered call: the check-in whose extraction never finished, or null. */
   pendingExtraction?(vapiCallId: string): Promise<string | null>
+  /** The wellbeing agent for a saved check-in: turns concerns in the transcript into alerts. */
+  wellbeing?(checkInId: string): Promise<unknown>
+  /** For a redelivered call: the check-in whose wellbeing extraction never finished, or null. */
+  pendingWellbeing?(vapiCallId: string): Promise<string | null>
   /** Runs work after the response is sent (next/server `after`). */
   after(task: () => Promise<void>): void
   now(): Date
@@ -50,13 +54,32 @@ async function runPlanner(deps: VapiWebhookDeps, checkInId: string) {
   }
 }
 
-async function retryExtraction(deps: VapiWebhookDeps, callId: string) {
-  if (!deps.extract || !deps.pendingExtraction) return
+/** Runs the wellbeing agent after the response; independent of the planner, so one failing never blocks the other. */
+async function runWellbeing(deps: VapiWebhookDeps, checkInId: string) {
+  if (!deps.wellbeing) return
   try {
-    const checkInId = await deps.pendingExtraction(callId)
-    if (checkInId) deps.after(() => runPlanner(deps, checkInId))
+    await deps.wellbeing(checkInId)
   } catch (err) {
-    console.error('vapi webhook: could not check for unfinished extraction', (err as Error).message)
+    console.error('vapi webhook: the wellbeing agent failed', (err as Error).message)
+  }
+}
+
+async function retryExtraction(deps: VapiWebhookDeps, callId: string) {
+  if (deps.extract && deps.pendingExtraction) {
+    try {
+      const checkInId = await deps.pendingExtraction(callId)
+      if (checkInId) deps.after(() => runPlanner(deps, checkInId))
+    } catch (err) {
+      console.error('vapi webhook: could not check for unfinished extraction', (err as Error).message)
+    }
+  }
+  if (deps.wellbeing && deps.pendingWellbeing) {
+    try {
+      const checkInId = await deps.pendingWellbeing(callId)
+      if (checkInId) deps.after(() => runWellbeing(deps, checkInId))
+    } catch (err) {
+      console.error('vapi webhook: could not check for unfinished wellbeing extraction', (err as Error).message)
+    }
   }
 }
 
@@ -133,7 +156,8 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
       }
 
       const planFor = transcript && deps.extract ? saved.id : null
-      if (opportunityIds.length > 0 || planFor) {
+      const wellbeingFor = transcript && deps.wellbeing ? saved.id : null
+      if (opportunityIds.length > 0 || planFor || wellbeingFor) {
         deps.after(async () => {
           for (const id of opportunityIds) {
             try {
@@ -143,6 +167,7 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
             }
           }
           if (planFor) await runPlanner(deps, planFor)
+          if (wellbeingFor) await runWellbeing(deps, wellbeingFor)
         })
       }
     }
