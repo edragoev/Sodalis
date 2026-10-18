@@ -33,6 +33,6 @@
 4. Pull `message.artifact.transcript`, `message.summary`, `startedAt`, `endedAt`, `endedReason`. Map senior by `call.customer.number`.
 5. Voicemail/no-answer: insert `no_answer` check-in and stop (retry scheduling is v2).
 6. Call Gemini Flash with the structured schema (see 03-ai). Retry once, then fall back to a minimal row so the call is never lost.
-7. Insert `check_ins`; insert `alerts` for fired flags; insert a `wants_contact` opportunity if `wants_family_contact`; update engagement aggregates. Skip extracted health alerts that `flag_concern` already raised during the call; start the coordinator for every extracted opportunity. After the response, the wellbeing agent runs independently of the event planner and writes its own alerts.
+7. Insert `check_ins`; insert `alerts` for fired flags; insert a `wants_contact` opportunity if `wants_family_contact`; update engagement aggregates. Skip extracted health alerts that `flag_concern` already raised during the call; start the coordinator for every extracted opportunity. After the response, one at a time: the call summary (mood, topics, engagement, summary and `open_thread` onto the check-in), then the event planner, then the wellbeing agent, which writes its own alerts. Each step's failure is logged and never stops the next. The next call's `{{last_topics}}` and `{{open_thread}}` come from the latest completed check-in.
 8. FCM multicast to members with tokens; urgent alerts high priority.
-9. `export const maxDuration = 60`; if Gemini is slow, return 200 and finish with `after()`.
+9. `export const maxDuration = 90` (three Gemini steps run one after another); if Gemini is slow, return 200 and finish with `after()`.

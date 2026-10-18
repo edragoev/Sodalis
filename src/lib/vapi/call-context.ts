@@ -15,7 +15,7 @@ export interface CallVariables {
 export interface CallContextInput {
   senior: { name: string; timezone?: string | null }
   family: { name: string; relationship?: string | null; pronouns?: string | null }[]
-  lastCheckIn?: { topics?: string[] | null } | null
+  lastCheckIn?: { topics?: string[] | null; open_thread?: string | null } | null
 }
 
 const NONE = 'none'
@@ -46,8 +46,8 @@ export function buildCallVariables(input: CallContextInput, now: Date): CallVari
     today: formatToday(now, input.senior.timezone),
     family_summary: familySummary(input.family),
     last_topics: topics.length > 0 ? topics.join(', ') : NONE,
-    // Not extracted yet; the prompt skips the follow-up when it says "none".
-    open_thread: NONE,
+    // Picked by the call summary after the last call; the prompt skips the follow-up when it says "none".
+    open_thread: input.lastCheckIn?.open_thread?.trim() || NONE,
   }
 }
 
@@ -69,7 +69,7 @@ export async function loadSeniorToCall(db: SupabaseClient, seniorId: string, now
 
   const { data: lastCheckIn, error: checkInError } = await db
     .from('check_ins')
-    .select('topics')
+    .select('topics, open_thread')
     .eq('senior_id', seniorId)
     .eq('status', 'completed')
     .order('started_at', { ascending: false })

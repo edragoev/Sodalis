@@ -51,3 +51,18 @@ describe('buildCallVariables', () => {
     )
   })
 })
+
+describe('open_thread from the last call', () => {
+  it("passes on the follow-up the call summary picked", () => {
+    const vars = buildCallVariables(
+      { senior: jane, family: [], lastCheckIn: { topics: ['gardening'], open_thread: "Ask how Sarah's visit went" } },
+      NOW,
+    )
+    expect(vars.open_thread).toBe("Ask how Sarah's visit went")
+  })
+
+  it.each([null, undefined, '  '])('says "none" when there is nothing to follow up (%j)', (open_thread) => {
+    const vars = buildCallVariables({ senior: jane, family: [], lastCheckIn: { topics: [], open_thread } }, NOW)
+    expect(vars.open_thread).toBe('none')
+  })
+})
