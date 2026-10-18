@@ -5,9 +5,8 @@ import { secretMatches } from '@/lib/shared-secret'
 // POST /api/vapi/webhook, `end-of-call-report` (specs/02-api/routes.md "Webhook flow").
 // The handler only orchestrates; every collaborator is injected so it can be tested without a database.
 // Alerts that flag_concern raised during the call (src/lib/vapi/tools.ts) are linked to the new check-in.
-// After the response, one at a time: the call summary (mood, topics, summary, open_thread on the check-in),
-// the event planner (opportunities from the transcript) and the wellbeing agent (alerts from the transcript),
-// through `summarize`, `extract` and `wellbeing`.
+// After the response, one at a time: the event planner (opportunities from the transcript) and the wellbeing
+// agent (alerts from the transcript), through `extract` and `wellbeing`.
 
 export interface VapiWebhookDeps {
   /** Shared secret Vapi sends in x-vapi-secret. When unset, every request is refused. */
@@ -24,10 +23,6 @@ export interface VapiWebhookDeps {
   propose(opportunityId: string): Promise<void>
   /** Points the alerts flag_concern raised during the call (by Vapi call id) at the new check-in. */
   linkAlerts?(vapiCallId: string, checkInId: string): Promise<void>
-  /** The call summary for a saved check-in: writes mood, topics, engagement, summary and open_thread onto it. */
-  summarize?(checkInId: string): Promise<unknown>
-  /** For a redelivered call: the check-in that was never summarised, or null. */
-  pendingSummary?(vapiCallId: string): Promise<string | null>
   /** The event planner for a saved check-in: finds opportunities in the transcript and proposes them. */
   extract?(checkInId: string): Promise<unknown>
   /** For a redelivered call: the check-in whose extraction never finished, or null. */
@@ -57,16 +52,6 @@ function validDate(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-/** Runs the call summary after the response; a failure is logged and never blocks the steps after it. */
-async function runSummary(deps: VapiWebhookDeps, checkInId: string) {
-  if (!deps.summarize) return
-  try {
-    await deps.summarize(checkInId)
-  } catch (err) {
-    console.error('vapi webhook: the call summary failed', (err as Error).message)
-  }
-}
-
 /** Runs the planner after the response; it records its own failures, so nothing here may throw. */
 async function runPlanner(deps: VapiWebhookDeps, checkInId: string) {
   if (!deps.extract) return
@@ -88,14 +73,6 @@ async function runWellbeing(deps: VapiWebhookDeps, checkInId: string) {
 }
 
 async function retryExtraction(deps: VapiWebhookDeps, callId: string) {
-  if (deps.summarize && deps.pendingSummary) {
-    try {
-      const checkInId = await deps.pendingSummary(callId)
-      if (checkInId) deps.after(() => runSummary(deps, checkInId))
-    } catch (err) {
-      console.error('vapi webhook: could not check for an unfinished summary', (err as Error).message)
-    }
-  }
   if (deps.extract && deps.pendingExtraction) {
     try {
       const checkInId = await deps.pendingExtraction(callId)
@@ -195,13 +172,11 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
         console.error('vapi webhook: could not link the opportunities', (err as Error).message)
       }
 
-      const summaryFor = transcript && deps.summarize ? saved.id : null
       const planFor = transcript && deps.extract ? saved.id : null
       const wellbeingFor = transcript && deps.wellbeing ? saved.id : null
-      if (opportunityIds.length > 0 || summaryFor || planFor || wellbeingFor) {
+      if (opportunityIds.length > 0 || planFor || wellbeingFor) {
         deps.after(async () => {
-          // First, so the mood reaches the dashboard soonest; one Gemini call at a time keeps under the per-minute limit.
-          if (summaryFor) await runSummary(deps, summaryFor)
+          // One Gemini call at a time keeps under the per-minute limit.
           for (const id of opportunityIds) {
             try {
               await deps.propose(id)

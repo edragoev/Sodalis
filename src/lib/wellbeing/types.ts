@@ -21,6 +21,14 @@ export interface WellbeingAlert {
   confidence: number
 }
 
+/** How the elder seemed across the whole call, for the dashboard's mood face and trend. */
+export interface Mood {
+  /** -1 (very low) to 1 (very happy); null when they said too little to tell. */
+  score: number | null
+  /** One or two lowercase words, such as "cheerful" or "a bit low". */
+  label: string
+}
+
 /** What Gemini is told about the call. No phone numbers, tokens or family details. */
 export interface ExtractionInput {
   transcript: string

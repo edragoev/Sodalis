@@ -1,7 +1,7 @@
 import { backoffFor } from '@/lib/gemini-backoff'
 import { localDate } from '@/lib/event-planner/dates'
-import type { ExtractionInput, Category, Safety, WellbeingAlert } from './types'
-import { parseWellbeing, type DropReason } from './validate'
+import type { ExtractionInput, Category, Mood, Safety, WellbeingAlert } from './types'
+import { parseMood, parseWellbeing, type DropReason } from './validate'
 
 // The post-call wellbeing agent: one Gemini call over the transcript, strict validation, alerts saved in one
 // insert, and a push for anything that needs a closer look. Every collaborator is injected, so it needs no
@@ -44,6 +44,8 @@ export interface PlannerDeps {
   /** Inserts all rows in one statement. A row the call already saved is left alone. */
   saveAlerts(checkIn: WellbeingCheckIn, rows: NewAlert[]): Promise<void>
   saveResult(checkInId: string, record: Record<string, unknown>): Promise<void>
+  /** Writes the elder's mood onto the check-in (mood_score, mood_label). */
+  saveMood(checkInId: string, mood: Mood): Promise<void>
   /** Tells the family there is something to look at. Never carries the alert's content. */
   notify(checkIn: WellbeingCheckIn, level: Exclude<Safety, 'routine'>): Promise<void>
   now(): Date
@@ -53,7 +55,7 @@ export interface PlannerDeps {
 export type WellbeingResult =
   | { status: 'not_found' | 'no_transcript' | 'already_done' }
   | { status: 'failed'; reason: string; quota: boolean }
-  | { status: 'done'; alerts: WellbeingAlert[]; dropped: { index: number; reason: DropReason }[]; notified: Safety | null }
+  | { status: 'done'; alerts: WellbeingAlert[]; dropped: { index: number; reason: DropReason }[]; notified: Safety | null; mood: Mood | null }
 
 const TYPE_FOR: Record<Category, AlertType> = {
   loneliness: 'low_mood',
@@ -122,11 +124,13 @@ export function createWellbeingPlanner(deps: PlannerDeps) {
 
     const parsed = parseWellbeing(raw, { transcript })
     if (!parsed.ok) return fail(new Error(parsed.reason), parsed.reason)
+    const mood = parseMood(raw)
 
     try {
       await deps.saveAlerts(checkIn, parsed.alerts.map(toRow))
-      // The marker goes in only after the alerts exist, so a crash in between just re-runs safely.
-      await deps.saveResult(checkIn.id, { status: 'ok', at: deps.now().toISOString(), count: parsed.alerts.length, dropped: parsed.dropped })
+      if (mood) await deps.saveMood(checkIn.id, mood)
+      // The marker goes in only after the alerts and mood exist, so a crash in between just re-runs safely.
+      await deps.saveResult(checkIn.id, { status: 'ok', at: deps.now().toISOString(), count: parsed.alerts.length, dropped: parsed.dropped, mood: mood !== null })
     } catch (err) {
       return fail(err, 'could not save the alerts')
     }
@@ -143,6 +147,6 @@ export function createWellbeingPlanner(deps: PlannerDeps) {
         console.error('wellbeing: could not notify the family', errorMessage(err))
       }
     }
-    return { status: 'done', alerts: parsed.alerts, dropped: parsed.dropped, notified: level }
+    return { status: 'done', alerts: parsed.alerts, dropped: parsed.dropped, notified: level, mood }
   }
 }

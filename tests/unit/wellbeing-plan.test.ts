@@ -20,9 +20,10 @@ function setup(over: Partial<PlannerDeps> = {}, ctx: Partial<WellbeingContext['c
   }
   const deps = {
     load: vi.fn().mockResolvedValue(context),
-    extract: vi.fn().mockResolvedValue({ alerts: [alert()] }),
+    extract: vi.fn().mockResolvedValue({ alerts: [alert()], mood: { score: -0.3, label: 'lonely' } }),
     saveAlerts: vi.fn().mockResolvedValue(undefined),
     saveResult: vi.fn().mockResolvedValue(undefined),
+    saveMood: vi.fn().mockResolvedValue(undefined),
     notify: vi.fn().mockResolvedValue(undefined),
     now: () => new Date('2026-10-15T15:00:00Z'),
     timeoutMs: 1000,
@@ -124,5 +125,38 @@ describe('wellbeing planner', () => {
     })
     expect(row.message).toBe('Jane misses baking apple pie with Sarah.')
     expect(row.suggested_followup).toBe('I wish we can do that again.')
+  })
+})
+
+describe('wellbeing planner: mood', () => {
+  it('saves the mood onto the check-in before marking the run done', async () => {
+    const { deps, plan } = setup()
+    const r = await plan('ci-1')
+    expect(r).toMatchObject({ status: 'done', mood: { score: -0.3, label: 'lonely' } })
+    expect(deps.saveMood).toHaveBeenCalledWith('ci-1', { score: -0.3, label: 'lonely' })
+    expect(deps.saveMood.mock.invocationCallOrder[0]).toBeLessThan(deps.saveResult.mock.invocationCallOrder[0])
+    expect(deps.saveResult).toHaveBeenCalledWith('ci-1', expect.objectContaining({ status: 'ok', mood: true }))
+  })
+
+  it('saves the mood for a call with no alerts', async () => {
+    const { deps, plan } = setup({ extract: vi.fn().mockResolvedValue({ alerts: [], mood: { score: 0.6, label: 'cheerful' } }) })
+    await plan('ci-1')
+    expect(deps.saveMood).toHaveBeenCalledWith('ci-1', { score: 0.6, label: 'cheerful' })
+  })
+
+  it('still saves the alerts when the mood is missing or bad', async () => {
+    for (const mood of [undefined, { score: 5, label: 'ecstatic' }]) {
+      const { deps, plan } = setup({ extract: vi.fn().mockResolvedValue({ alerts: [alert()], mood }) })
+      expect(await plan('ci-1')).toMatchObject({ status: 'done', mood: null })
+      expect(deps.saveAlerts).toHaveBeenCalled()
+      expect(deps.saveMood).not.toHaveBeenCalled()
+      expect(deps.saveResult).toHaveBeenCalledWith('ci-1', expect.objectContaining({ status: 'ok', mood: false }))
+    }
+  })
+
+  it('records a failure, so the run is retried, when the mood cannot be saved', async () => {
+    const { deps, plan } = setup({ saveMood: vi.fn().mockRejectedValue(new Error('db')) })
+    expect(await plan('ci-1')).toMatchObject({ status: 'failed' })
+    expect(deps.saveResult).toHaveBeenCalledWith('ci-1', expect.objectContaining({ status: 'failed' }))
   })
 })

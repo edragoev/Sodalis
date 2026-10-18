@@ -1,5 +1,5 @@
 import { quoteInTranscript } from '@/lib/event-planner/validate'
-import { CATEGORIES, SAFETY_LEVELS, type Category, type Safety, type WellbeingAlert } from './types'
+import { CATEGORIES, SAFETY_LEVELS, type Category, type Mood, type Safety, type WellbeingAlert } from './types'
 
 // Gemini's answer is never trusted. Every field is checked; an alert that fails is dropped on its own,
 // except a serious one: those are kept (as needs_review) so a concern is never silently discarded.
@@ -111,4 +111,19 @@ export function parseWellbeing(raw: unknown, ctx: { transcript: string }): Parse
 
   const alerts = [...byQuote.values()].sort((a, b) => RANK[b.safety] - RANK[a.safety]).slice(0, MAX_ALERTS)
   return { ok: true, alerts, dropped }
+}
+
+const MAX_MOOD_LABEL = 30
+
+/**
+ * Checks the `mood` next to the alerts. Kept apart from parseWellbeing on purpose: a bad or missing mood is
+ * dropped (null) and never costs the family the alerts.
+ */
+export function parseMood(raw: unknown): Mood | null {
+  if (!isObject(raw) || !isObject(raw.mood)) return null
+  const { score, label } = raw.mood
+  if (score !== null && (typeof score !== 'number' || !Number.isFinite(score) || score < -1 || score > 1)) return null
+  const word = text(label, MAX_MOOD_LABEL)?.toLowerCase() ?? null
+  if (score === null) return { score: null, label: word ?? 'hard to tell' }
+  return word ? { score, label: word } : null
 }
