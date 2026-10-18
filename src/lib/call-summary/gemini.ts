@@ -1,11 +1,12 @@
 import { GoogleGenAI, Type } from '@google/genai'
-import { backoffFor, withOneRetry } from '@/lib/gemini-backoff'
+import { backoffFor, geminiModels, withFallback } from '@/lib/gemini-backoff'
 
 // The call summary: mood, topics, engagement, a summary for the family and one thing to follow up on next
 // call, all written onto the check-in. One Gemini call per phone call, separate from the event planner and
 // the wellbeing agent. Model id from GEMINI_MODEL.
 
-// Per attempt; a timeout or Google-side error is asked once more (withOneRetry), so allow two of these.
+// Per attempt; a timeout or Google-side error is asked once more, then once on the fallback model (withFallback),
+// so allow three of these.
 export const GEMINI_TIMEOUT_MS = 30_000
 
 export interface SummaryInput {
@@ -74,13 +75,13 @@ let quotaBlockedUntil = 0
 /** Asks Gemini once and returns the parsed JSON. Throws on any failure; the caller logs it. */
 export async function summarizeCall(input: SummaryInput): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY
-  const model = process.env.GEMINI_MODEL
+  const { model, fallback } = geminiModels()
   if (!apiKey || !model) throw new Error('Gemini env vars are not set')
   if (quotaBlockedUntil > Date.now()) throw new Error('Gemini quota is exhausted; waiting before asking again')
 
   const ai = new GoogleGenAI({ apiKey, httpOptions: { timeout: GEMINI_TIMEOUT_MS, retryOptions: { attempts: 1 } } })
   try {
-    const res = await withOneRetry(() =>
+    const res = await withFallback(model, fallback, (model) =>
       ai.models.generateContent({
         model,
         contents: buildContents(input),

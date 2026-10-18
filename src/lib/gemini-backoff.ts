@@ -52,3 +52,24 @@ export async function withOneRetry<T>(ask: () => Promise<T>): Promise<T> {
     return ask()
   }
 }
+
+/** The model to ask, and an optional second model (GEMINI_FALLBACK_MODEL) for when the first one is busy. */
+export function geminiModels(env: NodeJS.ProcessEnv = process.env): { model: string | undefined; fallback: string | undefined } {
+  const model = env.GEMINI_MODEL || undefined
+  const fallback = env.GEMINI_FALLBACK_MODEL || undefined
+  return { model, fallback: fallback === model ? undefined : fallback }
+}
+
+/**
+ * Asks `model` (with one more try), and when it is still overloaded or slow, asks `fallback` once. Overload is
+ * per model, so another model usually answers. A quota refusal or a bad request is never sent to the fallback.
+ */
+export async function withFallback<T>(model: string, fallback: string | undefined, ask: (model: string) => Promise<T>): Promise<T> {
+  try {
+    return await withOneRetry(() => ask(model))
+  } catch (err) {
+    if (!fallback || !isTransient(err)) throw err
+    console.warn(`gemini: ${model} is unavailable, asking ${fallback} instead`)
+    return ask(fallback)
+  }
+}

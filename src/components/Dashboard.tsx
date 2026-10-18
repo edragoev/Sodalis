@@ -99,7 +99,9 @@ export default function Dashboard() {
   const [loaded, setLoaded] = useState(false);
   const [showEarlier, setShowEarlier] = useState(false);
 
-  const load = useCallback(async (id: string) => {
+  // Ideas and contact requests show only to the member the coordinator picked (notified_member_ids), the
+  // best match, not to the whole family.
+  const load = useCallback(async (id: string, member: string) => {
     const db = supabaseBrowser();
     const [s, c, a, r, v, o, m] = await Promise.all([
       db.from("seniors").select("name").eq("id", id).maybeSingle(),
@@ -108,13 +110,13 @@ export default function Dashboard() {
       db.from("alerts").select("id, type, severity, message, created_at, check_in_id")
         .eq("senior_id", id).is("acknowledged_by", null).order("created_at", { ascending: false }).limit(10),
       db.from("opportunities").select("id, summary, created_at")
-        .eq("senior_id", id).eq("type", "wants_contact").in("status", ["detected", "proposed"])
+        .eq("senior_id", id).eq("type", "wants_contact").in("status", ["detected", "proposed"]).contains("notified_member_ids", [member])
         .order("created_at", { ascending: false }),
       db.from("visits").select("id, kind, starts_at, status")
         .eq("senior_id", id).in("status", ["proposed", "confirmed"]).gte("starts_at", new Date().toISOString())
         .order("starts_at").limit(10),
       db.from("opportunities").select("id, type, summary, quote, status, accepted_by, created_at")
-        .eq("senior_id", id).neq("type", "wants_contact").in("status", ["proposed", "confirmed"]).order("created_at", { ascending: false }).limit(5),
+        .eq("senior_id", id).neq("type", "wants_contact").in("status", ["proposed", "confirmed"]).contains("notified_member_ids", [member]).order("created_at", { ascending: false }).limit(5),
       db.from("family_members").select("id, name").eq("senior_id", id),
     ]);
     if (s.error || c.error) return setError("Couldn't load the dashboard.");
@@ -143,11 +145,11 @@ export default function Dashboard() {
       const message = error instanceof Error ? error.message : "Could not initialize the Supabase client.";
       return void queueMicrotask(() => setError(message));
     }
-    queueMicrotask(() => load(s.senior_id));
+    queueMicrotask(() => load(s.senior_id, s.member_id));
     // Any change to these tables for this senior triggers a refetch.
     const channel = db.channel(`senior-${s.senior_id}`);
     for (const table of TABLES) {
-      channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `senior_id=eq.${s.senior_id}` }, () => load(s.senior_id));
+      channel.on("postgres_changes", { event: "*", schema: "public", table, filter: `senior_id=eq.${s.senior_id}` }, () => load(s.senior_id, s.member_id));
     }
     channel.subscribe();
     return () => void db.removeChannel(channel);

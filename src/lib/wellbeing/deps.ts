@@ -7,7 +7,7 @@ import { createWellbeingPlanner, type WellbeingResult } from './plan'
 import { pushWellbeing } from './push'
 import { createWellbeingStore } from './store'
 
-const PLANNER_TIMEOUT_MS = 2 * GEMINI_TIMEOUT_MS + 2_000 // two attempts
+const PLANNER_TIMEOUT_MS = 3 * GEMINI_TIMEOUT_MS + 2_000 // two attempts, then one on the fallback model
 
 /** Runs the wellbeing agent for one saved check-in against the real database, Gemini and Firebase. */
 export function planWellbeing(checkInId: string, options: { force?: boolean } = {}): Promise<WellbeingResult> {

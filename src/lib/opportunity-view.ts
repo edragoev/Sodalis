@@ -15,7 +15,8 @@ export type OpportunityData = {
     urgency: string
     status: 'detected' | 'proposed' | 'confirmed' | 'declined' | 'expired'
     accepted_by: string | null
-    proposed_slots: { id: string; starts_at: string }[]
+    /** Null until the coordinator proposes times. */
+    proposed_slots: { id: string; starts_at: string }[] | null
   }
   members: { id: string; name: string }[]
   timezone: string
@@ -56,8 +57,8 @@ export function buildOpportunityView({ opportunity, members, timezone }: Opportu
   if (!session) return hidden('needs_link')
   if (session.senior_id !== opportunity.senior_id) return hidden('not_your_family')
 
-  // A slot with an unreadable date is dropped rather than shown as "Invalid Date".
-  const slots = opportunity.proposed_slots
+  // A slot with an unreadable date is dropped rather than shown as "Invalid Date". No times yet is an empty list.
+  const slots = (opportunity.proposed_slots ?? [])
     .filter((s) => !Number.isNaN(Date.parse(s.starts_at)))
     .map((s) => ({ id: s.id, label: formatSlot(s.starts_at, timezone) }))
 

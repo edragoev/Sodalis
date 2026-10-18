@@ -1,11 +1,12 @@
 import { GoogleGenAI, Type } from '@google/genai'
-import { backoffFor, withOneRetry } from '@/lib/gemini-backoff'
+import { backoffFor, geminiModels, withFallback } from '@/lib/gemini-backoff'
 import { KINDS, OPPORTUNITY_TYPES, URGENCIES, type ExtractionInput } from './types'
 
 // The single Gemini call per phone call (specs/03-ai/hope-persona.md "Gemini Flash extraction schema",
 // reduced to the part this feature uses: opportunities[]). Model id from GEMINI_MODEL.
 
-// Per attempt; a timeout or Google-side error is asked once more (withOneRetry), so allow two of these.
+// Per attempt; a timeout or Google-side error is asked once more, then once on the fallback model (withFallback),
+// so allow three of these.
 export const GEMINI_TIMEOUT_MS = 30_000
 
 const nullableString = { type: Type.STRING, nullable: true }
@@ -73,14 +74,14 @@ let quotaBlockedUntil = 0
 /** Asks Gemini once and returns the parsed JSON. Throws on any failure; the planner records it. */
 export async function extractWithGemini(input: ExtractionInput): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY
-  const model = process.env.GEMINI_MODEL
+  const { model, fallback } = geminiModels()
   if (!apiKey || !model) throw new Error('Gemini env vars are not set')
   if (quotaBlockedUntil > Date.now()) throw new Error('Gemini quota is exhausted; waiting before asking again')
 
   // One attempt: on the free tier a refused call would otherwise retry for minutes.
   const ai = new GoogleGenAI({ apiKey, httpOptions: { timeout: GEMINI_TIMEOUT_MS, retryOptions: { attempts: 1 } } })
   try {
-    const res = await withOneRetry(() =>
+    const res = await withFallback(model, fallback, (model) =>
       ai.models.generateContent({
         model,
         contents: buildPrompt(input),
