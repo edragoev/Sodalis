@@ -1,13 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DAY_LETTERS, DAY_NAMES, SLOTS, cellKey, dayKeys, fromWindows, slotKeys, toWindows } from "@/lib/availability";
+import { busyCells } from "@/lib/calendar/busy";
+import type { Occurrence } from "@/lib/calendar/expand";
 import { getSession } from "@/lib/session";
-import { PublicCalendarEmbed } from "./PublicCalendarEmbed";
+import ImportedCalendar from "./ImportedCalendar";
 import { Button, Screen, TabBar, headingCls, subCls } from "./ui";
-
-const PUBLIC_CALENDAR_URL = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL || "";
 
 // "After work" on weekdays (4 to 8 pm), and the daytime on weekends (8 am to 8 pm).
 const PRESETS = [
@@ -27,6 +27,9 @@ export default function Availability() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [upcoming, setUpcoming] = useState<Occurrence[]>([]);
+  // Times that clash with the imported calendar in the next 7 days. A hint only: never unticks a cell.
+  const busyKeys = useMemo(() => busyCells(upcoming, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"), [upcoming]);
 
   useEffect(() => {
     const s = getSession();
@@ -149,12 +152,16 @@ export default function Availability() {
                 <button
                   key={d}
                   aria-pressed={on}
-                  aria-label={`${DAY_NAMES[d]} ${slot.range}`}
+                  aria-label={`${DAY_NAMES[d]} ${slot.range}${busyKeys.has(cellKey(d, i)) ? ", busy on your calendar" : ""}`}
                   onClick={() => toggle(cellKey(d, i))}
-                  className={`h-11 rounded-lg border transition-colors ${
+                  className={`relative h-11 rounded-lg border transition-colors ${
                     on ? "border-primary bg-primary" : "border-sand bg-white hover:bg-mist"
                   }`}
-                />
+                >
+                  {busyKeys.has(cellKey(d, i)) && (
+                    <span aria-hidden className={`absolute right-1 top-1 h-2 w-2 rounded-full ${on ? "bg-white" : "bg-warn"}`} />
+                  )}
+                </button>
               );
             })}
           </div>
@@ -162,7 +169,9 @@ export default function Availability() {
       </div>
       <p className="mt-4 text-sm text-slate">Each row starts at the time on the left. Tap a day or a time to fill its whole row or column.</p>
 
-      {PUBLIC_CALENDAR_URL && <PublicCalendarEmbed url={PUBLIC_CALENDAR_URL} />}
+      <p className="mt-2 text-sm text-slate">A dot means something on your imported calendar overlaps that time in the next 7 days.</p>
+
+      <ImportedCalendar memberId={memberId} onUpcoming={setUpcoming} />
     </Screen>
   );
 }

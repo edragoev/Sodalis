@@ -71,26 +71,32 @@ New table `calendar_events` (see also [schema](../01-database/schema.md)):
 | `import_batch_id` | uuid | Groups one upload, for undo |
 | `created_at` | timestamptz | |
 
-- Unique `(member_id, uid, coalesce(recurrence_id, 'epoch'))`: re-importing the same export upserts instead of duplicating.
+- Unique `(member_id, uid, recurrence_id)` declared `NULLS NOT DISTINCT`: re-importing the same export upserts instead of duplicating.
 - Index `(member_id, starts_at)`.
 - Imported events are native data: queryable like any other table, and counted as busy intervals by `GET /api/availability/[memberId]` alongside the manual grid.
-- Writes only through the import route (service role). RLS on. **Open question:** the project's anon SELECT-only convention would expose `notes` (may contain personal or health details) to anyone with the anon key. Prefer no anon policy on this table and serve it only through the API.
+- Writes only through the import route (service role). RLS is on with **no anon policy**: `notes` can hold personal or health details, so the table is read only through `GET /api/calendar/events`.
 
 ### REST API
 | Route | Purpose |
 |---|---|
 | `POST /api/calendar/import` | Upload `.ics`/`.zip`. Returns `{ batch_id, imported, updated, skipped, errors: [{uid?, message}] }` |
 | `GET /api/calendar/events?member_id&from&to` | Occurrences in the window (series expanded), each `{ id, uid, title, notes, starts_at, ends_at, all_day }` with UTC ISO-8601 timestamps |
-| `DELETE /api/calendar/import/[batchId]` | Removes everything from that upload |
+| `DELETE /api/calendar/import/[batchId]?member_id=` | Removes everything from that upload (including rows it updated) |
 
 Errors: 400 missing/invalid fields or unreadable file, 413 over size limit, 415 not an ics/zip, 422 no `VEVENT`s found, 404 unknown member.
 
-## 5. Privacy and security
+## 5. Where it shows up
+On the Availability page (`/availability`), below the weekly grid, a "Your calendar" section replaces the public embed there:
+- An **Upload calendar** button (and **Remove imported calendar** once something is imported; the last batch id is kept in the browser).
+- A **month calendar** with a dot on days that have events; tapping a day lists its events in the viewer's local time.
+- **Busy hints in the weekly grid:** a small dot on any 2-hour cell that overlaps a timed event in the next 7 days. It is a hint only; it never unticks a cell, and all-day events don't count.
+
+## 6. Privacy and security
 - The uploaded file is processed in memory and discarded. Do not log event titles, notes or file contents.
 - Verify `member_id` exists. (No auth in the demo; same caveat as the other routes.)
 - Enforce limits before parsing: body size, zip entry count and uncompressed size.
 
-## 6. Tests
+## 7. Tests
 Vitest, in the existing layout (`tests/unit/` for parsing/normalization, `tests/api/` for the route). Fixtures:
 - `TZID` with `VTIMEZONE`, a `Z` time, and a floating time: all end up as the expected UTC instants.
 - All-day event; event with `DURATION` instead of `DTEND`.

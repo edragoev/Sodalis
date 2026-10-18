@@ -76,7 +76,7 @@ The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `p
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`
 - `alerts (senior_id, created_at DESC)`
-- `calendar_events (member_id, starts_at)`; unique `(member_id, uid, coalesce(recurrence_id, 'epoch'))`
+- `calendar_events (member_id, starts_at)`; unique `(member_id, uid, recurrence_id)` `NULLS NOT DISTINCT`
 - `call_requests (status) WHERE status = 'pending'`
 
 ## Realtime
