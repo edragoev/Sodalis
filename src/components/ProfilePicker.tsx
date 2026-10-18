@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { RELATIONSHIPS } from "@/lib/relationships";
 import { clearElder, getElder, getSession, saveElder, saveSession } from "@/lib/session";
-import { Avatar, BackButton, Button, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls } from "./ui";
+import { Avatar, BackButton, Button, Screen, SelectField, headingCls, inputCls, fieldLabelCls, subCls } from "./ui";
 
 type Member = { id: string; name: string; relationship: string; has_answers: boolean };
 
@@ -93,7 +93,7 @@ export default function ProfilePicker() {
     setBusy(false);
   }
 
-  if (state === "loading") return <p className="p-8 text-xl text-slate">{error || "Loading…"}</p>;
+  if (state === "loading") return <p className="p-8 text-slate">{error || "Loading…"}</p>;
 
   if (state === "adding")
     return (
@@ -106,25 +106,25 @@ export default function ProfilePicker() {
         }
       >
         <div className="flex flex-col items-center text-center">
-          <Avatar name={name.trim().split(/\s+/)[0] || "?"} size={96} />
+          <Avatar name={name.trim().split(/\s+/)[0] || "?"} size={80} />
           <h1 className={`${headingCls} mt-4`}>Add profile</h1>
-          <p className={`${subCls} text-xl`}>Someone who checks in on {seniorName}. Tap their profile afterwards to answer a few questions.</p>
+          <p className={subCls}>Someone who checks in on {seniorName}. Tap their profile afterwards to answer a few questions.</p>
         </div>
         <div className="mt-8 space-y-6">
           <div>
-            <label className={largeLabelCls} htmlFor="member-name">First name</label>
-            <input id="member-name" className={largeInputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
+            <label className={fieldLabelCls} htmlFor="member-name">First name</label>
+            <input id="member-name" className={inputCls} autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className={largeLabelCls} htmlFor="member-pronouns">Pronouns</label>
-            <SelectField id="member-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions(MEMBER_SKIP)} placeholder="Choose one" large blackText />
+            <label className={fieldLabelCls} htmlFor="member-pronouns">Pronouns</label>
+            <SelectField id="member-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions(MEMBER_SKIP)} placeholder="Choose one" blackText />
             {pronounChoice === OTHER && (
               <input className={`${inputCls} mt-3`} placeholder="Pronouns, in your words" value={pronounOther} onChange={(e) => setPronounOther(e.target.value)} />
             )}
           </div>
           <div>
-            <label className={largeLabelCls} htmlFor="member-rel">How are they related to {seniorName}?</label>
-            <SelectField id="member-rel" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" large blackText />
+            <label className={fieldLabelCls} htmlFor="member-rel">How are they related to {seniorName}?</label>
+            <SelectField id="member-rel" value={relationship} onChange={setRelationship} options={RELATIONSHIPS} placeholder="Choose one" blackText />
             {relationship === "Other" && (
               <input className={`${inputCls} mt-3`} placeholder="Tell us how they're connected" value={otherRel} onChange={(e) => setOtherRel(e.target.value)} />
             )}
@@ -136,21 +136,18 @@ export default function ProfilePicker() {
 
   return (
     <Screen
-      footer={
-        <Button
-          variant="text"
-          className="text-slate"
+      // Back to the phone number screen, for a mistyped number or another loved one.
+      top={
+        <BackButton
           onClick={() => {
             clearElder();
             router.push("/");
           }}
-        >
-          Not {seniorName}&apos;s family? Use a different number
-        </Button>
+        />
       }
     >
       <h1 className={headingCls}>{members.length ? `Who's checking in on ${seniorName}?` : "Add your family"}</h1>
-      <p className={`${subCls} text-xl`}>
+      <p className={subCls}>
         {members.length
           ? "Pick your profile, or add someone to the circle."
           : `Create a profile for each person who checks in on ${seniorName}. You can add more any time.`}
@@ -164,17 +161,17 @@ export default function ProfilePicker() {
             onClick={() => pick(m)}
             className="flex flex-col items-center gap-3 rounded-3xl border border-sand p-5 text-center transition-colors hover:bg-mist"
           >
-            <Avatar name={m.name} size={84} />
-            <span className="font-serif text-2xl font-semibold text-ink">{m.name}</span>
-            <span className="-mt-2 text-lg text-slate">{m.relationship}</span>
+            <Avatar name={m.name} size={72} />
+            <span className="font-serif text-xl font-semibold text-ink">{m.name}</span>
+            <span className="-mt-2 text-base text-slate">{m.relationship}</span>
           </button>
         ))}
         <button
           onClick={() => { setState("adding"); setError(""); setNotice(""); }}
           className="flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-sand p-5 text-center text-slate transition-colors hover:bg-mist"
         >
-          <span className="grid h-[84px] w-[84px] place-items-center rounded-full bg-cream text-5xl text-primary">+</span>
-          <span className="text-xl font-semibold text-ink">Add profile</span>
+          <span className="grid h-[72px] w-[72px] place-items-center rounded-full bg-cream text-4xl text-primary">+</span>
+          <span className="text-lg font-semibold text-ink">Add profile</span>
         </button>
       </div>
     </Screen>

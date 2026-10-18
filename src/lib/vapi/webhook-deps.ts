@@ -11,6 +11,7 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
   const db = supabaseAdmin()
   return {
     secret: process.env.VAPI_WEBHOOK_SECRET,
+    demoSeniorPhone: process.env.DEMO_SENIOR_PHONE,
     async findSeniorByPhone(phone) {
       const { data, error } = await db.from('seniors').select('id').eq('phone_e164', phone).maybeSingle()
       if (error) throw new Error(error.message)
@@ -26,6 +27,14 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
         .select('id')
       if (error) throw new Error(error.message)
       return (data ?? []).map((row) => row.id as string)
+    },
+    async linkAlerts(vapiCallId, checkInId) {
+      const { error } = await db
+        .from('alerts')
+        .update({ check_in_id: checkInId })
+        .eq('vapi_call_id', vapiCallId)
+        .is('check_in_id', null)
+      if (error) throw new Error(error.message)
     },
     async propose(opportunityId) {
       await coordinateOpportunity(opportunityId)

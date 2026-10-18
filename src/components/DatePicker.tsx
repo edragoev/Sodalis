@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button, largeInputCls } from "./ui";
+import { Button, inputCls } from "./ui";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -77,7 +77,7 @@ export default function DatePicker({
         id={id}
         aria-haspopup="dialog"
         onClick={openPicker}
-        className={`${largeInputCls} flex items-center justify-between text-left`}
+        className={`${inputCls} flex items-center justify-between text-left`}
       >
         <span className={chosen ? "text-ink" : "text-slate/50"}>
           {chosen ? pretty(chosen.y, chosen.m, chosen.d) : placeholder}

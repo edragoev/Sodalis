@@ -6,7 +6,7 @@ import { OTHER, pronounOptions, pronounValue } from "@/lib/pronouns";
 import { saveElder } from "@/lib/session";
 import DatePicker from "./DatePicker";
 import TagInput from "./TagInput";
-import { BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, largeInputCls, largeLabelCls, subCls, textareaCls } from "./ui";
+import { BackButton, Button, Logo, Screen, SelectField, headingCls, inputCls, fieldLabelCls, subCls, textareaCls } from "./ui";
 
 // 1. Phone number. Found -> the family's profile picker. Not found -> set up the loved one:
 // 2. About them (name, pronouns, birthday), 3. What they're like (interests, skills, things to know).
@@ -110,16 +110,16 @@ export default function LinkFlow() {
         }
       >
         <h1 className={headingCls}>What is {name.trim()} like?</h1>
-        <p className={`${subCls} text-xl`}>This helps Sodalis and your family find the right moments. Skip anything you&apos;re unsure about.</p>
+        <p className={subCls}>This helps Sodalis and your family find the right moments. Skip anything you&apos;re unsure about.</p>
         <div className="mt-8 space-y-7">
           <TagInput id="elder-interests" label="Interests" hint="Things they love" values={interests} onChange={setInterests} suggestions={INTEREST_IDEAS} />
           <TagInput id="elder-skills" label="Skills" hint="Things they're good at" values={skills} onChange={setSkills} suggestions={SKILL_IDEAS} />
           <div>
-            <label className={largeLabelCls} htmlFor="elder-notes">Good to know</label>
-            <p className="-mt-1 mb-2 text-lg text-slate">Routines, health, favourite things, names Sodalis should know.</p>
+            <label className={fieldLabelCls} htmlFor="elder-notes">Good to know</label>
+            <p className="-mt-1 mb-2 text-sm text-slate">Routines, health, favourite things, names Sodalis should know.</p>
             <textarea
               id="elder-notes"
-              className={`${textareaCls} min-h-32 text-xl`}
+              className={`${textareaCls} min-h-32`}
               maxLength={2000}
               placeholder="e.g. Naps after lunch. Hard of hearing on the left. Loves her cat, Biscuit."
               value={notes}
@@ -142,21 +142,21 @@ export default function LinkFlow() {
         }
       >
         <h1 className={headingCls}>Let&apos;s set up your loved one</h1>
-        <p className={`${subCls} text-xl`}>We don&apos;t have {prettyPhone(phone)} yet. Tell us a little about them.</p>
+        <p className={subCls}>We don&apos;t have {prettyPhone(phone)} yet. Tell us a little about them.</p>
         <div className="mt-8 space-y-6">
           <div>
-            <label className={largeLabelCls} htmlFor="elder-name">Their name</label>
-            <input id="elder-name" className={largeInputCls} value={name} onChange={(e) => setName(e.target.value)} />
+            <label className={fieldLabelCls} htmlFor="elder-name">Their name</label>
+            <input id="elder-name" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className={largeLabelCls} htmlFor="elder-pronouns">Their pronouns</label>
-            <SelectField id="elder-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions(ELDER_SKIP)} placeholder="Choose one" large blackText />
+            <label className={fieldLabelCls} htmlFor="elder-pronouns">Their pronouns</label>
+            <SelectField id="elder-pronouns" value={pronounChoice} onChange={setPronounChoice} options={pronounOptions(ELDER_SKIP)} placeholder="Choose one" blackText />
             {pronounChoice === OTHER && (
               <input className={`${inputCls} mt-3`} placeholder="Their pronouns, in your words" value={pronounOther} onChange={(e) => setPronounOther(e.target.value)} />
             )}
           </div>
           <div>
-            <label className={largeLabelCls} htmlFor="elder-birthday">Their birthday (optional)</label>
+            <label className={fieldLabelCls} htmlFor="elder-birthday">Their birthday (optional)</label>
             <DatePicker id="elder-birthday" value={birthday} onChange={setBirthday} placeholder="Select their birthday" startYear={1950} />
           </div>
         </div>
@@ -164,16 +164,7 @@ export default function LinkFlow() {
     );
 
   return (
-    <Screen
-      footer={
-        <div className="space-y-3">
-          <Button className="w-full" disabled={busy || !phoneReady} onClick={lookup}>
-            Continue
-          </Button>
-          <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
-        </div>
-      }
-    >
+    <Screen>
       <div className="pt-4">
         <Logo align="left" />
       </div>
@@ -186,15 +177,19 @@ export default function LinkFlow() {
           if (phoneReady && !busy) lookup();
         }}
       >
-        <label className="mb-2 block text-base font-semibold text-ink" htmlFor="elder-phone">Their phone number</label>
+        <label className={fieldLabelCls} htmlFor="elder-phone">Their phone number</label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate">+1</span>
           <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
             value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
-        <button type="submit" className="hidden" />
+        {errorBox}
+        {/* Right under the number, so it sits within reach and isn't pushed off screen by the keyboard. */}
+        <Button type="submit" className="mt-4 w-full" disabled={busy || !phoneReady}>
+          Continue
+        </Button>
+        <p className="mt-3 text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
       </form>
-      {errorBox}
       {notFound && (
         <div className="fixed inset-0 z-20 flex items-end justify-center bg-ink/40" onClick={() => setNotFound(false)}>
           <div

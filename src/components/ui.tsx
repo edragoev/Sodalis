@@ -4,7 +4,6 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 const inputBaseCls =
   "w-full h-14 rounded-2xl border border-sand bg-white px-4 text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20";
 export const inputCls = `${inputBaseCls} text-lg`;
-export const largeInputCls = `${inputBaseCls} text-xl`;
 export const textareaCls =
   "w-full rounded-2xl border border-sand bg-white px-4 py-3 text-lg text-ink outline-none placeholder:text-slate/50 focus:border-primary focus:ring-2 focus:ring-primary/20";
 const labelBaseCls = "mb-2 block font-semibold text-ink";
@@ -12,22 +11,30 @@ const labelBaseCls = "mb-2 block font-semibold text-ink";
 export const primaryCls =
   "h-14 w-full rounded-2xl bg-btn px-6 text-lg font-semibold text-primary-dark transition-colors hover:bg-btn-hover disabled:opacity-50";
 export const labelCls = `${labelBaseCls} text-sm`;
-export const largeLabelCls = `${labelBaseCls} text-2xl`;
+// Every form label on the setup screens: the same size as the phone number label.
+export const fieldLabelCls = `${labelBaseCls} text-base`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";
 export const subCls = "mt-3 text-lg leading-relaxed text-slate";
 
-// A tilted phone handset with two dot eyes above it: Sodalis's friendly voice on the line.
-const HANDSET =
-  "M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z";
+// A calendar where one day is a heart: the day you visit. The dots and the band under the rings
+// are the tile colour, so they read as cut-outs. The app icons in public/icons and
+// src/app/favicon.ico use the same glyph.
+const HEART =
+  "M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3.2 5 6.6 5c2 0 3.4 1.1 5.4 3 2-1.9 3.4-3 5.4-3 3.4 0 5.4 3.6 4.1 6.8C19.5 16.4 12 21 12 21z";
+const DAYS = [[7.5, 13.6], [12, 13.6], [16.5, 13.6], [7.5, 17.6], [12, 17.6]];
 
 export function Logo({ align = "center" }: { align?: "center" | "left" | "right" }) {
   return (
     <div className={`flex items-center gap-3 ${align === "right" ? "justify-end" : align === "left" ? "justify-start" : "justify-center"}`}>
       <span className="grid h-12 w-12 place-items-center rounded-2xl bg-btn">
         <svg viewBox="0 0 24 24" className="h-8 w-8 text-primary-dark" fill="currentColor" aria-hidden>
-          <path d={HANDSET} />
-          <circle cx="13.2" cy="5.6" r="1.5" />
-          <circle cx="18.2" cy="9.6" r="1.5" />
+          <rect x="3" y="5" width="18" height="16" rx="3" />
+          <path d="M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <rect x="3" y="9.2" width="18" height="1.3" className="fill-btn" />
+          {DAYS.map(([cx, cy]) => (
+            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.3" className="fill-btn" />
+          ))}
+          <path d={HEART} fill="#fff" transform="translate(16.5 17.5) scale(.27) translate(-12 -13)" />
         </svg>
       </span>
       <span className="font-serif text-3xl font-semibold text-ink">Sodalis</span>
@@ -134,13 +141,13 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
 }
 
 export function SelectField({
-  id, value, onChange, options, placeholder, large = false, blackText = false,
-}: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; large?: boolean; blackText?: boolean }) {
+  id, value, onChange, options, placeholder, blackText = false,
+}: { id: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; blackText?: boolean }) {
   return (
     <div className="relative">
       <select
         id={id}
-        className={`${large ? largeInputCls : inputCls} appearance-none pr-12 ${!value && !blackText ? "text-slate/60" : ""}`}
+        className={`${inputCls} appearance-none pr-12 ${!value && !blackText ? "text-slate/60" : ""}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >

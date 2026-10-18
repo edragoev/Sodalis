@@ -4,7 +4,8 @@ import { exchangeCode, SCOPE } from '@/lib/google/oauth'
 import { clearNonceCookie, readNonce, verifyState } from '@/lib/google/state'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
-const DONE_PATH = '/availability'
+// The Calendar tab, which shows "Google Calendar connected" (or what went wrong) from ?calendar=.
+const DONE_PATH = '/schedule'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)

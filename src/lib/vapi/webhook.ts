@@ -4,17 +4,26 @@ import { secretMatches } from '@/lib/shared-secret'
 
 // POST /api/vapi/webhook, `end-of-call-report` (specs/02-api/routes.md "Webhook flow").
 // The handler only orchestrates; every collaborator is injected so it can be tested without a database.
-// Not here yet: Gemini mood/topic/flag analysis. The event planner (opportunities from the transcript) and
-// the wellbeing agent (alerts from the transcript) run after the response, through `extract` and `wellbeing`.
+// Not here yet: Gemini mood/topic analysis. Alerts that flag_concern raised during the call
+// (src/lib/vapi/tools.ts) are linked to the new check-in. The event planner (opportunities from the
+// transcript) and the wellbeing agent (alerts from the transcript) run after the response, through
+// `extract` and `wellbeing`.
 
 export interface VapiWebhookDeps {
   /** Shared secret Vapi sends in x-vapi-secret. When unset, every request is refused. */
   secret?: string
+  /**
+   * Demo only (DEMO_SENIOR_PHONE): the senior a web call belongs to. Web calls (the Vapi dashboard's
+   * Talk button) carry no phone number; phone calls never use this.
+   */
+  demoSeniorPhone?: string
   findSeniorByPhone(phone: string): Promise<{ id: string } | null>
   insertCheckIn(input: CheckInInput): Promise<{ id: string }>
   /** Ties the opportunities Hope created during the call to the new check-in; returns their ids. */
   linkHopeOpportunities(vapiCallId: string, checkInId: string): Promise<string[]>
   propose(opportunityId: string): Promise<void>
+  /** Points the alerts flag_concern raised during the call (by Vapi call id) at the new check-in. */
+  linkAlerts?(vapiCallId: string, checkInId: string): Promise<void>
   /** The event planner for a saved check-in: finds opportunities in the transcript and proposes them. */
   extract?(checkInId: string): Promise<unknown>
   /** For a redelivered call: the check-in whose extraction never finished, or null. */
@@ -99,7 +108,7 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
     const call = isObject(message.call) ? message.call : {}
     const customer = isObject(call.customer) ? call.customer : {}
     const callId = text(call.id)
-    const number = text(customer.number)
+    const number = text(customer.number) ?? (call.type === 'webCall' ? text(deps.demoSeniorPhone) : undefined)
     if (!callId) return bad('call.id is required')
     if (!number) return bad('call.customer.number is required')
 
@@ -144,6 +153,15 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
       }
       console.error('vapi webhook: could not save the check-in', (err as Error).message)
       return Response.json({ error: 'Could not save the check-in' }, { status: 500 })
+    }
+
+    if (deps.linkAlerts) {
+      try {
+        await deps.linkAlerts(callId, saved.id)
+      } catch (err) {
+        // The alerts were already saved and pushed during the call; only the link to the call is missing.
+        console.error('vapi webhook: could not link the alerts', (err as Error).message)
+      }
     }
 
     if (status !== 'no_answer') {

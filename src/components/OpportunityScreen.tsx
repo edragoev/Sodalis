@@ -71,24 +71,24 @@ export default function OpportunityScreen({
     };
   }, [opportunityId, session, load]);
 
-  if (session === undefined) return <p className="p-8 text-xl text-slate">Loading…</p>;
+  if (session === undefined) return <p className="p-8 text-slate">Loading…</p>;
   if (!session) {
     return (
       <Screen>
         <h1 className={headingCls}>One quick step first</h1>
-        <p className={`${subCls} text-xl`}>Link your account to see this idea.</p>
+        <p className={subCls}>Link your account to see this idea.</p>
         <Link href="/" className={`${primaryCls} mt-8 flex items-center justify-center`}>
           Link your account
         </Link>
       </Screen>
     );
   }
-  if (loadFailed) return <p role="alert" className="p-8 text-xl text-danger">Couldn&apos;t load this idea. Try again.</p>;
-  if (data === undefined) return <p className="p-8 text-xl text-slate">Loading…</p>;
+  if (loadFailed) return <p role="alert" className="p-8 text-danger">Couldn&apos;t load this idea. Try again.</p>;
+  if (data === undefined) return <p className="p-8 text-slate">Loading…</p>;
   if (data === null) {
     return (
       <Screen>
-        <p className={`${subCls} text-xl`}>We couldn&apos;t find that idea.</p>
+        <p className={subCls}>We couldn&apos;t find that idea.</p>
       </Screen>
     );
   }
@@ -97,7 +97,7 @@ export default function OpportunityScreen({
   if (view.state === "not_your_family") {
     return (
       <Screen>
-        <p className={`${subCls} text-xl`}>This idea belongs to another family.</p>
+        <p className={subCls}>This idea belongs to another family.</p>
       </Screen>
     );
   }

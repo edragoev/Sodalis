@@ -1,17 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { getSession } from "@/lib/session";
-import { normalizeGoogleCalendarEmbedUrl, PublicCalendarEmbed } from "./PublicCalendarEmbed";
-import { Button, Screen, headingCls, inputCls, subCls } from "./ui";
-
-const DEFAULT_PUBLIC_CALENDAR = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL || "";
+import { Button, Screen, headingCls, subCls } from "./ui";
 
 export default function CalendarStep() {
   const router = useRouter();
-  const [publicCalendarUrl, setPublicCalendarUrl] = useState(DEFAULT_PUBLIC_CALENDAR);
-  const [calendarEmbedUrl, setCalendarEmbedUrl] = useState(DEFAULT_PUBLIC_CALENDAR);
 
   useEffect(() => {
     if (!getSession()) router.replace("/");
@@ -26,25 +21,12 @@ export default function CalendarStep() {
     window.location.assign(`/api/auth/google?member_id=${encodeURIComponent(session.member_id)}`);
   };
 
-  const handlePreviewPublicCalendar = () => {
-    const trimmed = publicCalendarUrl.trim();
-    if (!trimmed) return;
-    const normalized = normalizeGoogleCalendarEmbedUrl(trimmed);
-    setCalendarEmbedUrl(normalized);
-    window.open(normalized, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <Screen
-      footer={
-        <div className="space-y-1">
-          <Button className="w-full" onClick={() => router.push("/availability")}>
-            Set my free times
-          </Button>
-          <Button variant="text" onClick={() => router.push("/dashboard")}>
-            Skip for now
-          </Button>
-        </div>
+      top={
+        <button onClick={() => router.push("/dashboard")} className="-ml-1 px-1 py-2 text-base font-semibold text-slate hover:text-ink hover:underline">
+          Skip
+        </button>
       }
     >
       <div className="grid h-16 w-16 place-items-center rounded-2xl bg-mist text-primary">
@@ -62,29 +44,9 @@ export default function CalendarStep() {
           Connect private Google Calendar
         </Button>
         <Button variant="secondary" className="w-full" onClick={() => router.push("/availability")}>
-          Continue without Google
+          Set my free times instead
         </Button>
       </div>
-
-      <div className="mt-6 rounded-2xl border border-sand bg-cream p-4">
-        <label htmlFor="public-google-calendar" className="mb-2 block text-sm font-semibold text-ink">
-          Public Google Calendar URL
-        </label>
-        <input
-          id="public-google-calendar"
-          type="url"
-          value={publicCalendarUrl}
-          onChange={(event) => setPublicCalendarUrl(event.target.value)}
-          placeholder="https://calendar.google.com/calendar/embed?..."
-          className={`${inputCls} h-12 text-base`}
-        />
-        <Button variant="secondary" className="mt-3 w-full" onClick={handlePreviewPublicCalendar}>
-          Preview public calendar
-        </Button>
-        <p className="mt-2 text-xs text-slate">This option does not require a Google sign-in and works for public calendars only.</p>
-      </div>
-
-      {calendarEmbedUrl && <PublicCalendarEmbed url={calendarEmbedUrl} />}
 
       <p className="mt-4 text-center text-sm text-slate">We use a read-only free/busy check and nothing more for private calendars.</p>
     </Screen>
