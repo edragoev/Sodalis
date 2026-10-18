@@ -40,13 +40,10 @@ const seed = () => ({
 })
 
 describe('createSchedulerLoader', () => {
-  it("returns the elder's timezone and both sets of free hours", async () => {
+  it("returns the elder's timezone and the member's free hours (slots use only those)", async () => {
     const data = await createSchedulerLoader(fakeDb(seed()))('danny')
-    expect(data).toMatchObject({
-      timezone: 'America/Toronto',
-      seniorWindows: [{ dow: 6, start: '08:00', end: '20:00' }],
-      memberWindows: windows,
-    })
+    expect(data).toMatchObject({ timezone: 'America/Toronto', memberWindows: windows })
+    expect(data).not.toHaveProperty('seniorWindows')
   })
 
   it('returns null for a member who does not exist', async () => {
@@ -77,10 +74,8 @@ describe('createSchedulerLoader', () => {
   it.each([{}, null, 'oops', 5])('treats %j availability as no free hours instead of failing', async (bad) => {
     const data = seed()
     data.family_members = [{ id: 'danny', senior_id: 'senior-1', manual_availability: bad }] as never
-    data.seniors[0].preferred_windows = bad as never
     const loaded = await createSchedulerLoader(fakeDb(data))('danny')
     expect(loaded!.memberWindows).toEqual([])
-    expect(loaded!.seniorWindows).toEqual([])
   })
 
   it('drops windows that are not well formed', async () => {

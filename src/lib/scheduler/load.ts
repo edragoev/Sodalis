@@ -62,7 +62,7 @@ export function createSchedulerLoader(
     if (!member) return null
 
     const [senior, visits] = await Promise.all([
-      db.from('seniors').select('timezone, preferred_windows').eq('id', member.senior_id).maybeSingle(),
+      db.from('seniors').select('timezone').eq('id', member.senior_id).maybeSingle(),
       db
         .from('visits')
         .select('starts_at, ends_at, kind')
@@ -86,7 +86,6 @@ export function createSchedulerLoader(
 
     return {
       timezone: senior.data?.timezone ?? 'UTC',
-      seniorWindows: cleanWindows(senior.data?.preferred_windows),
       memberWindows: cleanWindows(member.manual_availability),
       busyWindows,
       visits: (visits.data ?? []).map(

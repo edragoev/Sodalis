@@ -7,7 +7,6 @@ import { computeSlots, type Interval, type Kind, type OpportunityTweaks, type Sl
 
 export interface SchedulerData {
   timezone: string
-  seniorWindows: Window[]
   memberWindows: Window[]
   busyWindows?: Interval[]
   visits: Interval[]
