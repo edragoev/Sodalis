@@ -4,7 +4,8 @@ import { secretMatches } from '@/lib/shared-secret'
 
 // POST /api/vapi/webhook, `end-of-call-report` (specs/02-api/routes.md "Webhook flow").
 // The handler only orchestrates; every collaborator is injected so it can be tested without a database.
-// Not here yet: Gemini analysis (mood, topics, flags), alerts and call requests.
+// Not here yet: Gemini mood/topic/flag analysis and alerts. The event planner (opportunities from the
+// transcript) runs after the response, through `extract`.
 
 export interface VapiWebhookDeps {
   /** Shared secret Vapi sends in x-vapi-secret. When unset, every request is refused. */
@@ -19,6 +20,10 @@ export interface VapiWebhookDeps {
   /** Ties the opportunities Hope created during the call to the new check-in; returns their ids. */
   linkHopeOpportunities(vapiCallId: string, checkInId: string): Promise<string[]>
   propose(opportunityId: string): Promise<void>
+  /** The event planner for a saved check-in: finds opportunities in the transcript and proposes them. */
+  extract?(checkInId: string): Promise<unknown>
+  /** For a redelivered call: the check-in whose extraction never finished, or null. */
+  pendingExtraction?(vapiCallId: string): Promise<string | null>
   /** Runs work after the response is sent (next/server `after`). */
   after(task: () => Promise<void>): void
   now(): Date
@@ -38,6 +43,26 @@ function validDate(v: unknown): Date | null {
   if (!s) return null
   const d = new Date(s)
   return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Runs the planner after the response; it records its own failures, so nothing here may throw. */
+async function runPlanner(deps: VapiWebhookDeps, checkInId: string) {
+  if (!deps.extract) return
+  try {
+    await deps.extract(checkInId)
+  } catch (err) {
+    console.error('vapi webhook: the event planner failed', (err as Error).message)
+  }
+}
+
+async function retryExtraction(deps: VapiWebhookDeps, callId: string) {
+  if (!deps.extract || !deps.pendingExtraction) return
+  try {
+    const checkInId = await deps.pendingExtraction(callId)
+    if (checkInId) deps.after(() => runPlanner(deps, checkInId))
+  } catch (err) {
+    console.error('vapi webhook: could not check for unfinished extraction', (err as Error).message)
+  }
 }
 
 export function createVapiWebhook(deps: VapiWebhookDeps) {
@@ -95,6 +120,8 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
       saved = await deps.insertCheckIn(checkIn)
     } catch (err) {
       if ((err as { code?: string }).code === POSTGRES_UNIQUE_VIOLATION) {
+        // The check-in exists. If the first delivery died before the planner finished, finish the job now.
+        await retryExtraction(deps, callId)
         return Response.json({ ok: true, duplicate: true })
       }
       console.error('vapi webhook: could not save the check-in', (err as Error).message)
@@ -110,7 +137,8 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
         console.error('vapi webhook: could not link the opportunities', (err as Error).message)
       }
 
-      if (opportunityIds.length > 0) {
+      const planFor = transcript && deps.extract ? saved.id : null
+      if (opportunityIds.length > 0 || planFor) {
         deps.after(async () => {
           for (const id of opportunityIds) {
             try {
@@ -119,6 +147,7 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
               console.error('vapi webhook: could not propose an opportunity', id, (err as Error).message)
             }
           }
+          if (planFor) await runPlanner(deps, planFor)
         })
       }
     }

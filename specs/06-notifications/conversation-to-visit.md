@@ -20,6 +20,16 @@ The only message sent during a call is a health alert from Hope's `flag_concern`
 6. Send FCM push to the related family members (section 6); status becomes `proposed`. The push opens the web application at `/opportunities/[id]`.
 7. A member taps the push and lands in the web app, then taps Confirm on a slot. A `visits` row is created (`confirmed`, `opportunity_id` set) and the opportunity becomes `confirmed`.
 
+### Event planner (implementation)
+Steps 2-6 are `src/lib/event-planner/`, started from the webhook's `after()` for every call with a transcript.
+- **One Gemini call per phone call** (`gemini.ts`, `GEMINI_MODEL`, 20 s, one attempt, no retry on quota). Only the transcript, the elder's first name and timezone, today's date and member names, relationships and pronouns are sent; no phones, tokens or calendar data.
+- **Strict validation** (`validate.ts`): enums, confidence 0..1, lengths, at most 5 ideas. An invalid idea is dropped alone; an invalid envelope fails the call. The `quote` must appear in the transcript. A summary that mentions health is dropped (health goes through `alerts`).
+- **Member matching** (`members.ts`): first name, full name or relationship word. Unknown or ambiguous mentions are saved as unnamed (the summary notes the mention), because one opportunity names one member and two could double-book the elder.
+- **Dates** (`dates.ts`): `target_date` must be a real date from today (the elder's timezone, at call end) to one year ahead, else it is blanked.
+- **Dedup:** same type and item (or, with no item, same member) within 7 days, including opportunities Hope created during the call, is skipped; the existing row is not updated (v2). The unique index on `(check_in_vapi_call_id, type, member, item)` makes a repeat run harmless.
+- **Idempotency and failure:** `check_ins.raw_extraction` holds `{ status: 'ok', ideas, dropped }` once the opportunities exist, or `{ status: 'failed', reason, quota, retry_after_ms }`. Only `ok` blocks a re-run, so a redelivered webhook finishes an unfinished extraction.
+- Confidence below 0.6 is saved but not proposed. Each remaining idea goes to the [coordinator](../08-agents/coordinator-agent.md), which keeps its own checks (shortlist, health words, first-accept-wins).
+
 ## 2. Opportunity types
 | Type | Meaning | Example utterance | Default urgency |
 |---|---|---|---|

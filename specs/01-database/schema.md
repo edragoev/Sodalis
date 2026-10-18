@@ -43,6 +43,7 @@ See [member-questionnaire](../07-onboarding/member-questionnaire.md).
 ## Agents
 | Table / column | Notes |
 |---|---|
+| `check_ins.raw_extraction` | Event planner marker: `{ status: 'ok', ideas, dropped }` or `{ status: 'failed', reason, quota, retry_after_ms }`. A call-level failure lives here because `agent_runs.opportunity_id` is required |
 | `agent_runs` | id, opportunity_id, step, tool, args `jsonb`, result `jsonb`, model_text, used_fallback bool, created_at (v1: one row per run with input/output; v2: one row per step) |
 
 Enable realtime on `agent_runs` for the dashboard trace. See [coordinator-agent](../08-agents/coordinator-agent.md).
