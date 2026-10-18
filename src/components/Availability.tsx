@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DAY_LETTERS, DAY_NAMES, SLOTS, cellKey, dayKeys, fromWindows, slotKeys, toWindows } from "@/lib/availability";
@@ -83,7 +84,12 @@ export default function Availability() {
 
   return (
     <Screen
-      tabs={<TabBar active="availability" name={name} />}
+      top={
+        <Link href="/schedule" className="text-sm font-semibold text-primary hover:underline">
+          ← Calendar
+        </Link>
+      }
+      tabs={<TabBar active="calendar" name={name} />}
       footer={
         <div className="space-y-2">
           {saved && !dirty ? (

@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [names, setNames] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [showEarlier, setShowEarlier] = useState(false);
 
   const load = useCallback(async (id: string) => {
     const db = supabaseBrowser();
@@ -204,6 +205,18 @@ export default function Dashboard() {
           </section>
         )}
 
+        {requests.length > 0 && (
+          <section className="space-y-3">
+            {requests.map((r) => (
+              <div key={r.id} className="rounded-3xl bg-peach p-5">
+                <p className="text-xs font-semibold text-accent">{sName} would love to hear from you</p>
+                <p className="mt-1 text-lg font-semibold text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
+                <p className="mt-1 text-sm text-slate">{when(r.created_at)}</p>
+              </div>
+            ))}
+          </section>
+        )}
+
         <section className={card}>
           <p className="text-sm font-medium text-slate">{sName}&apos;s mood today</p>
           {latest ? (
@@ -225,57 +238,58 @@ export default function Dashboard() {
           )}
         </section>
 
-        {requests.length > 0 && (
-          <section className="space-y-3">
-            {requests.map((r) => (
-              <div key={r.id} className="rounded-3xl bg-peach p-5">
-                <p className="text-xs font-semibold text-accent">{sName} would love to hear from you</p>
-                <p className="mt-1 text-lg font-semibold text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
-                <p className="mt-1 text-sm text-slate">{when(r.created_at)}</p>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {ideas.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Hope&apos;s calls</h2>
-            {ideas.map((i) => (
-              <Link key={i.id} href={`/opportunities/${i.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
-                {i.quote && <p className="font-serif text-lg leading-snug text-ink">&ldquo;{i.quote}&rdquo;</p>}
-                <p className="text-slate">{i.summary}</p>
-                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${i.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-peach text-accent"}`}>
-                  {i.status === "confirmed" ? `${i.accepted_by ? names[i.accepted_by] ?? "Someone" : "Someone"} is on it` : "Needs someone"}
-                </span>
-              </Link>
-            ))}
-          </section>
-        )}
-
         <section className="space-y-3">
-          <h2 className="font-serif text-2xl font-semibold text-ink">Coming up</h2>
-          {visits.length ? (
-            visits.map((v) => (
-              <div key={v.id} className={`${card} flex items-center justify-between py-4`}>
-                <div>
-                  <p className="font-semibold capitalize text-ink">{v.kind}</p>
-                  <p className="text-sm text-slate">{when(v.starts_at)}</p>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${v.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-warn-bg text-warn"}`}>
-                  {v.status}
-                </span>
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-serif text-2xl font-semibold text-ink">Next up</h2>
+            <Link href="/schedule" className="text-sm font-semibold text-primary hover:underline">Calendar</Link>
+          </div>
+          {visits[0] ? (
+            <div className={`${card} flex items-center justify-between py-4`}>
+              <div>
+                <p className="font-semibold text-ink">
+                  <span className="capitalize">{visits[0].kind}</span> · {when(visits[0].starts_at)}
+                </p>
+                {visits.length > 1 && <p className="text-sm text-slate">and {visits.length - 1} more coming up</p>}
               </div>
-            ))
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${visits[0].status === "confirmed" ? "bg-mist text-primary-dark" : "bg-warn-bg text-warn"}`}>
+                {visits[0].status === "confirmed" ? "Confirmed" : "Waiting"}
+              </span>
+            </div>
           ) : (
             <p className="text-slate">Nothing scheduled yet.</p>
           )}
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-serif text-2xl font-semibold text-ink">Recent calls with Hope</h2>
-          {checkIns.length ? (
-            checkIns.map((c) => (
-              <Link key={c.id} href={`/calls/${c.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
+          <h2 className="font-serif text-2xl font-semibold text-ink">Last call with Hope</h2>
+          {checkIns[0] ? (
+            <>
+              <Link href={`/calls/${checkIns[0].id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
+                <div className="flex items-center justify-between text-sm text-slate">
+                  <span>{when(checkIns[0].started_at)}</span>
+                  <span className="font-semibold capitalize">
+                    {checkIns[0].status === "completed" ? checkIns[0].mood_label ?? "" : checkIns[0].status.replace("_", " ")}
+                  </span>
+                </div>
+                {checkIns[0].summary && <p className="leading-relaxed text-ink">{checkIns[0].summary}</p>}
+                {!!checkIns[0].topics?.length && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {checkIns[0].topics.map((t) => (
+                      <span key={t} className="rounded-full bg-mist px-3 py-1 text-sm text-primary-dark">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Link>
+              {checkIns.length > 1 && (
+                <button type="button" aria-expanded={showEarlier} onClick={() => setShowEarlier((v) => !v)} className="text-sm font-semibold text-primary hover:underline">
+                  {showEarlier ? "Hide earlier calls" : "Show earlier calls"}
+                </button>
+              )}
+              {showEarlier &&
+                checkIns.slice(1).map((c) => (
+                  <Link key={c.id} href={`/calls/${c.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
                 <div className="flex items-center justify-between text-sm text-slate">
                   <span>{when(c.started_at)}</span>
                   <span className="font-semibold capitalize">
@@ -293,11 +307,27 @@ export default function Dashboard() {
                   </div>
                 )}
               </Link>
-            ))
+                ))}
+            </>
           ) : (
             <p className="text-slate">Nothing yet.</p>
           )}
         </section>
+
+        {ideas.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Hope&apos;s calls</h2>
+            {ideas.map((i) => (
+              <Link key={i.id} href={`/opportunities/${i.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
+                {i.quote && <p className="font-serif text-lg leading-snug text-ink">&ldquo;{i.quote}&rdquo;</p>}
+                <p className="text-slate">{i.summary}</p>
+                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${i.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-peach text-accent"}`}>
+                  {i.status === "confirmed" ? `${i.accepted_by ? names[i.accepted_by] ?? "Someone" : "Someone"} is on it` : "Needs someone"}
+                </span>
+              </Link>
+            ))}
+          </section>
+        )}
 
         {memberId && <InviteCard memberId={memberId} seniorName={sName} />}
       </div>

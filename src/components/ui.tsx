@@ -95,10 +95,10 @@ const icons = {
   person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21c0-4 3.6-6 8-6s8 2 8 6",
 };
 
-export function TabBar({ active, name }: { active: "home" | "availability" | "profile"; name: string }) {
+export function TabBar({ active, name }: { active: "home" | "calendar" | "profile"; name: string }) {
   const tabs = [
     { key: "home", href: "/dashboard", label: "Home", icon: icons.home },
-    { key: "availability", href: "/availability", label: "Availability", icon: icons.calendar },
+    { key: "calendar", href: "/schedule", label: "Calendar", icon: icons.calendar },
     { key: "profile", href: "/profile", label: name || "Me", icon: icons.person },
   ] as const;
   return (

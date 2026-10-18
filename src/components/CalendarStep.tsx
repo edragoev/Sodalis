@@ -6,7 +6,7 @@ import { getSession } from "@/lib/session";
 import { Button, Screen, headingCls, subCls } from "./ui";
 
 // Optional last onboarding step. Google Calendar sign-in isn't wired yet, so it's
-// shown as coming soon; the manual grid on the Availability tab is the fallback.
+// shown as coming soon; the free-times grid on the Calendar tab is the fallback.
 export default function CalendarStep() {
   const router = useRouter();
 
@@ -43,7 +43,7 @@ export default function CalendarStep() {
         Connect Google Calendar
         <span className="rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-primary-dark">Coming soon</span>
       </button>
-      <p className="mt-4 text-center text-sm text-slate">You can do this any time from the Availability tab.</p>
+      <p className="mt-4 text-center text-sm text-slate">You can do this any time from the Calendar tab.</p>
     </Screen>
   );
 }
