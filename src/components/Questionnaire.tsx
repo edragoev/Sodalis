@@ -77,18 +77,6 @@ export default function Questionnaire() {
           </div>
         </div>
       }
-      footer={
-        <div className="flex gap-3">
-          {i > 0 && (
-            <Button variant="secondary" disabled={saving} onClick={() => setI(i - 1)}>
-              Back
-            </Button>
-          )}
-          <Button className="flex-1" disabled={saving} onClick={next}>
-            {last ? (saving ? "Saving…" : "Finish") : "Next"}
-          </Button>
-        </div>
-      }
     >
       <h1 className={`${headingCls} mt-4`}>{q.text}</h1>
       <p className={subCls}>{HINTS[q.key]}</p>
@@ -110,6 +98,17 @@ export default function Questionnaire() {
           {error}
         </p>
       )}
+      {/* Right after the answer, like the phone screen, so the keyboard never hides them. */}
+      <div className="mt-6 flex gap-3">
+        {i > 0 && (
+          <Button variant="secondary" disabled={saving} onClick={() => setI(i - 1)}>
+            Back
+          </Button>
+        )}
+        <Button className="flex-1" disabled={saving} onClick={next}>
+          {last ? (saving ? "Saving…" : "Finish") : "Next"}
+        </Button>
+      </div>
     </Screen>
   );
 }

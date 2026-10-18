@@ -106,7 +106,7 @@ export default function ProfilePicker() {
         }
       >
         <div className="flex flex-col items-center text-center">
-          <Avatar name={name.trim().split(/\s+/)[0] || "?"} size={96} />
+          <Avatar name={name.trim().split(/\s+/)[0] || "?"} size={80} />
           <h1 className={`${headingCls} mt-4`}>Add profile</h1>
           <p className={subCls}>Someone who checks in on {seniorName}. Tap their profile afterwards to answer a few questions.</p>
         </div>
@@ -136,17 +136,14 @@ export default function ProfilePicker() {
 
   return (
     <Screen
-      footer={
-        <Button
-          variant="text"
-          className="text-slate"
+      // Back to the phone number screen, for a mistyped number or another loved one.
+      top={
+        <BackButton
           onClick={() => {
             clearElder();
             router.push("/");
           }}
-        >
-          Not {seniorName}&apos;s family? Use a different number
-        </Button>
+        />
       }
     >
       <h1 className={headingCls}>{members.length ? `Who's checking in on ${seniorName}?` : "Add your family"}</h1>
@@ -164,17 +161,17 @@ export default function ProfilePicker() {
             onClick={() => pick(m)}
             className="flex flex-col items-center gap-3 rounded-3xl border border-sand p-5 text-center transition-colors hover:bg-mist"
           >
-            <Avatar name={m.name} size={84} />
-            <span className="font-serif text-2xl font-semibold text-ink">{m.name}</span>
-            <span className="-mt-2 text-lg text-slate">{m.relationship}</span>
+            <Avatar name={m.name} size={72} />
+            <span className="font-serif text-xl font-semibold text-ink">{m.name}</span>
+            <span className="-mt-2 text-base text-slate">{m.relationship}</span>
           </button>
         ))}
         <button
           onClick={() => { setState("adding"); setError(""); setNotice(""); }}
           className="flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-sand p-5 text-center text-slate transition-colors hover:bg-mist"
         >
-          <span className="grid h-[84px] w-[84px] place-items-center rounded-full bg-cream text-5xl text-primary">+</span>
-          <span className="text-xl font-semibold text-ink">Add profile</span>
+          <span className="grid h-[72px] w-[72px] place-items-center rounded-full bg-cream text-4xl text-primary">+</span>
+          <span className="text-lg font-semibold text-ink">Add profile</span>
         </button>
       </div>
     </Screen>
