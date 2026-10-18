@@ -128,7 +128,7 @@ export default function ImportedCalendar({ memberId, onUpcoming }: { memberId: s
     ev.all_day ? "All day" : new Date(ev.starts_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
   return (
-    <section className="mt-8" aria-label="Your calendar">
+    <section id="your-calendar" className="mt-8 scroll-mt-6" aria-label="Your calendar">
       <h2 className="font-serif text-2xl font-semibold text-ink">Your calendar</h2>
       <p className="mt-1 text-slate">
         Upload your exported Google Calendar (.ics or .zip) and we&apos;ll show what you already have on.

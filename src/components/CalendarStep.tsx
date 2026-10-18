@@ -12,15 +12,6 @@ export default function CalendarStep() {
     if (!getSession()) router.replace("/");
   }, [router]);
 
-  const handleConnect = () => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    window.location.assign(`/api/auth/google?member_id=${encodeURIComponent(session.member_id)}`);
-  };
-
   return (
     <Screen
       top={
@@ -36,19 +27,15 @@ export default function CalendarStep() {
       </div>
       <h1 className={`${headingCls} mt-6`}>When are you free?</h1>
       <p className={subCls}>
-        Share your availability and we&apos;ll suggest visits and calls that fit your week. We only look at when you&apos;re busy, never what the events are.
+        Tap the times that usually work, and upload your Google Calendar if you like. We&apos;ll suggest visits and calls that fit your week.
       </p>
 
       <div className="mt-8 space-y-3">
-        <Button className="w-full" onClick={handleConnect}>
-          Connect private Google Calendar
-        </Button>
-        <Button variant="secondary" className="w-full" onClick={() => router.push("/availability")}>
-          Set my free times instead
+        <Button className="w-full" onClick={() => router.push("/availability")}>
+          Set my free times
         </Button>
       </div>
 
-      <p className="mt-4 text-center text-sm text-slate">We use a read-only free/busy check and nothing more for private calendars.</p>
     </Screen>
   );
 }

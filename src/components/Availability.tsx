@@ -47,6 +47,14 @@ export default function Availability() {
       });
   }, [router]);
 
+  // The Calendar tab's "Upload" links to #your-calendar; the browser's own jump runs while this
+  // page still says "Loading…", so scroll there once the section exists.
+  useEffect(() => {
+    if (loaded && window.location.hash === "#your-calendar") {
+      document.getElementById("your-calendar")?.scrollIntoView({ block: "start" });
+    }
+  }, [loaded]);
+
   const change = (next: Set<string>) => {
     setSelected(next);
     setDirty(true);
