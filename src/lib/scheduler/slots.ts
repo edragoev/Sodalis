@@ -23,6 +23,8 @@ export type SlotInput = {
   kind: Kind
   seniorWindows: Window[]
   memberWindows: Window[]
+  /** Google busy time blocks from the member's calendar. */
+  busyWindows?: Interval[]
   /** Confirmed visits for the elder, with anyone: they block their time and the 24 h either side. */
   visits: Interval[]
   /** Hope check-in calls: they block only their own time. */
@@ -96,7 +98,7 @@ function sharedRanges(dow: number, a: Window[], b: Window[]): [number, number][]
 }
 
 export function computeSlots(input: SlotInput): Slot[] {
-  const { memberId, now, days, timezone, kind, seniorWindows, memberWindows, visits, hopeCalls, opportunity } = input
+  const { memberId, now, days, timezone, kind, seniorWindows, memberWindows, busyWindows = [], visits, hopeCalls, opportunity } = input
   const length = LENGTH_MINUTES[kind]
   const nowMs = now.getTime()
   const horizon = nowMs + days * DAY
@@ -119,7 +121,7 @@ export function computeSlots(input: SlotInput): Slot[] {
     .filter(([start]) => start >= nowMs && start < horizon)
     .filter(([start]) => {
       const end = start + length * MINUTE
-      if ([...visits, ...hopeCalls].some((busy) => overlaps(start, end, busy))) return false
+      if ([...visits, ...hopeCalls, ...busyWindows].some((busy) => overlaps(start, end, busy))) return false
       // 24 h between contacts, which also means at most one contact a day.
       return visits.every((v) => start >= Date.parse(v.ends_at) + MIN_GAP || end <= Date.parse(v.starts_at) - MIN_GAP)
     })

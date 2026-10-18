@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { getTestEnv } from '../helpers/env'
 import { callRoute } from '../helpers/route'
-import { cleanupTracked, track, TEST_PHONE_PREFIX } from '../helpers/cleanup'
+import { cleanupAllTestData, cleanupTracked, track, TEST_PHONE_PREFIX } from '../helpers/cleanup'
 
 describe('getTestEnv', () => {
   const saved = { ...process.env }
@@ -98,5 +98,17 @@ describe('cleanupTracked', () => {
 
   it('uses a reserved fictional phone prefix', () => {
     expect(TEST_PHONE_PREFIX).toBe('+1555010')
+  })
+
+  it('skips cleanup when the test database is unreachable', async () => {
+    const unreachableDb = {
+      from: () => ({
+        select: () => ({
+          like: async () => ({ data: null, error: { code: 'ECONNREFUSED', message: 'fetch failed' } }),
+        }),
+      }),
+    } as never
+
+    await expect(cleanupAllTestData(unreachableDb)).resolves.toBeUndefined()
   })
 })

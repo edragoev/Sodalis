@@ -8,6 +8,9 @@
 | `GET /api/cron/hope-calls` | v2 | Vercel Cron every 5-15 min; dials due `hope_calls` via Vapi; retry after 30 min, max 2, then `missed_checkin` alert |
 | `GET /api/auth/google` + `/callback` | v2 | Per-member Google Calendar OAuth (free/busy scope); stores refresh token |
 | `GET /api/availability/[memberId]` | v2 | Busy intervals from Google, or the manual grid |
+| `POST /api/calendar/import` | v2 | Uploads a Google Calendar `.ics`/`.zip` export; parses, normalizes to UTC, upserts `calendar_events`. See [google-calendar-import](../10-calendar/google-calendar-import.md) |
+| `GET /api/calendar/events` | v2 | Imported events for a member and window; recurring series expanded at read time |
+| `DELETE /api/calendar/import/[batchId]` | v2 | Removes all events from one import |
 | `POST /api/push/register` | v1 | Stores a member's FCM token |
 | `POST /api/push/test` | v1 | Sends a test push to the current member (FCM hello world) |
 | `POST /api/call-requests/[id]/accept` | v2 | Member claims a request; triggers scheduling of the next slot |
