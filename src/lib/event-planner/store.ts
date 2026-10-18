@@ -6,6 +6,7 @@ import { DEDUP_DAYS, MIN_CONFIDENCE, type NewOpportunity, type Outcome, type Pla
 // Never select phone, fcm_token or google_refresh_token: member data is sent to Gemini.
 const MEMBER_COLUMNS = 'id, name, relationship, pronouns'
 const POSTGRES_UNIQUE_VIOLATION = '23505'
+const URGENCY_RANK: Record<string, number> = { low: 0, normal: 1, high: 2 }
 
 // Generic messages on purpose: a database error could quote data that should not reach a log or a caller.
 const fail = (what: string) => new Error(`Could not ${what}`)
@@ -26,7 +27,14 @@ export function createPlannerStore(db: SupabaseClient): Pick<PlannerDeps, 'load'
     const [senior, members, recent] = await Promise.all([
       db.from('seniors').select('name, timezone').eq('id', checkIn.senior_id).maybeSingle(),
       db.from('family_members').select(MEMBER_COLUMNS).eq('senior_id', checkIn.senior_id),
-      db.from('opportunities').select('type, mentioned_member_id, mentioned_item').eq('senior_id', checkIn.senior_id).gte('created_at', since),
+      // Only ideas a family member was actually asked about count as repeats; one that never got a push must not
+      // block the same idea from a later call.
+      db
+        .from('opportunities')
+        .select('type, mentioned_member_id, mentioned_item')
+        .eq('senior_id', checkIn.senior_id)
+        .in('status', ['proposed', 'confirmed'])
+        .gte('created_at', since),
     ])
     if (senior.error || members.error || recent.error) throw fail('load the family')
 
@@ -78,12 +86,18 @@ export function createPlannerStore(db: SupabaseClient): Pick<PlannerDeps, 'load'
   async function openIds(checkInId: string): Promise<string[]> {
     const { data, error } = await db
       .from('opportunities')
-      .select('id, confidence')
+      .select('id, confidence, type, urgency')
       .eq('check_in_id', checkInId)
       .eq('source', 'extraction')
       .eq('status', 'detected')
     if (error) throw fail('list the opportunities')
-    return (data ?? []).filter((r) => r.confidence == null || Number(r.confidence) >= MIN_CONFIDENCE).map((r) => r.id as string)
+    // Best first: a concrete plan before a general "wants contact", then the more urgent, then the more certain.
+    const score = (r: { confidence: unknown; type: unknown; urgency: unknown }) =>
+      (r.type === 'wants_contact' ? 0 : 100) + (URGENCY_RANK[r.urgency as string] ?? 1) * 10 + (r.confidence == null ? 0 : Number(r.confidence))
+    return (data ?? [])
+      .filter((r) => r.confidence == null || Number(r.confidence) >= MIN_CONFIDENCE)
+      .sort((a, b) => score(b) - score(a))
+      .map((r) => r.id as string)
   }
 
   async function saveResult(checkInId: string, record: Record<string, unknown>) {

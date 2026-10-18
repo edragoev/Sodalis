@@ -215,6 +215,15 @@ describe('event planner', () => {
     expect(deps.propose).toHaveBeenCalledTimes(2)
   })
 
+  it('pushes only the best idea: stops after the first one the coordinator proposes', async () => {
+    const { deps, plan } = setup({
+      openIds: vi.fn().mockResolvedValue(['best', 'next', 'last']),
+      propose: vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true),
+    })
+    await plan('ci-1')
+    expect(deps.propose.mock.calls.map((c) => c[0])).toEqual(['best', 'next'])
+  })
+
   it('reads the date in the elder’s timezone from when the call ended', async () => {
     const { deps, plan } = setup({}, { checkIn: { id: 'ci-1', senior_id: 's', vapi_call_id: 'c', transcript: TRANSCRIPT, started_at: '2026-10-16T01:00:00Z', ended_at: '2026-10-16T01:05:00Z', raw_extraction: null } })
     await plan('ci-1')

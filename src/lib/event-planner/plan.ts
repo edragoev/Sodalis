@@ -63,12 +63,12 @@ export interface PlannerDeps {
   extract(input: ExtractionInput): Promise<unknown>
   /** Inserts rows tied to the check-in. A row that already exists (same call, type, member) is left alone. */
   saveIdeas(checkIn: PlannerCheckIn, rows: NewOpportunity[]): Promise<void>
-  /** This check-in's extracted opportunities still `detected` and confident enough to propose. */
+  /** This check-in's extracted opportunities still `detected` and confident enough to propose, best first. */
   openIds(checkInId: string): Promise<string[]>
   /** Marks the check-in's extraction as done or failed. */
   saveResult(checkInId: string, record: Record<string, unknown>): Promise<void>
-  /** Runs the coordinator, which picks slots, writes the push and sets `proposed`. */
-  propose(opportunityId: string): Promise<void>
+  /** Runs the coordinator, which picks slots, writes the push and sets `proposed`. True when it was proposed. */
+  propose(opportunityId: string): Promise<boolean | void>
   outcomes(ids: string[]): Promise<Outcome[]>
   now(): Date
   timeoutMs: number
@@ -234,10 +234,11 @@ export function createEventPlanner(deps: PlannerDeps) {
       return fail(err, 'could not save the opportunities')
     }
 
+    // One push per call: the best idea. If it can't be proposed (no free times), the next one is tried.
     const open = await deps.openIds(checkIn.id)
     for (const id of open) {
       try {
-        await deps.propose(id)
+        if (await deps.propose(id)) break
       } catch (err) {
         console.error('event planner: could not propose an opportunity', id, errorMessage(err))
       }
