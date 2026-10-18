@@ -215,6 +215,34 @@ describe('event planner', () => {
     expect(deps.propose).toHaveBeenCalledTimes(2)
   })
 
+  it('gives a plan that names no one to the person the elder said she misses, in one push', async () => {
+    const transcript = 'User: I do miss Danny. We used to garden together.'
+    const { deps, plan } = setup(
+      {
+        extract: vi.fn().mockResolvedValue({
+          opportunities: [
+            idea({ type: 'wants_contact', quote: 'I do miss Danny', mentioned_member: 'Danny', mentioned_item: null }),
+            idea({ type: 'activity', quote: 'We used to garden together', mentioned_member: null, mentioned_item: 'garden' }),
+          ],
+        }),
+      },
+      { checkIn: { id: 'ci-1', senior_id: 's-1', vapi_call_id: 'call-1', transcript, started_at: '2026-10-15T14:00:00Z', ended_at: null, raw_extraction: null } },
+    )
+    await plan('ci-1')
+    const saved = deps.saveIdeas.mock.calls[0][1]
+    expect(saved).toEqual([expect.objectContaining({ type: 'activity', mentioned_member_id: 'danny' })])
+  })
+
+  it('matches "my kids" to every child, never silently to one of them', async () => {
+    const { matchMentionedMember } = await import('@/lib/event-planner/members')
+    const family = [
+      { id: 'sarah', name: 'Sarah', relationship: 'Daughter', pronouns: null },
+      { id: 'sam', name: 'Sam', relationship: 'Son', pronouns: null },
+    ]
+    expect(matchMentionedMember('my kids', family)).toEqual({ kind: 'several', members: family })
+    expect(matchMentionedMember('my daughter', family)).toEqual({ kind: 'one', member: family[0] })
+  })
+
   it('pushes only the best idea: stops after the first one the coordinator proposes', async () => {
     const { deps, plan } = setup({
       openIds: vi.fn().mockResolvedValue(['best', 'next', 'last']),

@@ -5,11 +5,14 @@ import type { PlannerMember } from './types'
 const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim()
 
 // Words an elder uses for a relationship, mapped to the stored relationship (lowercase).
+// "my kids" or "the children" matches every child, which comes back as several (never silently one of them).
+const CHILD = ['child', 'children', 'kid', 'kids']
+const GRANDCHILD = ['grandchild', 'grandchildren', 'grandkid', 'grandkids']
 const ALIASES: Record<string, string[]> = {
-  daughter: ['daughter'],
-  son: ['son'],
-  granddaughter: ['granddaughter', 'grandchild', 'grandkid'],
-  grandson: ['grandson', 'grandchild', 'grandkid'],
+  daughter: ['daughter', 'daughters', ...CHILD],
+  son: ['son', 'sons', ...CHILD],
+  granddaughter: ['granddaughter', 'granddaughters', ...GRANDCHILD],
+  grandson: ['grandson', 'grandsons', ...GRANDCHILD],
   'niece or nephew': ['niece', 'nephew'],
   'friend or neighbor': ['friend', 'neighbor', 'neighbour'],
 }

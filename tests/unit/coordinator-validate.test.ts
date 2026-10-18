@@ -147,4 +147,14 @@ describe('pushBody', () => {
   it('still says what to do without times', () => {
     expect(pushBody([], 'America/Toronto')).toBe('Tap to pick a time.')
   })
+
+  it('starts with what the elder said', () => {
+    expect(pushBody([at('2026-10-17T18:30:00Z')], 'America/Toronto', { elderName: 'Jane', quote: 'we enjoy baking together.' })).toBe(
+      'Jane said “we enjoy baking together”. Sat 2:30pm. Tap to confirm.',
+    )
+  })
+
+  it.each(['my knee is sore again', 'x'.repeat(81), '  ', null])('leaves out a quote that is about health, long or empty: %j', (quote) => {
+    expect(pushBody([], 'America/Toronto', { elderName: 'Jane', quote })).toBe('Tap to pick a time.')
+  })
 })

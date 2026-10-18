@@ -214,6 +214,19 @@ export function createEventPlanner(deps: PlannerDeps) {
       }
     }
 
+    // "I miss Sarah" and "we love baking" in one call is baking with Sarah: a plan that names no one goes to
+    // the one person the elder said she wants to see, so the push reaches her rather than the best match.
+    const wanted = new Set(candidates.flatMap((c) => (c.row.type === 'wants_contact' && c.row.mentioned_member_id ? [c.row.mentioned_member_id] : [])))
+    if (wanted.size === 1) {
+      const [memberId] = wanted
+      for (const c of candidates) {
+        if (c.row.type !== 'wants_contact' && c.row.mentioned_member_id === null) {
+          c.row.mentioned_member_id = memberId
+          c.planned.matched_member_id = memberId
+        }
+      }
+    }
+
     // After the loop, so a specific plan later in the call still covers an earlier general wish.
     const callRows = candidates.map((c) => c.row)
     for (const { planned, row } of candidates) {

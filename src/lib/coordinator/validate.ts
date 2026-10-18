@@ -69,12 +69,24 @@ export function pushTitle(
   return `${opportunity.suggested_kind === 'call' ? 'Call' : 'Visit'} with ${elderName}?`
 }
 
-/** The push body: the proposed times in the elder's timezone, "Sat 2pm, Sun 11am or Sun 4pm. Tap to pick one." */
-export function pushBody(slots: { starts_at?: string }[], timezone: string): string {
+const MAX_PUSH_QUOTE = 80
+
+/**
+ * The push body: what the elder said, then the proposed times in the elder's timezone:
+ * "Jane said “we enjoy baking together”. Sat 2pm, Sun 11am or Sun 4pm. Tap to pick one."
+ * The quote is left out when it is long or mentions health.
+ */
+export function pushBody(slots: { starts_at?: string }[], timezone: string, said?: { elderName: string; quote?: string | null }): string {
   const times = slots.flatMap((s) => (s.starts_at ? [formatSlot(s.starts_at, timezone)] : []))
-  if (times.length === 0) return 'Tap to pick a time.'
-  if (times.length === 1) return `${times[0]}. Tap to confirm.`
-  return `${times.slice(0, -1).join(', ')} or ${times[times.length - 1]}. Tap to pick one.`
+  const when =
+    times.length === 0
+      ? 'Tap to pick a time.'
+      : times.length === 1
+        ? `${times[0]}. Tap to confirm.`
+        : `${times.slice(0, -1).join(', ')} or ${times[times.length - 1]}. Tap to pick one.`
+  const quote = said?.quote?.trim().replace(/[.!?\s]+$/, '')
+  if (!quote || quote.length > MAX_PUSH_QUOTE || mentionsHealth(quote)) return when
+  return `${said!.elderName} said “${quote}”. ${when}`
 }
 
 /** The no-AI answer: the best-matched member (first on the shortlist), their first 3 slots and the fixed push text. */
@@ -82,6 +94,7 @@ export function templateFallback(
   opportunity: {
     id: string
     summary: string
+    quote?: string | null
     type?: string
     activity?: string | null
     suggested_kind?: string | null
@@ -95,7 +108,7 @@ export function templateFallback(
     member_id: top.member_id,
     slot_ids: slots.map((s) => s.id),
     title: pushTitle(opportunity, senior.first_name),
-    body: pushBody(slots, senior.timezone),
+    body: pushBody(slots, senior.timezone, { elderName: senior.first_name, quote: opportunity.quote }),
     why: 'Chosen by match score, because the AI suggestion could not be used.',
   }
 }
