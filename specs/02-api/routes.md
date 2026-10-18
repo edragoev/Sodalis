@@ -6,7 +6,7 @@
 | `POST /api/schedule/plan` | v2 | Scheduling math for a horizon (default 14 days); returns proposed family `visits` (visit or call) only |
 | `POST /api/schedule/confirm` | v1 | Member confirms a slot (from `/opportunities/[id]`); first accept wins; status becomes `confirmed`; push to others |
 | `GET /api/cron/hope-calls` | v2 | Vercel Cron every 5-15 min; dials due `hope_calls` via Vapi; retry after 30 min, max 2, then `missed_checkin` alert |
-| `GET /api/auth/google` + `/callback` | v2 | Per-member Google Calendar OAuth (free/busy scope); stores refresh token |
+| `GET /api/auth/google?member_id=` + `/callback` | v2 | Per-member Google Calendar OAuth (free/busy scope). The first redirects to consent with a signed `state` and a nonce cookie; the callback verifies both, stores the encrypted refresh token, sets `calendar_connected`, and redirects to `/availability?calendar=connected`, `denied` or `error` |
 | `GET /api/availability/[memberId]` | v2 | Busy intervals from Google, or the manual grid |
 | `POST /api/push/register` | v1 | Stores a member's FCM token |
 | `POST /api/push/test` | v1 | Sends a test push to the current member (FCM hello world) |

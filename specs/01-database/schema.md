@@ -58,7 +58,7 @@ Long-lived Google refresh tokens are stored encrypted at rest. Never store or lo
 
 **Encryption**
 - App-level AES-256-GCM in a server-only helper (Node `crypto`), with a fresh random 12-byte IV per write. The `v1:` prefix leaves room to rotate keys or algorithms.
-- The key is `TOKEN_ENCRYPTION_KEY` (32 random bytes, base64) in server env only: never `NEXT_PUBLIC_*`, never committed, never in the database.
+- The key is `ENCRYPTION_KEY` (any long random secret, hashed to 32 bytes) in server env only: never `NEXT_PUBLIC_*`, never committed, never in the database.
 - Encrypt before the insert/update and decrypt only inside the server code that calls Google. Plaintext is never returned from an API route.
 - Supabase also encrypts the disk, but that does not protect against a leaked row or SQL read. The app-level layer does.
 
