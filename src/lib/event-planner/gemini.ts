@@ -1,11 +1,12 @@
 import { GoogleGenAI, Type } from '@google/genai'
-import { backoffFor } from '@/lib/gemini-backoff'
+import { backoffFor, withOneRetry } from '@/lib/gemini-backoff'
 import { KINDS, OPPORTUNITY_TYPES, URGENCIES, type ExtractionInput } from './types'
 
 // The single Gemini call per phone call (specs/03-ai/hope-persona.md "Gemini Flash extraction schema",
 // reduced to the part this feature uses: opportunities[]). Model id from GEMINI_MODEL.
 
-export const GEMINI_TIMEOUT_MS = 20_000
+// Per attempt; a timeout or Google-side error is asked once more (withOneRetry), so allow two of these.
+export const GEMINI_TIMEOUT_MS = 30_000
 
 const nullableString = { type: Type.STRING, nullable: true }
 
@@ -22,13 +23,14 @@ export const responseSchema = {
           quote: { type: Type.STRING },
           mentioned_member: nullableString,
           mentioned_item: nullableString,
+          activity: { type: Type.STRING },
           interest_tags: { type: Type.ARRAY, items: { type: Type.STRING } },
           target_date: nullableString,
           urgency: { type: Type.STRING, enum: [...URGENCIES] },
           confidence: { type: Type.NUMBER },
           suggested_kind: { type: Type.STRING, enum: [...KINDS] },
         },
-        required: ['type', 'summary', 'quote', 'mentioned_member', 'mentioned_item', 'interest_tags', 'target_date', 'urgency', 'confidence', 'suggested_kind'],
+        required: ['type', 'summary', 'quote', 'mentioned_member', 'mentioned_item', 'activity', 'interest_tags', 'target_date', 'urgency', 'confidence', 'suggested_kind'],
       },
     },
   },
@@ -55,6 +57,8 @@ export function buildPrompt({ transcript, senior, today, members }: ExtractionIn
     '- confidence: 0 to 1, how sure you are that the elder meant it. urgency: low, normal or high (high when a date is near or they are out of a necessity).',
     '- suggested_kind: call when they want to hear a voice or distance makes a visit unlikely; otherwise visit.',
     '- Write summary in one neutral sentence, never about their health.',
+    '- activity: 1 to 4 words starting with a verb, for a family member to do with the elder: "Bake apple pie", "Visit", "Call",',
+    '  "Garden together", "Celebrate the birthday". For gift_errand start with "Bring" ("Bring extra tomatoes"). No names, no health words.',
     '',
     `Family members:\n${family}`,
     '',
@@ -76,11 +80,13 @@ export async function extractWithGemini(input: ExtractionInput): Promise<unknown
   // One attempt: on the free tier a refused call would otherwise retry for minutes.
   const ai = new GoogleGenAI({ apiKey, httpOptions: { timeout: GEMINI_TIMEOUT_MS, retryOptions: { attempts: 1 } } })
   try {
-    const res = await ai.models.generateContent({
-      model,
-      contents: buildPrompt(input),
-      config: { responseMimeType: 'application/json', responseSchema, temperature: 0 },
-    })
+    const res = await withOneRetry(() =>
+      ai.models.generateContent({
+        model,
+        contents: buildPrompt(input),
+        config: { responseMimeType: 'application/json', responseSchema, temperature: 0 },
+      }),
+    )
     return JSON.parse(res.text ?? '')
   } catch (err) {
     const { waitMs, quota } = backoffFor(err)

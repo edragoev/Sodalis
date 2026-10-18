@@ -22,8 +22,8 @@ Send the opportunity (type, quote, summary, tags, urgency), the elder's first na
 {
   "member_id": "uuid (must be on the shortlist)",
   "slot_ids": ["slot id (1-3, from that member's slots)"],
-  "title": "string (short, warm)",
-  "body": "string (includes the quote and the slot times)",
+  "title": "string: \"{activity} with {elder}?\" (\"to {elder}?\" for gift_errand), as the template writes it",
+  "body": "string: the slot times, \"Sat 2pm, Sun 11am or Sun 4pm. Tap to pick one.\"",
   "why": "string (one sentence, shown on the dashboard)"
 }
 ```

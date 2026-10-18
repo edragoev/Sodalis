@@ -86,12 +86,13 @@ v1: the coordinator writes the title and body (template as fallback). The push g
 - **Signed-out recipient:** the app asks them to sign in, then returns them to `/opportunities/[id]`.
 - **Already claimed:** if another member accepted first, the page shows "already covered by [name]" instead of the Confirm buttons.
 
-- **Title:** short and warm, such as "A visit idea: zucchini from the garden".
-- **Body:** the quote and the slots, such as "'My zucchini are out of control.' Thu 4pm, Fri 10am, Sat 2pm".
+- **Title:** `{activity} with {elder}?`, or `{activity} to {elder}?` for something to bring: "Bake apple pie with Jane?", "Bring extra tomatoes to Jane?". `opportunities.activity` is a 1-4 word verb phrase the event planner writes; without a usable one (older ideas, or a health word) the title is "Visit with Jane?" or "Call with Jane?" from `suggested_kind`.
+- **Body:** the proposed times in the elder's timezone: "Sat 2pm, Sun 11am or Sun 4pm. Tap to pick one." (one slot: "Sat 2pm. Tap to confirm.").
+- **One push per wish:** in one call, a general `wants_contact` idea is dropped (recorded as `skipped: 'covered'`) when a specific idea (activity, event, gift_errand) names the same member, or any member when the wish names no one.
 - **Data:** `opportunity_id`, slot ids, `urgency`, and the `/opportunities/[id]` link.
 - **Actions (v2):** Confirm slot, Pick another, Can't make it.
 - **Priority:** `high` urgency maps to FCM high priority; others are normal.
-- **Privacy:** short quotes only. Nothing about the elder's health goes in a push: if the quote is about feeling unwell or pain ("my knee hurts"), the push leaves it out and uses the summary instead. Health detail stays in the dashboard.
+- **Privacy:** no quotes in the push. Nothing about the elder's health goes in a push: an activity with a health word falls back to "Visit". Health detail stays in the dashboard.
 
 ## 7. Lifecycle
 `detected → proposed → confirmed | declined | expired`

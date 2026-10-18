@@ -69,6 +69,8 @@ Confidence: A value between 0 and 1 reflecting confidence that the extracted con
 
 Write in compassionate, respectful, plain language. Avoid alarmist wording, stigmatizing labels, unsupported medical terminology, and speculative conclusions.
 
+Refer to the elder by their first name, never as he, she, him, her, his or hers: their pronouns are not known. Family members may be referred to by name.
+
 Do not exaggerate the severity or persistence of a concern. A single expression of sadness does not establish a mental health condition, and a reported fall does not establish that an injury is minor.
 
 6. Family Support

@@ -1,11 +1,12 @@
 import { GoogleGenAI, Type } from '@google/genai'
-import { backoffFor } from '@/lib/gemini-backoff'
+import { backoffFor, withOneRetry } from '@/lib/gemini-backoff'
 
 // The call summary: mood, topics, engagement, a summary for the family and one thing to follow up on next
 // call, all written onto the check-in. One Gemini call per phone call, separate from the event planner and
 // the wellbeing agent. Model id from GEMINI_MODEL.
 
-export const GEMINI_TIMEOUT_MS = 20_000
+// Per attempt; a timeout or Google-side error is asked once more (withOneRetry), so allow two of these.
+export const GEMINI_TIMEOUT_MS = 30_000
 
 export interface SummaryInput {
   transcript: string
@@ -79,11 +80,13 @@ export async function summarizeCall(input: SummaryInput): Promise<unknown> {
 
   const ai = new GoogleGenAI({ apiKey, httpOptions: { timeout: GEMINI_TIMEOUT_MS, retryOptions: { attempts: 1 } } })
   try {
-    const res = await ai.models.generateContent({
-      model,
-      contents: buildContents(input),
-      config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: 'application/json', responseSchema, temperature: 0 },
-    })
+    const res = await withOneRetry(() =>
+      ai.models.generateContent({
+        model,
+        contents: buildContents(input),
+        config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: 'application/json', responseSchema, temperature: 0 },
+      }),
+    )
     return JSON.parse(res.text ?? '')
   } catch (err) {
     const { waitMs, quota } = backoffFor(err)

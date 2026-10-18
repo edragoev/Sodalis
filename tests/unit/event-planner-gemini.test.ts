@@ -68,6 +68,7 @@ describe('extractWithGemini', () => {
     const { extractWithGemini } = await import('@/lib/event-planner/gemini')
     await expect(extractWithGemini(input)).rejects.toThrow('503')
     await expect(extractWithGemini(input)).rejects.toThrow('503')
-    expect(generateContent).toHaveBeenCalledTimes(2)
+    // Each call tries twice (a 503 is worth one retry), and the second call is not blocked by the first.
+    expect(generateContent).toHaveBeenCalledTimes(4)
   })
 })

@@ -117,6 +117,48 @@ describe('event planner', () => {
       expect(result).toMatchObject({ ideas: [{ skipped: 'duplicate' }] })
     })
 
+    describe('one push per wish', () => {
+      const missesDanny = idea({ type: 'wants_contact', mentioned_item: null, quote: 'Danny loves them, you know.' })
+      const missesSomeone = idea({ type: 'wants_contact', mentioned_member: null, mentioned_item: null })
+      const plan = (...opportunities: unknown[]) => {
+        const s = setup({ extract: vi.fn().mockResolvedValue({ opportunities }) })
+        return s.plan('ci-1').then((result) => ({ result, saved: s.deps.saveIdeas.mock.calls[0][1] }))
+      }
+
+      it('drops "misses Danny" when the same call has a specific plan with Danny', async () => {
+        const { result, saved } = await plan(missesDanny, idea())
+        expect(saved).toHaveLength(1)
+        expect(saved[0]).toMatchObject({ type: 'gift_errand', mentioned_member_id: 'danny' })
+        expect(result).toMatchObject({ ideas: [{ type: 'wants_contact', skipped: 'covered' }, { type: 'gift_errand', skipped: null }] })
+      })
+
+      it('also when the specific plan comes first in the answer', async () => {
+        const { saved } = await plan(idea(), missesDanny)
+        expect(saved.map((r: { type: string }) => r.type)).toEqual(['gift_errand'])
+      })
+
+      it('drops an unnamed "misses someone" when the call has any specific plan', async () => {
+        const { saved } = await plan(missesSomeone, idea())
+        expect(saved.map((r: { type: string }) => r.type)).toEqual(['gift_errand'])
+      })
+
+      it('keeps "misses Danny" when the only plan is with someone else', async () => {
+        const { saved } = await plan(missesDanny, idea({ mentioned_member: 'Maya' }))
+        expect(saved.map((r: { type: string }) => r.type)).toEqual(['wants_contact', 'gift_errand'])
+      })
+
+      it('keeps "misses Danny" when there is no specific plan', async () => {
+        const { saved } = await plan(missesDanny)
+        expect(saved).toHaveLength(1)
+        expect(saved[0].type).toBe('wants_contact')
+      })
+
+      it('keeps two different plans with the same member', async () => {
+        const { saved } = await plan(idea(), idea({ type: 'activity', mentioned_item: 'baking' }))
+        expect(saved).toHaveLength(2)
+      })
+    })
+
     it('collapses a repeat inside the same answer', async () => {
       const { deps, plan } = setup({ extract: vi.fn().mockResolvedValue({ opportunities: [idea(), idea({ confidence: 0.7 })] }) })
       await plan('ci-1')
@@ -196,7 +238,8 @@ describe('the Gemini request', () => {
 
   it('declares every field as required and the closed enums', () => {
     const item = responseSchema.properties.opportunities.items
-    expect(item.required).toHaveLength(10)
+    expect(item.required).toHaveLength(11)
+    expect(item.required).toContain('activity')
     expect(item.properties.type.enum).toEqual(['gift_errand', 'activity', 'event', 'wants_contact'])
     expect(responseSchema.required).toEqual(['opportunities'])
   })

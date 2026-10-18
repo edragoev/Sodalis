@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/server'
 import { GEMINI_TIMEOUT_MS, summarizeCall } from './gemini'
 import { createCallSummarizer, type SummaryCheckIn, type SummaryResult } from './run'
 
-const RUN_TIMEOUT_MS = GEMINI_TIMEOUT_MS + 2_000
+const RUN_TIMEOUT_MS = 2 * GEMINI_TIMEOUT_MS + 2_000 // two attempts
 
 // Generic messages on purpose: a database error could quote data that should not reach a log.
 const fail = (what: string) => new Error(`Could not ${what}`)

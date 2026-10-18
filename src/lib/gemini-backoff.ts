@@ -29,3 +29,26 @@ export function backoffFor(error: unknown): Backoff {
   const waitMs = seconds === null ? QUOTA_COOLDOWN_MS : Math.min(Math.max(seconds * 1000, SHORT_COOLDOWN_MS), MAX_COOLDOWN_MS)
   return { waitMs, quota: true }
 }
+
+// A slow or failing Gemini (a timeout, "503 overloaded", "504 DEADLINE_EXCEEDED") often works a moment later,
+// so each post-call agent asks once more. A quota refusal is never retried: that only wastes a request.
+const TRANSIENT = /DEADLINE_EXCEEDED|UNAVAILABLE|overloaded|INTERNAL|timed? ?out|timeout|abort/i
+
+/** Whether a failed Gemini call is worth one more try: a timeout or a Google-side error, never a quota refusal. */
+export function isTransient(error: unknown): boolean {
+  if (backoffFor(error).quota) return false
+  const status = (error as { status?: unknown } | null)?.status
+  if (typeof status === 'number') return status >= 500
+  const text = error instanceof Error ? `${error.name} ${error.message}` : String(error)
+  return TRANSIENT.test(text) || /"code"\s*:\s*5\d\d/.test(text)
+}
+
+/** Runs `ask`, and once more if it fails in a way that is worth retrying. */
+export async function withOneRetry<T>(ask: () => Promise<T>): Promise<T> {
+  try {
+    return await ask()
+  } catch (err) {
+    if (!isTransient(err)) throw err
+    return ask()
+  }
+}

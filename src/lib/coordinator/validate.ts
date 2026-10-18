@@ -1,3 +1,5 @@
+import { formatSlot } from '@/lib/slots'
+
 // Code checks Gemini's answer before anything is sent (specs/08-agents/coordinator-agent.md "Validation").
 
 export interface Decision {
@@ -10,7 +12,7 @@ export interface Decision {
 
 export interface ShortlistEntry {
   member_id: string
-  slots: { id: string }[]
+  slots: { id: string; starts_at?: string }[]
 }
 
 export type Validation =
@@ -51,22 +53,49 @@ export function validateDecision(decision: unknown, shortlist: ShortlistEntry[])
   return { ok: true }
 }
 
-/** The no-AI answer: the best-matched member (first on the shortlist) and their first 3 slots. */
+/**
+ * The push title: "{activity} with {elder}?", or "to {elder}?" for something to bring ("Bring extra tomatoes to
+ * Jane?"). Without a usable activity (older ideas, or one that mentions health) it is "Visit with Jane?" or
+ * "Call with Jane?" from the suggested kind.
+ */
+export function pushTitle(
+  opportunity: { type?: string; activity?: string | null; suggested_kind?: string | null },
+  elderName: string,
+): string {
+  const activity = opportunity.activity?.trim()
+  if (activity && !mentionsHealth(activity)) {
+    return `${activity} ${opportunity.type === 'gift_errand' ? 'to' : 'with'} ${elderName}?`
+  }
+  return `${opportunity.suggested_kind === 'call' ? 'Call' : 'Visit'} with ${elderName}?`
+}
+
+/** The push body: the proposed times in the elder's timezone, "Sat 2pm, Sun 11am or Sun 4pm. Tap to pick one." */
+export function pushBody(slots: { starts_at?: string }[], timezone: string): string {
+  const times = slots.flatMap((s) => (s.starts_at ? [formatSlot(s.starts_at, timezone)] : []))
+  if (times.length === 0) return 'Tap to pick a time.'
+  if (times.length === 1) return `${times[0]}. Tap to confirm.`
+  return `${times.slice(0, -1).join(', ')} or ${times[times.length - 1]}. Tap to pick one.`
+}
+
+/** The no-AI answer: the best-matched member (first on the shortlist), their first 3 slots and the fixed push text. */
 export function templateFallback(
-  opportunity: { id: string; summary: string; quote?: string | null; mentioned_item?: string | null },
+  opportunity: {
+    id: string
+    summary: string
+    type?: string
+    activity?: string | null
+    suggested_kind?: string | null
+  },
   shortlist: ShortlistEntry[],
+  senior: { first_name: string; timezone: string },
 ): Decision {
   const top = shortlist[0]
-  const subject = opportunity.mentioned_item?.trim() || opportunity.summary
-  // A quote about how the elder feels stays out of the push; the summary stands in for it.
-  const quote = opportunity.quote?.trim()
-  const said = quote && !mentionsHealth(quote) ? `'${quote}'` : opportunity.summary
-
+  const slots = top.slots.slice(0, MAX_SLOTS)
   return {
     member_id: top.member_id,
-    slot_ids: top.slots.slice(0, MAX_SLOTS).map((s) => s.id),
-    title: `A visit idea: ${subject}`,
-    body: `${said} Pick a time that suits you.`,
+    slot_ids: slots.map((s) => s.id),
+    title: pushTitle(opportunity, senior.first_name),
+    body: pushBody(slots, senior.timezone),
     why: 'Chosen by match score, because the AI suggestion could not be used.',
   }
 }
