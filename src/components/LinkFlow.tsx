@@ -164,16 +164,7 @@ export default function LinkFlow() {
     );
 
   return (
-    <Screen
-      footer={
-        <div className="space-y-3">
-          <Button className="w-full" disabled={busy || !phoneReady} onClick={lookup}>
-            Continue
-          </Button>
-          <p className="text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
-        </div>
-      }
-    >
+    <Screen>
       <div className="pt-4">
         <Logo align="left" />
       </div>
@@ -192,9 +183,13 @@ export default function LinkFlow() {
           <input id="elder-phone" className={`${inputCls} pl-12`} inputMode="tel" autoComplete="off" placeholder="(415) 555-0142"
             value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
-        <button type="submit" className="hidden" />
+        {errorBox}
+        {/* Right under the number, so it sits within reach and isn't pushed off screen by the keyboard. */}
+        <Button type="submit" className="mt-4 w-full" disabled={busy || !phoneReady}>
+          Continue
+        </Button>
+        <p className="mt-3 text-center text-sm text-slate">Your family&apos;s details stay private and are never sold.</p>
       </form>
-      {errorBox}
       {notFound && (
         <div className="fixed inset-0 z-20 flex items-end justify-center bg-ink/40" onClick={() => setNotFound(false)}>
           <div
