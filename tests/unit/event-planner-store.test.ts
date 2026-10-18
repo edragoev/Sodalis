@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createPlannerStore } from '@/lib/event-planner/store'
 
 // The planner's database layer, with a fake Supabase client that records what it was asked to do.
