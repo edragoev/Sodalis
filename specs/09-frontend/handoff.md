@@ -89,7 +89,6 @@ Invite link /join/<token> ─▶ name, pronouns, relationship ─▶ questionnai
 | `POST /api/link/join` | Join by phone (still available). |
 | `GET /api/link/invite?member_id=`, `GET /api/invite/[token]`, `POST /api/invite/join` | Invite links. |
 | `GET/PUT /api/members/[id]/profile`, `PUT .../tags` | Questionnaire answers and tags (Gemini structuring). |
-| `GET/PUT /api/members/[id]/availability` | Weekly availability. |
 | `POST /api/schedule/confirm` | First accept wins, via `confirm_opportunity_slot`. |
 | `POST /api/push/register`, `POST /api/push/test` | Notifications (teammates). |
 

@@ -33,11 +33,8 @@ async function loadEvents(memberId: string, from: Date, to: Date): Promise<Occur
   return ((await res.json()).events ?? []) as Occurrence[];
 }
 
-/**
- * Upload a Google Calendar export (.ics or .zip) and see it as a month calendar.
- * onUpcoming gets the next 7 days of events so the weekly grid can hint at busy times.
- */
-export default function ImportedCalendar({ memberId, onUpcoming }: { memberId: string; onUpcoming: (events: Occurrence[]) => void }) {
+/** Upload a Google Calendar export (.ics or .zip) and see it as a month calendar. */
+export default function ImportedCalendar({ memberId }: { memberId: string }) {
   const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
   const [today] = useState(() => wallClock(Date.now(), tz));
   const [month, setMonth] = useState({ year: today.year, month: today.month });
@@ -50,23 +47,18 @@ export default function ImportedCalendar({ memberId, onUpcoming }: { memberId: s
   const [reload, setReload] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Loads the visible month, and the next 7 days for the weekly grid hints. `reload` re-runs it after an upload.
+  // Loads the visible month. `reload` re-runs it after an upload.
   useEffect(() => {
     let live = true;
     const from = new Date(Date.UTC(month.year, month.month - 1, 1) - 86_400_000);
     const to = new Date(Date.UTC(month.year, month.month, 1) + 86_400_000);
-    const now = new Date();
-    Promise.all([loadEvents(memberId, from, to), loadEvents(memberId, now, new Date(+now + 7 * 86_400_000))])
-      .then(([shown, soon]) => {
-        if (!live) return;
-        setEvents(shown);
-        onUpcoming(soon);
-      })
+    loadEvents(memberId, from, to)
+      .then((shown) => live && setEvents(shown))
       .catch(() => live && setProblem("Couldn't load your calendar."));
     return () => {
       live = false;
     };
-  }, [memberId, month, reload, onUpcoming]);
+  }, [memberId, month, reload]);
 
   async function upload(file: File) {
     setProblem("");
