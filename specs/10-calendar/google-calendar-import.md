@@ -74,6 +74,7 @@ New table `calendar_events` (see also [schema](../01-database/schema.md)):
 - Unique `(member_id, uid, recurrence_id)` declared `NULLS NOT DISTINCT`: re-importing the same export upserts instead of duplicating.
 - Index `(member_id, starts_at)`.
 - Imported events are native data: queryable like any other table, and counted as busy intervals by `GET /api/availability/[memberId]` alongside the manual grid.
+- **Scheduler:** `src/lib/scheduler/load.ts` reads the member's `calendar_events`, expands them for the next 8 days with `expandEvents` and adds the timed ones to `busyWindows` next to Google busy time, so `getSlots` never offers a slot over an uploaded event. All-day events are ignored, as in the weekly-grid hint. A read error is thrown, never read as "free".
 - Writes only through the import route (service role). RLS is on with **no anon policy**: `notes` can hold personal or health details, so the table is read only through `GET /api/calendar/events`.
 
 ### REST API

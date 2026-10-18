@@ -15,6 +15,7 @@ Next.js PWA (Vercel) + Supabase + Vapi + Gemini Flash + Firebase Cloud Messaging
 | [07-onboarding](07-onboarding/member-questionnaire.md) | Family member interest questionnaire and matching profile |
 | [08-agents](08-agents/hope-tools.md) | Hope's in-call health alert (`flag_concern`) and the coordinator |
 | [08-agents](08-agents/coordinator-agent.md) | Gemini coordinator agent that turns opportunities into family pushes |
+| [06-notifications](06-notifications/conversation-to-visit.md#event-planner-implementation) | Event planner: post-call Gemini extraction of opportunities |
 | [10-calendar](10-calendar/google-calendar-import.md) | Google Calendar `.ics` / `.zip` import: parsing, UTC normalization, RRULE handling |
 
 **Scope:** v1 is the 12-hour build; v2 is stretch. The split is in [decisions](05-product/decisions.md#scope-v1-vs-v2).

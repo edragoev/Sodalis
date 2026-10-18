@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Window } from '@/lib/availability'
 import { decryptToken } from '@/lib/google/crypto'
 import { fetchBusyWindows } from '@/lib/google/calendar'
+import { expandEvents } from '@/lib/calendar/expand'
+import type { CalendarRow } from '@/lib/calendar/import'
 import type { Interval } from './slots'
 import type { SchedulerData } from './get-slots'
 
@@ -29,6 +31,23 @@ function cleanWindows(value: unknown): Window[] {
 
 const fail = () => new Error('Could not load availability')
 
+const CALENDAR_COLUMNS = 'id, uid, recurrence_id, title, notes, starts_at, ends_at, all_day, rrule, exdates, source_tz'
+// getSlots looks at most a week ahead; the extra day covers a slot that starts near the edge.
+const CALENDAR_HORIZON_MS = 8 * 24 * 60 * 60 * 1000
+
+/**
+ * The member's uploaded calendar (.ics / .zip import) as busy time. Timed events only: all-day events
+ * (birthdays, holidays) are a hint, not a block, as in calendar/busy.ts.
+ */
+async function uploadedBusyWindows(db: SupabaseClient, memberId: string): Promise<Interval[]> {
+  const { data, error } = await db.from('calendar_events').select(CALENDAR_COLUMNS).eq('member_id', memberId)
+  if (error) throw fail()
+  const now = Date.now()
+  return expandEvents((data ?? []) as (CalendarRow & { id: string })[], new Date(now), new Date(now + CALENDAR_HORIZON_MS))
+    .filter((event) => !event.all_day)
+    .map((event) => ({ starts_at: event.starts_at, ends_at: event.ends_at }))
+}
+
 export function createSchedulerLoader(
   db: SupabaseClient,
   google = { fetchBusyWindows },
@@ -52,7 +71,7 @@ export function createSchedulerLoader(
     ])
     if (senior.error || visits.error) throw fail()
 
-    let busyWindows: Interval[] = []
+    let busyWindows: Interval[] = await uploadedBusyWindows(db, memberId)
     const connected = Boolean(member.calendar_connected) && typeof member.google_refresh_token === 'string' && member.google_refresh_token
     if (connected) {
       const refreshToken = decryptToken(member.google_refresh_token)
@@ -62,7 +81,7 @@ export function createSchedulerLoader(
         timeMin: new Date(now).toISOString(),
         timeMax: new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString(),
       })
-      busyWindows = windows.map((window) => ({ starts_at: window.start, ends_at: window.end }))
+      busyWindows = [...busyWindows, ...windows.map((window) => ({ starts_at: window.start, ends_at: window.end }))]
     }
 
     return {

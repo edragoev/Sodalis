@@ -7,7 +7,7 @@ Turns an opportunity into a family notification: who to ask, which slots to offe
 ## Trigger
 Post-call extraction only, for every opportunity found in the transcript, named or not. Nothing is pushed while the call is still going: the only mid-call message is a health alert from [Hope's `flag_concern` tool](hope-tools.md), which does not use the coordinator.
 
-Runs in `after()` or a separate `POST /api/agent/coordinate` call, so the webhook and tool routes return fast.
+Started by the [event planner](../06-notifications/conversation-to-visit.md#event-planner-implementation) (and for Hope's own mid-call opportunities) from the webhook's `after()`, or by a separate `POST /api/agent/coordinate` call, so the webhook and tool routes return fast.
 
 ## Shortlist (code, before Gemini)
 - **Named member:** that member (or several if the name or alias is ambiguous).
