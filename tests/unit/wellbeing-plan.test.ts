@@ -33,13 +33,13 @@ function setup(over: Partial<PlannerDeps> = {}, ctx: Partial<WellbeingContext['c
 }
 
 describe('wellbeing planner', () => {
-  it('saves a routine alert with legacy fields and still notifies the family', async () => {
+  it('saves a routine alert with legacy fields and does not notify', async () => {
     const { deps, plan } = setup()
     const r = await plan('ci-1')
-    expect(r).toMatchObject({ status: 'done', notified: 'needs_review' })
+    expect(r).toMatchObject({ status: 'done', notified: null })
     expect(deps.saveAlerts.mock.calls[0][1][0]).toMatchObject({ type: 'low_mood', severity: 'info', category: 'loneliness', safety: 'routine' })
     expect(deps.saveResult).toHaveBeenCalledWith('ci-1', expect.objectContaining({ status: 'ok', count: 1 }))
-    expect(deps.notify).toHaveBeenCalledWith(expect.anything(), 'needs_review')
+    expect(deps.notify).not.toHaveBeenCalled()
   })
 
   it('sends only the transcript, first name and date to Gemini', async () => {
@@ -48,11 +48,11 @@ describe('wellbeing planner', () => {
     expect(deps.extract).toHaveBeenCalledWith({ transcript: TRANSCRIPT, senior: { first_name: 'Rose' }, today: '2026-10-15' })
   })
 
-  it('notifies when the call ends with no concerns', async () => {
+  it('handles no concerns without saving or notifying', async () => {
     const { deps, plan } = setup({ extract: vi.fn().mockResolvedValue({ alerts: [] }) })
-    expect(await plan('ci-1')).toMatchObject({ status: 'done', alerts: [], notified: 'needs_review' })
+    expect(await plan('ci-1')).toMatchObject({ status: 'done', alerts: [], notified: null })
     expect(deps.saveAlerts).toHaveBeenCalledWith(expect.anything(), [])
-    expect(deps.notify).toHaveBeenCalledWith(expect.anything(), 'needs_review')
+    expect(deps.notify).not.toHaveBeenCalled()
   })
 
   it('notifies for a fall even if Gemini said routine', async () => {

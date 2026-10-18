@@ -135,16 +135,17 @@ export function createWellbeingPlanner(deps: PlannerDeps) {
       return fail(err, 'could not save the alerts')
     }
 
-    // A completed call should still notify the family even when the extract only finds routine notes or no
-    // specific alerts. The browser push title/body can remain generic in that case, and an urgent concern
-    // still escalates the message priority.
-    const level: Exclude<Safety, 'routine'> = parsed.alerts.some((a) => a.safety === 'urgent')
+    const level: Exclude<Safety, 'routine'> | null = parsed.alerts.some((a) => a.safety === 'urgent')
       ? 'urgent'
-      : 'needs_review'
-    try {
-      await deps.notify(checkIn, level)
-    } catch (err) {
-      console.error('wellbeing: could not notify the family', errorMessage(err))
+      : parsed.alerts.some((a) => a.safety === 'needs_review')
+        ? 'needs_review'
+        : null
+    if (level) {
+      try {
+        await deps.notify(checkIn, level)
+      } catch (err) {
+        console.error('wellbeing: could not notify the family', errorMessage(err))
+      }
     }
     return { status: 'done', alerts: parsed.alerts, dropped: parsed.dropped, notified: level, mood }
   }
