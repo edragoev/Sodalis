@@ -17,24 +17,41 @@ const dayHeading = (d: Date, today: Date) => {
   return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 };
 
-// The Calendar tab: every visit and call coming up, grouped by day, plus a summary of
-// the member's own free times (edited on the Availability page, reached from here).
+// What Google's sign-in sent back (/api/auth/google/callback adds ?calendar=...).
+const GOOGLE_RESULT: Record<string, { text: string; ok: boolean }> = {
+  connected: { text: "Google Calendar connected. We'll plan around your busy times.", ok: true },
+  denied: { text: "Google sign-in was cancelled. You can connect any time.", ok: false },
+  error: { text: "Couldn't connect Google Calendar. Please try again.", ok: false },
+};
+
+// The Calendar tab, top to bottom: visits and calls coming up, whether Google Calendar is
+// connected, and the member's own free times (edited on the Availability page).
 export default function Schedule() {
   const router = useRouter();
+  const [memberId, setMemberId] = useState("");
   const [name, setName] = useState("");
   const [seniorName, setSeniorName] = useState("");
   const [visits, setVisits] = useState<Visit[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [freeSlots, setFreeSlots] = useState<number | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleResult, setGoogleResult] = useState("");
   const [now, setNow] = useState<Date | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const s = getSession();
     if (!s) return void router.replace("/");
+    const result = new URLSearchParams(window.location.search).get("calendar") ?? "";
+    // Drop ?calendar= so a refresh doesn't show the message again.
+    if (result) window.history.replaceState(null, "", "/schedule");
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    queueMicrotask(() => setName(s.name?.split(" ")[0] ?? ""));
+    queueMicrotask(() => {
+      setName(s.name?.split(" ")[0] ?? "");
+      setMemberId(s.member_id);
+      if (GOOGLE_RESULT[result]) setGoogleResult(result);
+    });
     fetch(`/api/members/${s.member_id}/availability`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
@@ -50,12 +67,14 @@ export default function Schedule() {
       db.from("visits").select("id, kind, starts_at, status, member_id")
         .eq("senior_id", s.senior_id).in("status", ["proposed", "confirmed"]).gte("starts_at", today.toISOString())
         .order("starts_at").limit(60),
-      db.from("family_members").select("id, name").eq("senior_id", s.senior_id),
+      // calendar_connected only: the Google key itself is never readable from the browser.
+      db.from("family_members").select("id, name, calendar_connected").eq("senior_id", s.senior_id),
     ]).then(([sen, v, m]) => {
       if (v.error) return setError("Couldn't load the calendar.");
       setSeniorName(sen.data?.name?.split(" ")[0] ?? "");
       setVisits((v.data ?? []) as Visit[]);
       setNames(Object.fromEntries((m.data ?? []).map((x) => [x.id, x.name.split(" ")[0]])));
+      setGoogleConnected(!!m.data?.find((x) => x.id === s.member_id)?.calendar_connected);
       setNow(new Date());
     });
   }, [router]);
@@ -73,23 +92,19 @@ export default function Schedule() {
     else days.push({ key, date, items: [v] });
   }
   const card = "rounded-3xl border border-sand bg-white p-5";
+  const pill = "inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm font-semibold";
+  const notice = GOOGLE_RESULT[googleResult];
 
   return (
     <Screen tabs={<TabBar active="calendar" name={name} />}>
       <h1 className={headingCls}>Calendar</h1>
       <p className={subCls}>Visits and calls with {sName}.</p>
 
-      <section className={`${card} mt-6 flex items-center justify-between gap-4`}>
-        <div>
-          <p className="font-semibold text-ink">Your free times</p>
-          <p className="text-sm text-slate">
-            {freeSlots == null ? "Couldn't load them." : freeSlots === 0 ? "Not set yet." : `${freeSlots} two-hour windows a week.`}
-          </p>
-        </div>
-        <Link href="/availability" className="inline-flex h-10 shrink-0 items-center rounded-full bg-btn px-4 text-sm font-semibold text-primary-dark hover:bg-btn-hover">
-          {freeSlots ? "Edit" : "Set"}
-        </Link>
-      </section>
+      {notice && (
+        <p role="status" className={`mt-5 rounded-2xl p-3 ${notice.ok ? "bg-mist text-primary-dark" : "bg-warn-bg text-warn"}`}>
+          {notice.text}
+        </p>
+      )}
 
       <div className="mt-6 space-y-6">
         {days.length ? (
@@ -121,9 +136,35 @@ export default function Schedule() {
         )}
       </div>
 
-      <Link href="/calendar" className="mt-8 flex h-12 w-full items-center justify-center rounded-2xl border border-sand bg-white font-semibold text-ink hover:bg-cream">
-        Connect Google Calendar
-      </Link>
+      <h2 className="mt-10 font-serif text-xl font-semibold text-ink">When you&apos;re free</h2>
+      <div className="mt-3 space-y-3">
+        <section className={`${card} flex items-center justify-between gap-4`}>
+          <div>
+            <p className="font-semibold text-ink">Google Calendar</p>
+            <p className="text-sm text-slate">
+              {googleConnected ? "✓ Connected. We skip times you're busy." : "Connect it so we never suggest a time you're busy."}
+            </p>
+          </div>
+          {!googleConnected && memberId && (
+            // A full page load, not client navigation: the route redirects to Google's sign-in.
+            <a href={`/api/auth/google?member_id=${encodeURIComponent(memberId)}`} className={`${pill} bg-btn text-primary-dark hover:bg-btn-hover`}>
+              Connect
+            </a>
+          )}
+        </section>
+
+        <section className={`${card} flex items-center justify-between gap-4`}>
+          <div>
+            <p className="font-semibold text-ink">Your free times</p>
+            <p className="text-sm text-slate">
+              {freeSlots == null ? "Couldn't load them." : freeSlots === 0 ? "Not set yet." : `${freeSlots} two-hour windows a week.`}
+            </p>
+          </div>
+          <Link href="/availability" className={`${pill} ${freeSlots ? "border border-sand bg-white text-ink hover:bg-cream" : "bg-btn text-primary-dark hover:bg-btn-hover"}`}>
+            {freeSlots ? "Edit" : "Set"}
+          </Link>
+        </section>
+      </div>
     </Screen>
   );
 }
