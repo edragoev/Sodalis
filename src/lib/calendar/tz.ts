@@ -46,3 +46,26 @@ export function zonedToUtc(w: Wall, tz: string): number {
   const second = guess - offsetMs(first, tz);
   return second;
 }
+
+/**
+ * The time line for an event in a day list, in a viewer's zone: "12:00 AM – 6:00 AM".
+ * An end on another local day adds its weekday ("11:00 PM – Mon 6:00 AM"). No end (or a zero-length event) shows the start only.
+ */
+export function formatEventTime(
+  ev: { starts_at: string; ends_at: string; all_day: boolean },
+  tz: string,
+  locale: Intl.LocalesArgument = "en-US",
+): string {
+  if (ev.all_day) return "All day";
+  const s = Date.parse(ev.starts_at);
+  const e = Date.parse(ev.ends_at);
+  const clock = (ms: number, withDay = false) =>
+    new Date(ms)
+      .toLocaleString(locale, { timeZone: tz, ...(withDay ? { weekday: "short" } : {}), hour: "numeric", minute: "2-digit" })
+      .replace(/\s/g, " ");
+  if (!(e > s)) return clock(s);
+  const a = wallClock(s, tz);
+  const b = wallClock(e, tz);
+  const sameDay = a.year === b.year && a.month === b.month && a.day === b.day;
+  return `${clock(s)} – ${clock(e, !sameDay)}`;
+}

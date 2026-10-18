@@ -89,7 +89,8 @@ Errors: 400 missing/invalid fields or unreadable file, 413 over size limit, 415 
 ## 5. Where it shows up
 On the Availability page (`/availability`), below the weekly grid, a "Your calendar" section replaces the public embed there:
 - An **Upload calendar** button (and **Remove imported calendar** once something is imported; the last batch id is kept in the browser).
-- A **month calendar** with a dot on days that have events; tapping a day lists its events in the viewer's local time.
+- A **month calendar**, shown only once a calendar has been imported (a saved batch id or any events); before that, only the upload button appears under the weekly grid, which is the default view. It has a dot on days that have events; tapping a day lists its events in the viewer's local time as a range, start to end (`12:00 AM – 6:00 AM`). An end on a later local day adds its weekday (`11:00 PM – Mon 6:00 AM`); all-day events read "All day"; an event with no end shows the start only.
+- **Weekly grid default:** every square is white (not available) until the member saves times; tapping a square turns it blue (available), and tapping again clears it. Saved times load as blue. This is the same with or without an uploaded calendar.
 - **Busy hints in the weekly grid:** a small dot on any 2-hour cell that overlaps a timed event in the next 7 days. It is a hint only; it never unticks a cell, and all-day events don't count.
 
 ## 6. Privacy and security
