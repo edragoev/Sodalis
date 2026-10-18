@@ -10,7 +10,6 @@ const everyDay = (start: string, end: string) => [0, 1, 2, 3, 4, 5, 6].map((dow)
 
 const data = (over: Partial<SchedulerData> = {}): SchedulerData => ({
   timezone: 'America/Toronto',
-  seniorWindows: everyDay('09:00', '17:00'),
   memberWindows: everyDay('09:00', '17:00'),
   visits: [],
   hopeCalls: [],
@@ -67,7 +66,7 @@ describe('getSlots', () => {
   it("passes the opportunity's target day through, and includes that day", async () => {
     const sat = { dow: 6, start: '10:00', end: '12:00' }
     const sun = { dow: 0, start: '10:00', end: '12:00' }
-    const { getSlots } = setup(async () => data({ seniorWindows: [sat, sun], memberWindows: [sat, sun] }))
+    const { getSlots } = setup(async () => data({ memberWindows: [sat, sun] }))
     const slots = await getSlots('danny', 'visit', 7, { targetDate: '2026-10-17' })
     expect(slots.map((s) => s.starts_at)).toEqual(['2026-10-17T14:00:00.000Z'])
   })

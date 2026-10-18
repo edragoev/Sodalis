@@ -16,7 +16,6 @@ const input = (over: Partial<SlotInput> = {}): SlotInput => ({
   days: 7,
   timezone: TZ,
   kind: 'visit',
-  seniorWindows: everyDay('09:00', '17:00'),
   memberWindows: everyDay('09:00', '17:00'),
   visits: [],
   hopeCalls: [],
@@ -44,21 +43,19 @@ describe('computeSlots', () => {
   })
 
   describe('where slots may fall', () => {
-    it('only inside the hours both the elder and the member are free', () => {
-      const slots = computeSlots(
-        input({ seniorWindows: onlyOn(6, '09:00', '17:00'), memberWindows: onlyOn(6, '14:00', '20:00') }),
-      )
+    it("only inside the member's free hours; the elder's preferred hours are not used", () => {
+      const slots = computeSlots(input({ memberWindows: onlyOn(6, '14:00', '20:00') }))
       expect(starts(slots)).toEqual([
         '2026-10-17T18:00:00.000Z', // Sat 14:00 local
         '2026-10-17T18:30:00.000Z',
-        '2026-10-17T19:00:00.000Z', // 15:00-17:00 is the last 2 h visit that fits before 17:00
+        '2026-10-17T19:00:00.000Z',
       ])
     })
 
     it('reads windows in the elder\'s timezone, including after the clocks change', () => {
       const monday = onlyOn(1, '16:00', '18:00')
-      const before = computeSlots(input({ now: new Date('2026-10-12T12:00:00.000Z'), seniorWindows: monday, memberWindows: monday }))
-      const after = computeSlots(input({ now: new Date('2026-10-29T12:00:00.000Z'), seniorWindows: monday, memberWindows: monday }))
+      const before = computeSlots(input({ now: new Date('2026-10-12T12:00:00.000Z'), memberWindows: monday }))
+      const after = computeSlots(input({ now: new Date('2026-10-29T12:00:00.000Z'), memberWindows: monday }))
       expect(starts(before)).toEqual(['2026-10-12T20:00:00.000Z']) // 16:00 EDT
       expect(starts(after)).toEqual(['2026-11-02T21:00:00.000Z']) // 16:00 EST
     })
@@ -75,7 +72,7 @@ describe('computeSlots', () => {
 
     it('rounds a window that starts off the grid up to the next half hour', () => {
       const w = onlyOn(5, '09:15', '12:00')
-      const [first] = computeSlots(input({ kind: 'call', seniorWindows: w, memberWindows: w }))
+      const [first] = computeSlots(input({ kind: 'call', memberWindows: w }))
       expect(first.starts_at).toBe('2026-10-16T13:30:00.000Z') // 09:30 local
     })
 
@@ -88,14 +85,12 @@ describe('computeSlots', () => {
 
     it('not when the free run is too short for the kind', () => {
       const w = everyDay('09:00', '10:30') // 90 minutes
-      expect(computeSlots(input({ kind: 'visit', seniorWindows: w, memberWindows: w }))).toEqual([])
-      expect(computeSlots(input({ kind: 'call', seniorWindows: w, memberWindows: w })).length).toBeGreaterThan(0)
+      expect(computeSlots(input({ kind: 'visit', memberWindows: w }))).toEqual([])
+      expect(computeSlots(input({ kind: 'call', memberWindows: w })).length).toBeGreaterThan(0)
     })
 
     it.each([
-      ['the elder has no free hours', { seniorWindows: [] }],
       ['the member has no free hours', { memberWindows: [] }],
-      ['the two never overlap', { seniorWindows: onlyOn(1, '09:00', '12:00'), memberWindows: onlyOn(2, '09:00', '12:00') }],
     ])('none when %s', (_name, over) => {
       expect(computeSlots(input(over))).toEqual([])
     })
@@ -114,7 +109,7 @@ describe('computeSlots', () => {
     it('carries on into the next day when today runs out', () => {
       const thu = { dow: 4, start: '09:00', end: '13:00' }
       const fri = { dow: 5, start: '09:00', end: '17:00' }
-      const slots = computeSlots(input({ seniorWindows: [thu, fri], memberWindows: [thu, fri] }))
+      const slots = computeSlots(input({ memberWindows: [thu, fri] }))
       expect(starts(slots)).toEqual([
         '2026-10-15T14:30:00.000Z', // Thu 10:30-12:30
         '2026-10-15T15:00:00.000Z', // Thu 11:00-13:00
@@ -124,7 +119,7 @@ describe('computeSlots', () => {
 
     it('fewer than 3 when fewer slots fit', () => {
       const w = onlyOn(5, '09:00', '11:30') // a 2 h visit can start at 09:00 or 09:30
-      expect(starts(computeSlots(input({ seniorWindows: w, memberWindows: w })))).toEqual([
+      expect(starts(computeSlots(input({ memberWindows: w })))).toEqual([
         '2026-10-16T13:00:00.000Z',
         '2026-10-16T13:30:00.000Z',
       ])
@@ -150,7 +145,7 @@ describe('computeSlots', () => {
     it('only blocks the overlap for a Hope call, with no 24 hour gap', () => {
       const friday1030 = { starts_at: '2026-10-16T14:00:00.000Z', ends_at: '2026-10-16T14:30:00.000Z' } // 10:00-10:30
       const w = onlyOn(5, '09:00', '14:00')
-      const slots = computeSlots(input({ seniorWindows: w, memberWindows: w, hopeCalls: [friday1030] }))
+      const slots = computeSlots(input({ memberWindows: w, hopeCalls: [friday1030] }))
       // 09:00 to 11:00 would overlap the call; the first visit that clears it starts at 10:30
       expect(starts(slots)).toEqual(['2026-10-16T14:30:00.000Z', '2026-10-16T15:00:00.000Z', '2026-10-16T15:30:00.000Z'])
     })
@@ -165,7 +160,7 @@ describe('computeSlots', () => {
     const sat = { dow: 6, start: '10:00', end: '12:00' }
     const sun = { dow: 0, start: '10:00', end: '12:00' }
     const wed = { dow: 3, start: '10:00', end: '12:00' }
-    const windows = (...w: { dow: number; start: string; end: string }[]) => ({ seniorWindows: w, memberWindows: w })
+    const windows = (...w: { dow: number; start: string; end: string }[]) => ({ memberWindows: w })
 
     it('includes the target day itself, for example a ride to an appointment that day', () => {
       const slots = computeSlots(input({ ...windows(sat, sun), opportunity: { targetDate: '2026-10-17' } }))
