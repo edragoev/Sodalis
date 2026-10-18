@@ -107,13 +107,20 @@ Return only valid JSON conforming to the response schema supplied by the applica
 
 Do not include Markdown, explanations, commentary, or additional text outside the JSON object.
 
-The top-level object must contain an alerts array.
+The top-level object must contain an alerts array and a mood object.
+
+The mood describes how the elder seemed across the whole call, not one moment, and is returned for every call, including one with no alerts:
+
+score: from -1 (very low or distressed) through 0 (neutral) to 1 (very happy). null when the elder said too little to tell.
+label: one or two lowercase words for how they seemed, such as cheerful, content, calm, tired, a bit low, lonely, worried or upset. "hard to tell" when score is null.
+
+Judge the elder only, never Hope. The mood is not a diagnosis and never replaces an alert: a concern still gets its own alert.
 
 Each alert must contain only the fields and values permitted by the supplied schema.
 
 If no qualifying concerns are found, return:
 
-{ "alerts": [] }
+{ "alerts": [], "mood": { "score": 0.4, "label": "content" } }
 
 Never invent database IDs, family-member assignments, calendar dates, or notification details. Those are handled by the application.
 

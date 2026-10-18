@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { NewAlert, PlannerDeps, WellbeingCheckIn, WellbeingContext } from './plan'
+import type { Mood } from './types'
 
 // The wellbeing agent's reads and writes against Supabase (service-role client, server only).
 
@@ -10,7 +11,7 @@ const fail = (what: string) => new Error(`Could not ${what}`)
 
 const firstName = (name: unknown) => (typeof name === 'string' ? name.trim().split(/\s+/)[0] : '') || 'your loved one'
 
-export function createWellbeingStore(db: SupabaseClient): Pick<PlannerDeps, 'load' | 'saveAlerts' | 'saveResult'> {
+export function createWellbeingStore(db: SupabaseClient): Pick<PlannerDeps, 'load' | 'saveAlerts' | 'saveResult' | 'saveMood'> {
   async function load(checkInId: string): Promise<WellbeingContext | null> {
     const { data: checkIn, error } = await db
       .from('check_ins')
@@ -58,5 +59,10 @@ export function createWellbeingStore(db: SupabaseClient): Pick<PlannerDeps, 'loa
     if (error) throw fail('save the extraction')
   }
 
-  return { load, saveAlerts, saveResult }
+  async function saveMood(checkInId: string, mood: Mood) {
+    const { error } = await db.from('check_ins').update({ mood_score: mood.score, mood_label: mood.label }).eq('id', checkInId)
+    if (error) throw fail('save the mood')
+  }
+
+  return { load, saveAlerts, saveResult, saveMood }
 }

@@ -29,8 +29,16 @@ export const responseSchema = {
         required: ['category', 'summary', 'quote', 'support_needed', 'suggested_followup', 'safety', 'confidence'],
       },
     },
+    mood: {
+      type: Type.OBJECT,
+      properties: {
+        score: { type: Type.NUMBER, nullable: true },
+        label: { type: Type.STRING },
+      },
+      required: ['score', 'label'],
+    },
   },
-  required: ['alerts'],
+  required: ['alerts', 'mood'],
 }
 
 /** The data for the call. The transcript is fenced and labelled as data, never as instructions. */

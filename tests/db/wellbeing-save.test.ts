@@ -59,3 +59,12 @@ describe.skipIf(!hasTestDb())('wellbeing save (real database)', () => {
     expect(data?.wellbeing_extraction).toEqual({ status: 'ok', count: 1 })
   })
 })
+
+describe.skipIf(!hasTestDb())('wellbeing mood save (real database)', () => {
+  it('writes the mood onto the check-in', async () => {
+    const { checkIn, store } = await setup()
+    await store.saveMood(checkIn.id, { score: -0.25, label: 'a bit low' })
+    const { data } = await adminClient().from('check_ins').select('mood_score, mood_label').eq('id', checkIn.id).single()
+    expect(data).toEqual({ mood_score: -0.25, mood_label: 'a bit low' })
+  })
+})

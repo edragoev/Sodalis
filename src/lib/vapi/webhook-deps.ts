@@ -1,6 +1,5 @@
 import { after } from 'next/server'
 import { insertCheckIn } from '@/lib/check-ins'
-import { pendingSummary, summarizeCheckIn } from '@/lib/call-summary/deps'
 import { coordinateOpportunity } from '@/lib/coordinator/deps'
 import { pendingExtraction, planEvents } from '@/lib/event-planner/deps'
 import { supabaseAdmin } from '@/lib/supabase/server'
@@ -40,15 +39,6 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
     async propose(opportunityId) {
       await coordinateOpportunity(opportunityId)
     },
-    async summarize(checkInId) {
-      const result = await summarizeCheckIn(checkInId)
-      // The summary keeps no status column, so a failure must reach the logs to be seen at all.
-      if (result.status === 'failed') {
-        console.error('call summary failed:', result.reason, result.quota ? '(Gemini quota)' : '')
-      }
-      return result
-    },
-    pendingSummary,
     async extract(checkInId) {
       return planEvents(checkInId)
     },
