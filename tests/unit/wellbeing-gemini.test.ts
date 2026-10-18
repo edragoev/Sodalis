@@ -15,6 +15,13 @@ describe('wellbeing Gemini request', () => {
     expect(item.properties.safety.enum).toEqual([...SAFETY_LEVELS])
   })
 
+  it('asks for the elder\'s own ask, or Unknown, as a non-nullable follow-up', () => {
+    const followup = item.properties.suggested_followup as { type: string; nullable?: boolean; description: string }
+    expect(followup.nullable).toBeUndefined()
+    expect(followup.description).toContain('Unknown')
+    expect(item.required).toContain('suggested_followup')
+  })
+
   it('keeps the system prompt separate from the transcript', () => {
     expect(SYSTEM_PROMPT).toContain('Elder Wellbeing Alert Agent')
     expect(SYSTEM_PROMPT).toContain('{ "alerts": [] }')
