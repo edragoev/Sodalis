@@ -23,15 +23,10 @@ export default function CalendarStep() {
 
   return (
     <Screen
-      footer={
-        <div className="space-y-1">
-          <Button className="w-full" onClick={() => router.push("/availability")}>
-            Set my free times
-          </Button>
-          <Button variant="text" onClick={() => router.push("/dashboard")}>
-            Skip for now
-          </Button>
-        </div>
+      top={
+        <button onClick={() => router.push("/dashboard")} className="-ml-1 px-1 py-2 text-base font-semibold text-slate hover:text-ink hover:underline">
+          Skip
+        </button>
       }
     >
       <div className="grid h-16 w-16 place-items-center rounded-2xl bg-mist text-primary">
@@ -49,7 +44,7 @@ export default function CalendarStep() {
           Connect private Google Calendar
         </Button>
         <Button variant="secondary" className="w-full" onClick={() => router.push("/availability")}>
-          Continue without Google
+          Set my free times instead
         </Button>
       </div>
 
