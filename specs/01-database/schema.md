@@ -47,6 +47,27 @@ See [member-questionnaire](../07-onboarding/member-questionnaire.md).
 
 Enable realtime on `agent_runs` for the dashboard trace. See [coordinator-agent](../08-agents/coordinator-agent.md).
 
+## Database Schema (Token & User Storage)
+Long-lived Google refresh tokens are stored encrypted at rest. Never store or log them in plaintext.
+
+| Table / column | Notes |
+|---|---|
+| `family_members.google_refresh_token` | `text`, nullable. Holds ciphertext only, as `v1:<iv>:<tag>:<ciphertext>` (base64url). Null until the member connects Google Calendar. |
+| `family_members.calendar_connected` | `bool`, default false. Set true when a token is saved, false when it is revoked or Google returns `invalid_grant`. |
+| `family_members.fcm_token` | `text`, nullable. Push token, written through `POST /api/push/register`. Not a secret, but never exposed to anon. |
+
+**Encryption**
+- App-level AES-256-GCM in a server-only helper (Node `crypto`), with a fresh random 12-byte IV per write. The `v1:` prefix leaves room to rotate keys or algorithms.
+- The key is `TOKEN_ENCRYPTION_KEY` (32 random bytes, base64) in server env only: never `NEXT_PUBLIC_*`, never committed, never in the database.
+- Encrypt before the insert/update and decrypt only inside the server code that calls Google. Plaintext is never returned from an API route.
+- Supabase also encrypts the disk, but that does not protect against a leaked row or SQL read. The app-level layer does.
+
+**Access**
+- Only API routes using the service-role key read or write the token column.
+- The current `anon read family_members` policy is a table-wide `select`, so the anon key can read this column. Before the token is used, revoke it at column level (`revoke select (google_refresh_token) on family_members from anon`) or move tokens to a separate service-role-only table (`member_google_tokens`: member_id PK→family_members, `refresh_token_enc`, `updated_at`, RLS on and no anon policy). The separate table is preferred.
+- Disconnect: null the token, set `calendar_connected = false`, and revoke it with Google (`https://oauth2.googleapis.com/revoke`).
+- Deleting a senior cascades to their family members and so to their tokens.
+
 ## v1 seed
 The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `member_profile_answers`, `hope_calls.availability_cache`.
 
