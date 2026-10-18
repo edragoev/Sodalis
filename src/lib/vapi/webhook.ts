@@ -9,6 +9,11 @@ import { secretMatches } from '@/lib/shared-secret'
 export interface VapiWebhookDeps {
   /** Shared secret Vapi sends in x-vapi-secret. When unset, every request is refused. */
   secret?: string
+  /**
+   * Demo only (DEMO_SENIOR_PHONE): the senior a web call belongs to. Web calls (the Vapi dashboard's
+   * Talk button) carry no phone number; phone calls never use this.
+   */
+  demoSeniorPhone?: string
   findSeniorByPhone(phone: string): Promise<{ id: string } | null>
   insertCheckIn(input: CheckInInput): Promise<{ id: string }>
   /** Ties the opportunities Hope created during the call to the new check-in; returns their ids. */
@@ -51,7 +56,7 @@ export function createVapiWebhook(deps: VapiWebhookDeps) {
     const call = isObject(message.call) ? message.call : {}
     const customer = isObject(call.customer) ? call.customer : {}
     const callId = text(call.id)
-    const number = text(customer.number)
+    const number = text(customer.number) ?? (call.type === 'webCall' ? text(deps.demoSeniorPhone) : undefined)
     if (!callId) return bad('call.id is required')
     if (!number) return bad('call.customer.number is required')
 

@@ -9,6 +9,7 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
   const db = supabaseAdmin()
   return {
     secret: process.env.VAPI_WEBHOOK_SECRET,
+    demoSeniorPhone: process.env.DEMO_SENIOR_PHONE,
     async findSeniorByPhone(phone) {
       const { data, error } = await db.from('seniors').select('id').eq('phone_e164', phone).maybeSingle()
       if (error) throw new Error(error.message)
