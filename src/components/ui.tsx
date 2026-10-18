@@ -16,9 +16,12 @@ export const largeLabelCls = `${labelBaseCls} text-2xl`;
 export const headingCls = "font-serif text-[32px] font-semibold leading-tight text-ink";
 export const subCls = "mt-3 text-lg leading-relaxed text-slate";
 
-// A tilted phone handset with two dot eyes above it: Sodalis's friendly voice on the line.
+// A phone handset with a small white heart beside it: the daily call, made with care.
+// The app icons in public/icons and src/app/favicon.ico use the same glyph.
 const HANDSET =
   "M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z";
+const HEART =
+  "M16.5 10.8s-3.2-1.9-3.8-3.8c-.4-1.3.4-2.6 1.7-2.6.8 0 1.4.5 2.1 1.2.7-.7 1.3-1.2 2.1-1.2 1.3 0 2.1 1.3 1.7 2.6-.6 1.9-3.8 3.8-3.8 3.8z";
 
 export function Logo({ align = "center" }: { align?: "center" | "left" | "right" }) {
   return (
@@ -26,8 +29,7 @@ export function Logo({ align = "center" }: { align?: "center" | "left" | "right"
       <span className="grid h-12 w-12 place-items-center rounded-2xl bg-btn">
         <svg viewBox="0 0 24 24" className="h-8 w-8 text-primary-dark" fill="currentColor" aria-hidden>
           <path d={HANDSET} />
-          <circle cx="13.2" cy="5.6" r="1.5" />
-          <circle cx="18.2" cy="9.6" r="1.5" />
+          <path d={HEART} fill="#fff" />
         </svg>
       </span>
       <span className="font-serif text-3xl font-semibold text-ink">Sodalis</span>
