@@ -3,6 +3,7 @@ import { insertCheckIn } from '@/lib/check-ins'
 import { coordinateOpportunity } from '@/lib/coordinator/deps'
 import { pendingExtraction, planEvents } from '@/lib/event-planner/deps'
 import { supabaseAdmin } from '@/lib/supabase/server'
+import { pendingWellbeing, planWellbeing } from '@/lib/wellbeing/deps'
 import type { VapiWebhookDeps } from './webhook'
 
 /** The real collaborators for the webhook route. */
@@ -42,6 +43,10 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
       return planEvents(checkInId)
     },
     pendingExtraction,
+    async wellbeing(checkInId) {
+      return planWellbeing(checkInId)
+    },
+    pendingWellbeing,
     after,
     now: () => new Date(),
   }
