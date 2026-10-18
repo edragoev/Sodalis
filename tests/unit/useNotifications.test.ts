@@ -11,6 +11,8 @@ import { useNotifications } from '@/lib/hooks/useNotifications'
 const mockGetToken = vi.fn()
 const mockGetMessaging = vi.fn()
 const mockRequestPermission = vi.fn()
+const mockDeleteToken = vi.fn()
+const verify = vi.fn()
 const mockRegisterSw = vi.fn()
 const register = vi.fn()
 const APP = { name: 'test-app' }
@@ -19,6 +21,7 @@ const REGISTRATION = { scope: '/', active: { scriptURL: '/sw.js' } }
 vi.mock('firebase/messaging', () => ({
   getMessaging: (...args: unknown[]) => mockGetMessaging(...args),
   getToken: (...args: unknown[]) => mockGetToken(...args),
+  deleteToken: (...args: unknown[]) => mockDeleteToken(...args),
 }))
 vi.mock('@/lib/firebase/client', () => ({ getFirebaseApp: () => APP }))
 
@@ -41,6 +44,7 @@ describe('useNotifications', () => {
     mockGetToken.mockResolvedValue('fcm-token-123')
     mockRegisterSw.mockResolvedValue(REGISTRATION)
     register.mockResolvedValue({ ok: true })
+    verify.mockResolvedValue('valid')
 
     Object.defineProperty(globalThis.navigator, 'serviceWorker', {
       value: { register: mockRegisterSw },
@@ -56,7 +60,7 @@ describe('useNotifications', () => {
     vi.restoreAllMocks()
   })
 
-  const setup = (options: Parameters<typeof useNotifications>[0] = { memberId: 'm1', register }) =>
+  const setup = (options: Parameters<typeof useNotifications>[0] = { memberId: 'm1', register, verify }) =>
     renderHook(() => useNotifications(options))
 
   const enable = (result: { current: ReturnType<typeof useNotifications> }) =>
@@ -90,6 +94,67 @@ describe('useNotifications', () => {
       expect(mockRequestPermission).not.toHaveBeenCalled()
       expect(result.current.permission).toBe('granted')
       expect(register).toHaveBeenCalledWith('m1', 'fcm-token-123')
+      await waitFor(() => expect(result.current.registered).toBe(true))
+    })
+
+    it('is not registered when permission is granted but the token cannot be fetched', async () => {
+      stubNotification('granted')
+      mockGetToken.mockRejectedValue(new Error('push service error'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.isReady).toBe(true))
+
+      expect(result.current.registered).toBe(false)
+      expect(result.current.error).toBeTruthy()
+    })
+
+    it('is not registered when the service worker is unavailable', async () => {
+      stubNotification('granted')
+      mockRegisterSw.mockRejectedValue(new Error('script failed'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.isReady).toBe(true))
+
+      expect(mockGetToken).not.toHaveBeenCalled()
+      expect(result.current.registered).toBe(false)
+      expect(result.current.error).toBeTruthy()
+    })
+
+    it('replaces a dead cached token with a fresh one and registers that', async () => {
+      stubNotification('granted')
+      mockGetToken.mockResolvedValueOnce('dead-token').mockResolvedValueOnce('fresh-token')
+      verify.mockResolvedValueOnce('dead').mockResolvedValueOnce('valid')
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.registered).toBe(true))
+
+      expect(mockDeleteToken).toHaveBeenCalledTimes(1)
+      expect(register).toHaveBeenNthCalledWith(2, 'm1', 'fresh-token')
+      expect(result.current.token).toBe('fresh-token')
+      expect(result.current.error).toBeNull()
+    })
+
+    it('gives up with an error, not "registered", if the fresh token is dead too', async () => {
+      stubNotification('granted')
+      verify.mockResolvedValue('dead')
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.isReady).toBe(true))
+
+      expect(mockGetToken).toHaveBeenCalledTimes(2)
+      expect(result.current.registered).toBe(false)
+      expect(result.current.error).toBeTruthy()
+    })
+
+    it('trusts the token when the check itself could not be completed', async () => {
+      stubNotification('granted')
+      verify.mockResolvedValue('unknown')
+      const { result } = setup()
+
+      await waitFor(() => expect(result.current.registered).toBe(true))
+      expect(mockDeleteToken).not.toHaveBeenCalled()
     })
 
     it('reports "denied" without asking again or fetching a token', async () => {
@@ -166,7 +231,7 @@ describe('useNotifications', () => {
 
     it('still gets a token when nobody is linked, but has nobody to register it for', async () => {
       mockRequestPermission.mockResolvedValue('granted')
-      const { result } = setup({ memberId: null, register })
+      const { result } = setup({ memberId: null, register, verify })
       await waitFor(() => expect(result.current.isReady).toBe(true))
 
       await enable(result)
@@ -185,6 +250,7 @@ describe('useNotifications', () => {
 
       expect(result.current.error?.message).toMatch(/save/i)
       expect(result.current.token).toBe('fcm-token-123')
+      expect(result.current.registered).toBe(false)
     })
 
     it('catches errors during setup and handles them gracefully', async () => {

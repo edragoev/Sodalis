@@ -17,6 +17,7 @@ const state = (over: Record<string, unknown> = {}) => ({
   permission: 'default',
   token: null,
   error: null,
+  registered: false,
   isReady: true,
   enable,
   ...over,
@@ -45,11 +46,28 @@ describe('NotificationsButton', () => {
   })
 
   it('says notifications are on, with no button, once permission is granted', () => {
-    useNotifications.mockReturnValue(state({ permission: 'granted', token: 'tok' }))
+    useNotifications.mockReturnValue(state({ permission: 'granted', token: 'tok', registered: true }))
     show()
 
     expect(screen.getByText(/notifications are on/i)).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('never claims notifications are on when permission is granted but nothing was registered', () => {
+    useNotifications.mockReturnValue(state({ permission: 'granted' }))
+    show()
+
+    expect(screen.queryByText(/notifications are on/i)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /finish setting up/i }))
+    expect(enable).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers a retry, not "on", when registration failed', () => {
+    useNotifications.mockReturnValue(state({ permission: 'granted', token: 'tok', error: new Error('x') }))
+    show()
+
+    expect(screen.queryByText(/notifications are on/i)).toBeNull()
+    expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy()
   })
 
   it('explains how to unblock them when the browser has them blocked, with no button', () => {
