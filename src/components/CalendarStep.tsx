@@ -1,18 +1,36 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getSession } from "@/lib/session";
-import { Button, Screen, headingCls, subCls } from "./ui";
+import { normalizeGoogleCalendarEmbedUrl, PublicCalendarEmbed } from "./PublicCalendarEmbed";
+import { Button, Screen, headingCls, inputCls, subCls } from "./ui";
 
-// Optional last onboarding step. Google Calendar sign-in isn't wired yet, so it's
-// shown as coming soon; the free-times grid on the Calendar tab is the fallback.
+const DEFAULT_PUBLIC_CALENDAR = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL || "";
+
 export default function CalendarStep() {
   const router = useRouter();
+  const [publicCalendarUrl, setPublicCalendarUrl] = useState(DEFAULT_PUBLIC_CALENDAR);
+  const [calendarEmbedUrl, setCalendarEmbedUrl] = useState(DEFAULT_PUBLIC_CALENDAR);
 
   useEffect(() => {
     if (!getSession()) router.replace("/");
   }, [router]);
+
+  const handleConnect = () => {
+    const session = getSession();
+    if (!session) {
+      router.replace("/");
+      return;
+    }
+    window.location.assign(`/api/auth/google?member_id=${encodeURIComponent(session.member_id)}`);
+  };
+
+  const handlePreviewPublicCalendar = () => {
+    const trimmed = publicCalendarUrl.trim();
+    if (!trimmed) return;
+    setCalendarEmbedUrl(normalizeGoogleCalendarEmbedUrl(trimmed));
+  };
 
   return (
     <Screen
@@ -36,14 +54,37 @@ export default function CalendarStep() {
       <p className={subCls}>
         Share your availability and we&apos;ll suggest visits and calls that fit your week. We only look at when you&apos;re busy, never what the events are.
       </p>
-      <button
-        disabled
-        className="mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-sand bg-white text-lg font-semibold text-slate opacity-70"
-      >
-        Connect Google Calendar
-        <span className="rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-primary-dark">Coming soon</span>
-      </button>
-      <p className="mt-4 text-center text-sm text-slate">You can do this any time from the Calendar tab.</p>
+
+      <div className="mt-8 space-y-3">
+        <Button className="w-full" onClick={handleConnect}>
+          Connect private Google Calendar
+        </Button>
+        <Button variant="secondary" className="w-full" onClick={() => router.push("/availability")}>
+          Continue without Google
+        </Button>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-sand bg-cream p-4">
+        <label htmlFor="public-google-calendar" className="mb-2 block text-sm font-semibold text-ink">
+          Public Google Calendar URL
+        </label>
+        <input
+          id="public-google-calendar"
+          type="url"
+          value={publicCalendarUrl}
+          onChange={(event) => setPublicCalendarUrl(event.target.value)}
+          placeholder="https://calendar.google.com/calendar/embed?..."
+          className={`${inputCls} h-12 text-base`}
+        />
+        <Button variant="secondary" className="mt-3 w-full" onClick={handlePreviewPublicCalendar}>
+          Preview public calendar
+        </Button>
+        <p className="mt-2 text-xs text-slate">This option does not require a Google sign-in and works for public calendars only.</p>
+      </div>
+
+      {calendarEmbedUrl && <PublicCalendarEmbed url={calendarEmbedUrl} />}
+
+      <p className="mt-4 text-center text-sm text-slate">We use a read-only free/busy check and nothing more for private calendars.</p>
     </Screen>
   );
 }

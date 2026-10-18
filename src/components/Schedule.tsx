@@ -121,10 +121,9 @@ export default function Schedule() {
         )}
       </div>
 
-      <button disabled className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-sand bg-white font-semibold text-slate opacity-70">
+      <Link href="/calendar" className="mt-8 flex h-12 w-full items-center justify-center rounded-2xl border border-sand bg-white font-semibold text-ink hover:bg-cream">
         Connect Google Calendar
-        <span className="rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-primary-dark">Coming soon</span>
-      </button>
+      </Link>
     </Screen>
   );
 }
