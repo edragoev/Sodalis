@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { MAX_COOLDOWN_MS, QUOTA_COOLDOWN_MS, SHORT_COOLDOWN_MS, backoffFor, withOneRetry } from '@/lib/gemini-backoff'
+import { MAX_COOLDOWN_MS, QUOTA_COOLDOWN_MS, SHORT_COOLDOWN_MS, backoffFor, geminiModels, withFallback, withOneRetry } from '@/lib/gemini-backoff'
 
 // After Gemini refuses, how long the app stops asking. The free tier says how long it wants us to wait.
 
@@ -75,5 +75,62 @@ describe('withOneRetry: one more try for a slow or failing Gemini, never for a q
     const ask = vi.fn().mockResolvedValue('answer')
     await withOneRetry(ask)
     expect(ask).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('withFallback: a second model when the first is overloaded', () => {
+  const overloaded = Object.assign(new Error('This model is currently experiencing high demand'), { status: 503 })
+  const quota = Object.assign(new Error('RESOURCE_EXHAUSTED: You exceeded your current quota'), { status: 429 })
+  const answerFrom = (busy: string, err: unknown) => vi.fn(async (model: string) => {
+    if (model === busy) throw err
+    return `answer from ${model}`
+  })
+
+  it('asks the fallback model once after the main model fails twice', async () => {
+    const ask = answerFrom('main', overloaded)
+    await expect(withFallback('main', 'backup', ask)).resolves.toBe('answer from backup')
+    expect(ask.mock.calls.map(([m]) => m)).toEqual(['main', 'main', 'backup'])
+  })
+
+  it('never asks the fallback when the main model answers', async () => {
+    const ask = vi.fn().mockResolvedValue('answer')
+    await withFallback('main', 'backup', ask)
+    expect(ask).toHaveBeenCalledTimes(1)
+    expect(ask).toHaveBeenCalledWith('main')
+  })
+
+  it.each([
+    ['a quota refusal', quota],
+    ['a bad request', Object.assign(new Error('Invalid schema'), { status: 400 })],
+  ])('does not send %s to the fallback', async (_, err) => {
+    const ask = answerFrom('main', err)
+    await expect(withFallback('main', 'backup', ask)).rejects.toBe(err)
+    expect(ask).toHaveBeenCalledTimes(1)
+  })
+
+  it('without a fallback, fails as before after two tries', async () => {
+    const ask = answerFrom('main', overloaded)
+    await expect(withFallback('main', undefined, ask)).rejects.toBe(overloaded)
+    expect(ask).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives up when the fallback fails too', async () => {
+    const ask = vi.fn().mockRejectedValue(overloaded)
+    await expect(withFallback('main', 'backup', ask)).rejects.toBe(overloaded)
+    expect(ask).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('geminiModels', () => {
+  it('reads the main and fallback model', () => {
+    expect(geminiModels({ GEMINI_MODEL: 'a', GEMINI_FALLBACK_MODEL: 'b' } as NodeJS.ProcessEnv)).toEqual({ model: 'a', fallback: 'b' })
+  })
+
+  it.each([
+    ['unset', { GEMINI_MODEL: 'a' }],
+    ['empty', { GEMINI_MODEL: 'a', GEMINI_FALLBACK_MODEL: '' }],
+    ['the same as the main model', { GEMINI_MODEL: 'a', GEMINI_FALLBACK_MODEL: 'a' }],
+  ])('has no fallback when it is %s', (_, env) => {
+    expect(geminiModels(env as NodeJS.ProcessEnv).fallback).toBeUndefined()
   })
 })

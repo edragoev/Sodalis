@@ -5,7 +5,7 @@ import { createEventPlanner, type PlannerResult } from './plan'
 import { createPlannerStore } from './store'
 
 // Two Gemini attempts; the coordinator's own 5 s limit and the database work fit inside the route's 90 s.
-const PLANNER_TIMEOUT_MS = 2 * GEMINI_TIMEOUT_MS + 2_000 // two attempts
+const PLANNER_TIMEOUT_MS = 3 * GEMINI_TIMEOUT_MS + 2_000 // two attempts, then one on the fallback model
 
 /** Runs the event planner for one saved check-in against the real database, Gemini and Firebase. */
 export function planEvents(checkInId: string, options: { force?: boolean } = {}): Promise<PlannerResult> {

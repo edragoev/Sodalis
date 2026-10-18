@@ -73,6 +73,9 @@ GEMINI_API_KEY=
 
 GEMINI_MODEL=
 
+# Optional: a second model to ask when GEMINI_MODEL is overloaded (503) or times out.
+GEMINI_FALLBACK_MODEL=
+
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 VAPI_WEBHOOK_SECRET=

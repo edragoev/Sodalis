@@ -41,6 +41,16 @@ describe('extractWithGemini', () => {
     expect(ctor.mock.calls[0][0].httpOptions.retryOptions).toEqual({ attempts: 1 })
   })
 
+  it('asks GEMINI_FALLBACK_MODEL when the main model stays overloaded', async () => {
+    vi.stubEnv('GEMINI_FALLBACK_MODEL', 'backup-model')
+    const busy = Object.assign(new Error('This model is currently experiencing high demand'), { status: 503 })
+    generateContent.mockRejectedValueOnce(busy).mockRejectedValueOnce(busy).mockResolvedValue({ text: '{"opportunities":[]}' })
+    const { extractWithGemini } = await import('@/lib/event-planner/gemini')
+
+    await expect(extractWithGemini(input)).resolves.toEqual({ opportunities: [] })
+    expect(generateContent.mock.calls.map(([req]) => req.model)).toEqual(['test-model', 'test-model', 'backup-model'])
+  })
+
   it.each(['GEMINI_API_KEY', 'GEMINI_MODEL'])('refuses to call Gemini when %s is missing', async (name) => {
     vi.stubEnv(name, '')
     const { extractWithGemini } = await import('@/lib/event-planner/gemini')
