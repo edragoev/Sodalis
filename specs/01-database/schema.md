@@ -9,6 +9,7 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `check_ins` | id, senior_id, `vapi_call_id` UNIQUE (idempotency), `started_at`, ended_at, duration_s, status (completed/no_answer/failed), transcript, summary, `mood_score` (-1..1), mood_label, `topics text[]`, `engagement_score` (0..1), `flags jsonb`, `raw_extraction jsonb` |
 | `alerts` | id, senior_id, check_in_id, type (low_mood/health/missed_checkin/wants_contact), severity (info/warn/urgent), message, acknowledged_by, created_at |
 | `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, `outcome_engagement` |
+| `calendar_events` | id, member_id→family_members, `uid`, `recurrence_id`, title, notes, `starts_at`/`ends_at` (UTC), `all_day`, raw `rrule`, `exdates`, `source_tz`, `import_batch_id`. See [google-calendar-import](../10-calendar/google-calendar-import.md) |
 
 "The elder wants contact with someone" is an `opportunities` row of type `wants_contact`; the old `call_requests` table was dropped. `hope_calls` (the v2 daily-call queue) was dropped until the cron is built.
 
@@ -68,12 +69,13 @@ Long-lived Google refresh tokens are stored encrypted at rest. Never store or lo
 - Deleting a senior cascades to their family members and so to their tokens.
 
 ## v1 seed
-The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`.
+The elder plus 4 family members (Danny, Maya, Sam, Lena) with `relationship`, `pronouns`, tags, `profile_summary` and `manual_availability`. Unused in v1: `google_refresh_token`, `calendar_connected`, `calendar_events`.
 
 ## Indexes
 - `check_ins (senior_id, started_at DESC)` (required)
 - `visits (senior_id, starts_at)`
 - `alerts (senior_id, created_at DESC)`
+- `calendar_events (member_id, starts_at)`; unique `(member_id, uid, recurrence_id)` `NULLS NOT DISTINCT`
 
 ## Realtime
 Enable on `check_ins`, `alerts`, `visits`, `opportunities` (add to the `supabase_realtime` publication). The dashboard subscribes with the anon key.

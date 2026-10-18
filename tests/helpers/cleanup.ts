@@ -39,6 +39,12 @@ async function del(db: SupabaseClient, table: string, column: string, ids: strin
   }
 }
 
+function isUnreachableDbError(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false
+  const text = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()
+  return text.includes('fetch failed') || text.includes('econnrefused') || text.includes('enotfound') || text.includes('network')
+}
+
 async function deleteSeniors(db: SupabaseClient, seniorIds: string[]) {
   if (seniorIds.length === 0) return
   const { data: members } = await db.from('family_members').select('id').in('senior_id', seniorIds)
@@ -63,13 +69,25 @@ export async function cleanupTracked(db: SupabaseClient = adminClient()) {
  * uses the test prefix, along with their data.
  */
 export async function cleanupAllTestData(db: SupabaseClient = adminClient()) {
-  const { data, error } = await db
-    .from('seniors')
-    .select('id')
-    .like('phone_e164', `${TEST_PHONE_PREFIX}%`)
-  if (error) {
-    if (error.code === '42P01' || error.code === 'PGRST205') return
-    throw new Error(`cleanup lookup failed: ${error.message}`)
+  try {
+    const { data, error } = await db
+      .from('seniors')
+      .select('id')
+      .like('phone_e164', `${TEST_PHONE_PREFIX}%`)
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST205') return
+      if (isUnreachableDbError(error)) {
+        console.warn('Skipping Supabase test cleanup because the test database is unreachable.')
+        return
+      }
+      throw new Error(`cleanup lookup failed: ${error.message}`)
+    }
+    await deleteSeniors(db, (data ?? []).map((s: { id: string }) => s.id))
+  } catch (error) {
+    if (error instanceof Error && isUnreachableDbError(error as { code?: string; message?: string })) {
+      console.warn('Skipping Supabase test cleanup because the test database is unreachable.')
+      return
+    }
+    throw error
   }
-  await deleteSeniors(db, (data ?? []).map((s: { id: string }) => s.id))
 }
