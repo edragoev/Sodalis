@@ -203,19 +203,20 @@ export default function Dashboard() {
         )}
 
         {requests.length > 0 && (
-          <section className="space-y-3">
+          // Read-only and compact: a visit is booked only from its push notification.
+          <section className="space-y-2">
             {requests.map((r) => (
-              <Link key={r.id} href={`/opportunities/${r.id}`} className="flex items-start gap-3 rounded-3xl border border-primary/20 bg-mist p-5 transition-colors hover:bg-btn/40">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-primary">
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <div key={r.id} className="flex items-center gap-2.5 rounded-2xl border border-primary/20 bg-mist px-3.5 py-2.5">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-primary">
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" />
                   </svg>
                 </span>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold text-primary">Call request · {when(r.created_at)}</p>
-                  <p className="mt-1 text-lg font-semibold leading-snug text-ink">{r.summary}</p>
+                  <p className="text-sm font-semibold leading-snug text-ink">{r.summary}</p>
                 </div>
-              </Link>
+              </div>
             ))}
           </section>
         )}
@@ -321,13 +322,14 @@ export default function Dashboard() {
           <section className="space-y-3">
             <h2 className="font-serif text-2xl font-semibold text-ink">Ideas from Sodalis&apos;s calls</h2>
             {ideas.map((i) => (
-              <Link key={i.id} href={`/opportunities/${i.id}`} className={`${card} block space-y-2 transition-colors hover:bg-cream`}>
+              // Read-only: a visit is booked only from its push notification.
+              <div key={i.id} className={`${card} space-y-2`}>
                 {i.quote && <p className="font-serif text-lg leading-snug text-ink">&ldquo;{i.quote}&rdquo;</p>}
                 <p className="text-slate">{i.summary}</p>
                 <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${i.status === "confirmed" ? "bg-mist text-primary-dark" : "bg-peach text-accent"}`}>
                   {i.status === "confirmed" ? `${i.accepted_by ? names[i.accepted_by] ?? "Someone" : "Someone"} is on it` : "Needs someone"}
                 </span>
-              </Link>
+              </div>
             ))}
           </section>
         )}
