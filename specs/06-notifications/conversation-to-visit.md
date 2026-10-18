@@ -22,7 +22,7 @@ The only message sent during a call is a health alert from Hope's `flag_concern`
 
 ### Event planner (implementation)
 Steps 2-6 are `src/lib/event-planner/`, started from the webhook's `after()` for every call with a transcript.
-- **One Gemini call per phone call** (`gemini.ts`, `GEMINI_MODEL`, 20 s, one attempt, no retry on quota). Only the transcript, the elder's first name and timezone, today's date and member names, relationships and pronouns are sent; no phones, tokens or calendar data.
+- **One Gemini call per phone call for opportunities** (the wellbeing agent makes its own separate call for alerts, see [hope-persona](../03-ai/hope-persona.md#wellbeing-alerts)) (`gemini.ts`, `GEMINI_MODEL`, 20 s, one attempt, no retry on quota). Only the transcript, the elder's first name and timezone, today's date and member names, relationships and pronouns are sent; no phones, tokens or calendar data.
 - **Strict validation** (`validate.ts`): enums, confidence 0..1, lengths, at most 5 ideas. An invalid idea is dropped alone; an invalid envelope fails the call. The `quote` must appear in the transcript. A summary that mentions health is dropped (health goes through `alerts`).
 - **Member matching** (`members.ts`): first name, full name or relationship word. Unknown or ambiguous mentions are saved as unnamed (the summary notes the mention), because one opportunity names one member and two could double-book the elder.
 - **Dates** (`dates.ts`): `target_date` must be a real date from today (the elder's timezone, at call end) to one year ahead, else it is blanked.

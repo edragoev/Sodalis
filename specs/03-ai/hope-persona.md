@@ -33,6 +33,21 @@ Use `responseMimeType: application/json` plus `responseSchema`. Model id from an
 
 `opportunities[]` is described in [conversation-to-visit](../06-notifications/conversation-to-visit.md).
 
+## Wellbeing alerts
+A second Gemini call per phone call (`src/lib/wellbeing/`, `GEMINI_MODEL`, 20 s, one attempt) turns concerns in the transcript into `alerts`. The Elder Wellbeing Alert Agent prompt (`prompt.ts`) is the system instruction; the transcript is fenced as untrusted data. Output, validated in code (`validate.ts`):
+
+```json
+{ "alerts": [{
+  "category": "loneliness|emotional_wellbeing|physical_incident|daily_living|family_support|other",
+  "summary": "string", "quote": "string (verbatim)", "support_needed": "string|unknown",
+  "suggested_followup": "string|null", "safety": "routine|needs_review|urgent", "confidence": "number 0..1"
+}] }
+```
+- The quote must appear in the transcript, else the alert is dropped. Duplicate quotes merge, keeping the higher safety level; at most 5 alerts, most serious first.
+- **Safety floor:** an alert whose quote or summary matches a serious-risk word list (a fall, chest pain, self-harm, abuse...) is never `routine`; it becomes `needs_review`. A malformed alert with a verified serious quote is kept, not dropped.
+- `safety` is a routing signal, not a diagnosis: routine→`info`, needs_review→`warn`, urgent→`urgent`. `needs_review` and `urgent` send one push to the family (no health or feeling detail in it; it opens `/calls/[id]`).
+- Legacy `alerts.type`: loneliness/emotional_wellbeing→`low_mood`, physical_incident→`health`, family_support→`wants_contact`, daily_living/other→`wellbeing`.
+
 ## Alert mapping
 - `mood.score < -0.4` or `low_mood` → `low_mood`
 - `health_concern` / `safety_concern` → `health` (urgent when severity is urgent)

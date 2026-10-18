@@ -11,6 +11,8 @@ All ids are `uuid`. Timestamps are `timestamptz`.
 | `visits` | id, senior_id, member_id, kind (visit/call), `starts_at`, ends_at, status (proposed/confirmed/completed/cancelled), score, `score_breakdown jsonb`, `outcome_engagement` |
 | `calendar_events` | id, member_id→family_members, `uid`, `recurrence_id`, title, notes, `starts_at`/`ends_at` (UTC), `all_day`, raw `rrule`, `exdates`, `source_tz`, `import_batch_id`. See [google-calendar-import](../10-calendar/google-calendar-import.md) |
 
+`alerts` also holds wellbeing alerts ([hope-persona](../03-ai/hope-persona.md#wellbeing-alerts)): `category`, `quote`, `support_needed`, `suggested_followup`, `safety` (routine/needs_review/urgent), `confidence`, `source` (`call` by default, `wellbeing` for the agent), and `type` may also be `wellbeing`. Unique `(check_in_id, lower(quote)) where source = 'wellbeing'`. `check_ins.wellbeing_extraction` is the agent's marker: `{ status: 'ok', count, dropped }` or `{ status: 'failed', reason, quota, retry_after_ms }`; only `ok` blocks a re-run.
+
 "The elder wants contact with someone" is an `opportunities` row of type `wants_contact`; the old `call_requests` table was dropped. `hope_calls` (the v2 daily-call queue) was dropped until the cron is built.
 
 ## Conversation-driven visits
