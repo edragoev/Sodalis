@@ -11,9 +11,7 @@ export const TEST_PHONE_PREFIX = '+1555010'
 const SENIOR_SCOPED_TABLES = [
   'opportunities',
   'visits',
-  'call_requests',
   'alerts',
-  'hope_calls',
   'check_ins',
   'family_members',
 ] as const

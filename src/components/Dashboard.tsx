@@ -21,11 +21,12 @@ type CheckIn = {
   engagement_score: number | null;
 };
 type Alert = { id: string; type: string; severity: "info" | "warn" | "urgent"; message: string; created_at: string; check_in_id: string | null };
-type CallRequest = { id: string; reason: string | null; status: string; created_at: string };
+// An open 'wants_contact' opportunity: the elder would love to hear from family.
+type ContactRequest = { id: string; summary: string; created_at: string };
 type Idea = { id: string; type: string; summary: string; quote: string | null; status: string; accepted_by: string | null; created_at: string };
 type Visit = { id: string; kind: "visit" | "call"; starts_at: string; status: string };
 
-const TABLES = ["check_ins", "alerts", "call_requests", "visits", "opportunities"] as const;
+const TABLES = ["check_ins", "alerts", "visits", "opportunities"] as const;
 const RANK = { urgent: 0, warn: 1, info: 2 } as const;
 
 const ALERT_STYLE: Record<Alert["severity"], { card: string; icon: string; label: string; text: string }> = {
@@ -78,7 +79,7 @@ export default function Dashboard() {
   const [seniorName, setSeniorName] = useState("");
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [requests, setRequests] = useState<CallRequest[]>([]);
+  const [requests, setRequests] = useState<ContactRequest[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
@@ -93,13 +94,14 @@ export default function Dashboard() {
         .eq("senior_id", id).order("started_at", { ascending: false }).limit(14),
       db.from("alerts").select("id, type, severity, message, created_at, check_in_id")
         .eq("senior_id", id).is("acknowledged_by", null).order("created_at", { ascending: false }).limit(10),
-      db.from("call_requests").select("id, reason, status, created_at")
-        .eq("senior_id", id).eq("status", "pending").order("created_at", { ascending: false }),
+      db.from("opportunities").select("id, summary, created_at")
+        .eq("senior_id", id).eq("type", "wants_contact").in("status", ["detected", "proposed"])
+        .order("created_at", { ascending: false }),
       db.from("visits").select("id, kind, starts_at, status")
         .eq("senior_id", id).in("status", ["proposed", "confirmed"]).gte("starts_at", new Date().toISOString())
         .order("starts_at").limit(10),
       db.from("opportunities").select("id, type, summary, quote, status, accepted_by, created_at")
-        .eq("senior_id", id).in("status", ["proposed", "confirmed"]).order("created_at", { ascending: false }).limit(5),
+        .eq("senior_id", id).neq("type", "wants_contact").in("status", ["proposed", "confirmed"]).order("created_at", { ascending: false }).limit(5),
       db.from("family_members").select("id, name").eq("senior_id", id),
     ]);
     if (s.error || c.error) return setError("Couldn't load the dashboard.");
@@ -107,7 +109,7 @@ export default function Dashboard() {
     setSeniorName(s.data?.name?.split(" ")[0] ?? "");
     setCheckIns((c.data ?? []) as CheckIn[]);
     setAlerts(((a.data ?? []) as Alert[]).sort((x, y) => RANK[x.severity] - RANK[y.severity]));
-    setRequests((r.data ?? []) as CallRequest[]);
+    setRequests((r.data ?? []) as ContactRequest[]);
     setVisits((v.data ?? []) as Visit[]);
     setIdeas((o.data ?? []) as Idea[]);
     setNames(Object.fromEntries((m.data ?? []).map((x) => [x.id, x.name.split(" ")[0]])));
@@ -228,11 +230,11 @@ export default function Dashboard() {
         {requests.length > 0 && (
           <section className="space-y-3">
             {requests.map((r) => (
-              <div key={r.id} className="rounded-3xl bg-peach p-5">
+              <Link key={r.id} href={`/opportunities/${r.id}`} className="block rounded-3xl bg-peach p-5">
                 <p className="text-xs font-semibold text-accent">{sName} would love to hear from you</p>
-                <p className="mt-1 text-lg font-semibold text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
+                <p className="mt-1 text-lg font-semibold text-ink">{r.summary}</p>
                 <p className="mt-1 text-sm text-slate">{when(r.created_at)}</p>
-              </div>
+              </Link>
             ))}
           </section>
         )}
