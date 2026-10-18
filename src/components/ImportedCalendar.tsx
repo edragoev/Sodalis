@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Occurrence } from "@/lib/calendar/expand";
-import { wallClock } from "@/lib/calendar/tz";
+import { formatEventTime, wallClock } from "@/lib/calendar/tz";
 import { Button } from "./ui";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -123,9 +123,10 @@ export default function ImportedCalendar({ memberId, onUpcoming }: { memberId: s
     const d = new Date(Date.UTC(month.year, month.month - 1 + n, 1));
     setMonth({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 });
   };
+  // Nothing uploaded yet: show only the upload button (the weekly grid above is the default).
+  const hasCalendar = batchId !== "" || events.length > 0;
   const todayKey = dayKey(today.year, today.month, today.day);
-  const time = (ev: Occurrence) =>
-    ev.all_day ? "All day" : new Date(ev.starts_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const time = (ev: Occurrence) => formatEventTime(ev, tz, []);
 
   return (
     <section id="your-calendar" className="mt-8 scroll-mt-6" aria-label="Your calendar">
@@ -159,6 +160,7 @@ export default function ImportedCalendar({ memberId, onUpcoming }: { memberId: s
       {status && <p role="status" className="mt-2 text-sm text-slate">{status}</p>}
       {problem && <p role="alert" className="mt-2 text-sm text-danger">{problem}</p>}
 
+      {hasCalendar && (<>
       <div className="mt-4 rounded-2xl border border-sand bg-white p-3">
         <div className="flex items-center justify-between">
           <button aria-label="Previous month" onClick={() => step(-1)} className="h-10 w-10 rounded-lg text-xl text-ink hover:bg-mist">‹</button>
@@ -201,6 +203,7 @@ export default function ImportedCalendar({ memberId, onUpcoming }: { memberId: s
         ))}
         {!byDay.get(selected)?.length && <li className="text-sm text-slate">Nothing on this day.</li>}
       </ul>
+      </>)}
     </section>
   );
 }
