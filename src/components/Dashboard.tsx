@@ -208,10 +208,16 @@ export default function Dashboard() {
         {requests.length > 0 && (
           <section className="space-y-3">
             {requests.map((r) => (
-              <div key={r.id} className="rounded-3xl bg-peach p-5">
-                <p className="text-xs font-semibold text-accent">{sName} would love to hear from you</p>
-                <p className="mt-1 text-lg font-semibold text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
-                <p className="mt-1 text-sm text-slate">{when(r.created_at)}</p>
+              <div key={r.id} className="flex items-start gap-3 rounded-3xl border border-primary/20 bg-mist p-5">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-primary">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-primary">Call request · {when(r.created_at)}</p>
+                  <p className="mt-1 text-lg font-semibold leading-snug text-ink">{r.reason ?? `${sName} asked Hope to reach out to family`}</p>
+                </div>
               </div>
             ))}
           </section>
