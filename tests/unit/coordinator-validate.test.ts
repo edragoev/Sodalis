@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pushBody, pushTitle, templateFallback, validateDecision, type Decision } from '@/lib/coordinator/validate'
+import { PUSH_BODY, pushTitle, templateFallback, validateDecision, type Decision } from '@/lib/coordinator/validate'
 
 // Code checks Gemini's answer before anything is sent (specs/08-agents/coordinator-agent.md "Validation").
 
@@ -101,10 +101,11 @@ describe('templateFallback', () => {
     expect(result.slot_ids).toEqual(['s1', 's2', 's3'])
   })
 
-  it('writes "{activity} to/with {elder}?" and the proposed times', () => {
+  it('writes "{activity} to/with {elder}?" and a short body, with no quote or times', () => {
     const result = templateFallback(opportunity, [{ member_id: 'danny', slots: slots(3) }], jane)
     expect(result.title).toBe('Bring extra zucchini to Jane?')
-    expect(result.body).toBe('Thu 4pm, Fri 4pm or Sat 4pm. Tap to pick one.')
+    expect(result.body).toBe(PUSH_BODY)
+    expect(PUSH_BODY).toBe('Tap to pick a time.')
   })
 
   it('says why the fallback chose that member', () => {
@@ -128,33 +129,5 @@ describe('pushTitle', () => {
     [{ type: 'gift_errand', activity: 'Help with the sore knee' }, 'Visit with Jane?'],
   ])('falls back to visit or call without a usable activity: %j', (opportunity, title) => {
     expect(pushTitle(opportunity, 'Jane')).toBe(title)
-  })
-})
-
-describe('pushBody', () => {
-  const at = (iso: string) => ({ starts_at: iso })
-
-  it('lists the times in the elder\'s timezone', () => {
-    expect(pushBody([at('2026-10-17T18:00:00Z'), at('2026-10-18T15:00:00Z')], 'America/Toronto')).toBe(
-      'Sat 2pm or Sun 11am. Tap to pick one.',
-    )
-  })
-
-  it('asks to confirm a single time', () => {
-    expect(pushBody([at('2026-10-17T18:30:00Z')], 'America/Toronto')).toBe('Sat 2:30pm. Tap to confirm.')
-  })
-
-  it('still says what to do without times', () => {
-    expect(pushBody([], 'America/Toronto')).toBe('Tap to pick a time.')
-  })
-
-  it('starts with what the elder said', () => {
-    expect(pushBody([at('2026-10-17T18:30:00Z')], 'America/Toronto', { elderName: 'Jane', quote: 'we enjoy baking together.' })).toBe(
-      'Jane said “we enjoy baking together”. Sat 2:30pm. Tap to confirm.',
-    )
-  })
-
-  it.each(['my knee is sore again', 'x'.repeat(81), '  ', null])('leaves out a quote that is about health, long or empty: %j', (quote) => {
-    expect(pushBody([], 'America/Toronto', { elderName: 'Jane', quote })).toBe('Tap to pick a time.')
   })
 })
