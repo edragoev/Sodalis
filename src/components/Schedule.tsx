@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { fromWindows } from "@/lib/availability";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { getSession } from "@/lib/session";
 import { Screen, TabBar, headingCls, subCls } from "./ui";
@@ -17,15 +16,14 @@ const dayHeading = (d: Date, today: Date) => {
   return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 };
 
-// The Calendar tab, top to bottom: visits and calls coming up, then the member's own free times
-// and uploaded calendar (both edited on the Availability page).
+// The Calendar tab, top to bottom: visits and calls coming up, then the member's uploaded calendar
+// (edited on the Availability page). Suggested times are 9am-8pm when that calendar is free.
 export default function Schedule() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [seniorName, setSeniorName] = useState("");
   const [visits, setVisits] = useState<Visit[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [freeSlots, setFreeSlots] = useState<number | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   const [error, setError] = useState("");
 
@@ -35,10 +33,6 @@ export default function Schedule() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     queueMicrotask(() => setName(s.name?.split(" ")[0] ?? ""));
-    fetch(`/api/members/${s.member_id}/availability`)
-      .then((r) => (r.ok ? r.json() : null))
-      .catch(() => null)
-      .then((d) => setFreeSlots(d ? fromWindows(d.windows).size : null));
     let db: ReturnType<typeof supabaseBrowser>;
     try {
       db = supabaseBrowser();
@@ -114,22 +108,10 @@ export default function Schedule() {
       <div className="mt-3 space-y-3">
         <section className={`${card} flex items-center justify-between gap-4`}>
           <div>
-            <p className="font-semibold text-ink">Your free times</p>
-            <p className="text-sm text-slate">
-              {freeSlots == null ? "Couldn't load them." : freeSlots === 0 ? "Not set yet." : `${freeSlots} two-hour windows a week.`}
-            </p>
-          </div>
-          <Link href="/availability" className={`${pill} ${freeSlots ? "border border-sand bg-white text-ink hover:bg-cream" : "bg-btn text-primary-dark hover:bg-btn-hover"}`}>
-            {freeSlots ? "Edit" : "Set"}
-          </Link>
-        </section>
-
-        <section className={`${card} flex items-center justify-between gap-4`}>
-          <div>
             <p className="font-semibold text-ink">Your Google Calendar</p>
-            <p className="text-sm text-slate">Upload it so we never suggest a time you&apos;re busy.</p>
+            <p className="text-sm text-slate">We suggest times between 9am and 8pm when it&apos;s free.</p>
           </div>
-          <Link href="/availability#your-calendar" className={`${pill} border border-sand bg-white text-ink hover:bg-cream`}>
+          <Link href="/availability" className={`${pill} bg-btn text-primary-dark hover:bg-btn-hover`}>
             Upload
           </Link>
         </section>

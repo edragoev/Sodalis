@@ -13,7 +13,7 @@ const HINTS: Record<string, string> = {
   skills: "We'll use this to suggest the right moments.",
   talk_about: "The things that make you both smile.",
   wish: "No pressure. It just helps us spot the right moment.",
-  logistics: "You'll set your free times next, in Availability.",
+  logistics: "You can upload your calendar next.",
 };
 
 export default function Questionnaire() {

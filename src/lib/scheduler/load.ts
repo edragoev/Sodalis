@@ -1,33 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Window } from '@/lib/availability'
 import { decryptToken } from '@/lib/google/crypto'
 import { fetchBusyWindows } from '@/lib/google/calendar'
 import { expandEvents } from '@/lib/calendar/expand'
 import type { CalendarRow } from '@/lib/calendar/import'
-import type { Interval } from './slots'
+import { FREE_HOURS, type Interval } from './slots'
 import type { SchedulerData } from './get-slots'
 
-// The real source for getSlots: the elder's and the member's free hours, and what is already booked.
-// Manual availability remains the fallback, while Google Calendar adds live busy blocks when connected.
+// The real source for getSlots: the fixed free hours (FREE_HOURS) and what takes time out of them: the member's
+// uploaded calendar, Google Calendar busy blocks when connected, and the elder's booked visits.
 
-const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 const DEFAULT_LENGTH_MS = { visit: 2 * 3_600_000, call: 30 * 60_000 }
 const CONTACT_STATUSES = ['confirmed', 'completed']
-
-function cleanWindows(value: unknown): Window[] {
-  if (!Array.isArray(value)) return []
-  return value.filter(
-    (w): w is Window =>
-      Number.isInteger(w?.dow) &&
-      w.dow >= 0 &&
-      w.dow <= 6 &&
-      typeof w.start === 'string' &&
-      typeof w.end === 'string' &&
-      HHMM.test(w.start) &&
-      HHMM.test(w.end) &&
-      w.start < w.end,
-  )
-}
 
 const fail = () => new Error('Could not load availability')
 
@@ -55,7 +38,7 @@ export function createSchedulerLoader(
   return async function load(memberId: string): Promise<SchedulerData | null> {
     const { data: member, error: memberError } = await db
       .from('family_members')
-      .select('senior_id, manual_availability, google_refresh_token, calendar_connected')
+      .select('senior_id, google_refresh_token, calendar_connected')
       .eq('id', memberId)
       .maybeSingle()
     if (memberError) throw fail()
@@ -86,7 +69,7 @@ export function createSchedulerLoader(
 
     return {
       timezone: senior.data?.timezone ?? 'UTC',
-      memberWindows: cleanWindows(member.manual_availability),
+      freeWindows: FREE_HOURS,
       busyWindows,
       visits: (visits.data ?? []).map(
         (v): Interval => ({
