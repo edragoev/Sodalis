@@ -62,38 +62,6 @@ This project is structured as a full-stack app with a family dashboard, voice-dr
 - Notifications: Firebase Cloud Messaging for browser push notifications
 
 ---
-
-## Project structure
-
-```text
-.
-├── src/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   └── ...
-├── supabase/
-│   ├── migrations/
-│   └── ...
-├── specs/
-│   ├── 01-database/
-│   ├── 02-api/
-│   ├── 03-ai/
-│   ├── 04-scheduler/
-│   ├── 05-product/
-│   ├── 06-notifications/
-│   ├── 07-onboarding/
-│   ├── 08-agents/
-│   └── 10-calendar/
-├── public/
-├── tests/
-├── package.json
-├── next.config.ts
-├── tsconfig.json
-├── vitest.config.mts
-├── eslint.config.mjs
-├── README.md
-└── ...
 Below is env.example to setup
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
