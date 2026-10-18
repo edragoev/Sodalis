@@ -38,18 +38,41 @@ export function createPlannerStore(db: SupabaseClient): Pick<PlannerDeps, 'load'
     }
   }
 
+  // The same idea as the table's unique index: call, type, member and item, with "none" counting as one value.
+  const slotKey = (r: { type: string; mentioned_member_id: string | null; mentioned_item: string | null }) =>
+    `${r.type}|${r.mentioned_member_id ?? ''}|${r.mentioned_item ?? ''}`
+
+  async function alreadySaved(vapiCallId: string): Promise<Set<string>> {
+    const { data, error } = await db
+      .from('opportunities')
+      .select('type, mentioned_member_id, mentioned_item')
+      .eq('check_in_vapi_call_id', vapiCallId)
+    if (error) throw fail('save the opportunities')
+    return new Set((data ?? []).map(slotKey))
+  }
+
+  // All of a call's ideas go in with one insert, so a failure saves none of them rather than half. Rows the call
+  // already saved (a repeat run) are left out first. If a parallel run saves one in between, the insert hits the
+  // unique index; read again and retry once with whatever is still missing.
   async function saveIdeas(checkIn: PlannerCheckIn, rows: NewOpportunity[]) {
-    for (const row of rows) {
-      const { error } = await db.from('opportunities').insert({
-        ...row,
-        senior_id: checkIn.senior_id,
-        check_in_id: checkIn.id,
-        check_in_vapi_call_id: checkIn.vapi_call_id,
-        source: 'extraction',
-      })
-      // The same call, type and member already has a row: a repeat run, so leave it alone.
-      if (error && error.code !== POSTGRES_UNIQUE_VIOLATION) throw fail('save an opportunity')
+    if (rows.length === 0) return
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const saved = await alreadySaved(checkIn.vapi_call_id)
+      const fresh = rows.filter((row) => !saved.has(slotKey(row)))
+      if (fresh.length === 0) return
+      const { error } = await db.from('opportunities').insert(
+        fresh.map((row) => ({
+          ...row,
+          senior_id: checkIn.senior_id,
+          check_in_id: checkIn.id,
+          check_in_vapi_call_id: checkIn.vapi_call_id,
+          source: 'extraction',
+        })),
+      )
+      if (!error) return
+      if (error.code !== POSTGRES_UNIQUE_VIOLATION) break
     }
+    throw fail('save the opportunities')
   }
 
   async function openIds(checkInId: string): Promise<string[]> {
