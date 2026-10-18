@@ -60,6 +60,15 @@ describe.skipIf(!hasTestDb())('opportunities created mid-call by Hope', () => {
     expect((await insert(midCall(senior.id as string))).error?.code).toBe('23505')
   })
 
+  it('allows different items from one call with no member named, but not the same item twice', async () => {
+    const senior = await createSenior()
+    const id = senior.id as string
+
+    expect((await insert(midCall(id, { mentioned_item: 'zucchini' }))).error).toBeNull()
+    expect((await insert(midCall(id, { mentioned_item: 'tea' }))).error).toBeNull()
+    expect((await insert(midCall(id, { mentioned_item: 'tea' }))).error?.code).toBe('23505')
+  })
+
   it('allows a different type, a different member, or a different call', async () => {
     const senior = await createSenior()
     const danny = await createFamilyMember(senior.id as string, { name: 'Danny' })

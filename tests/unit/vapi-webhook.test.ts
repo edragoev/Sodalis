@@ -50,6 +50,57 @@ const untouched = (deps: ReturnType<typeof setup>['deps']) => {
 }
 
 describe('POST /api/vapi/webhook', () => {
+  describe('the event planner', () => {
+    it('runs after the response for a call with a transcript', async () => {
+      const extract = vi.fn().mockResolvedValue(undefined)
+      const { post, runAfter } = setup({ extract })
+      expect((await post(report())).status).toBe(200)
+      expect(extract).not.toHaveBeenCalled()
+      await runAfter()
+      expect(extract).toHaveBeenCalledWith('ci-1')
+    })
+
+    it('is not run for a call nobody answered', async () => {
+      const extract = vi.fn()
+      const { post, runAfter } = setup({ extract })
+      await post(report({ endedReason: 'voicemail' }))
+      await runAfter()
+      expect(extract).not.toHaveBeenCalled()
+    })
+
+    it('never breaks the response or the other proposals when it throws', async () => {
+      const extract = vi.fn().mockRejectedValue(new Error('boom'))
+      const { post, runAfter, deps } = setup({ extract, linkHopeOpportunities: vi.fn().mockResolvedValue(['opp-1']) })
+      expect((await post(report())).status).toBe(200)
+      await expect(runAfter()).resolves.toBeUndefined()
+      expect(deps.propose).toHaveBeenCalledWith('opp-1')
+    })
+
+    it('finishes an unfinished extraction when Vapi redelivers the call', async () => {
+      const extract = vi.fn().mockResolvedValue(undefined)
+      const { post, runAfter } = setup({
+        extract,
+        insertCheckIn: vi.fn().mockRejectedValue(Object.assign(new Error('dup'), { code: '23505' })),
+        pendingExtraction: vi.fn().mockResolvedValue('ci-9'),
+      })
+      expect((await post(report())).json).toEqual({ ok: true, duplicate: true })
+      await runAfter()
+      expect(extract).toHaveBeenCalledWith('ci-9')
+    })
+
+    it('leaves a finished extraction alone on redelivery', async () => {
+      const extract = vi.fn()
+      const { post, runAfter } = setup({
+        extract,
+        insertCheckIn: vi.fn().mockRejectedValue(Object.assign(new Error('dup'), { code: '23505' })),
+        pendingExtraction: vi.fn().mockResolvedValue(null),
+      })
+      await post(report())
+      await runAfter()
+      expect(extract).not.toHaveBeenCalled()
+    })
+  })
+
   describe('the shared secret (401 Unauthorized)', () => {
     it('accepts a request carrying the secret in x-vapi-secret', async () => {
       const { post } = setup()

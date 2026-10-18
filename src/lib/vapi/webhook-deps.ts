@@ -1,6 +1,7 @@
 import { after } from 'next/server'
 import { insertCheckIn } from '@/lib/check-ins'
 import { coordinateOpportunity } from '@/lib/coordinator/deps'
+import { pendingExtraction, planEvents } from '@/lib/event-planner/deps'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import type { VapiWebhookDeps } from './webhook'
 
@@ -28,6 +29,10 @@ export function vapiWebhookDeps(): VapiWebhookDeps {
     async propose(opportunityId) {
       await coordinateOpportunity(opportunityId)
     },
+    async extract(checkInId) {
+      return planEvents(checkInId)
+    },
+    pendingExtraction,
     after,
     now: () => new Date(),
   }

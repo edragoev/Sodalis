@@ -15,13 +15,15 @@ alter table opportunities
   add constraint opportunities_has_call
     check (check_in_id is not null or check_in_vapi_call_id is not null);
 
--- propose_visit is idempotent per call + member + type. "No member named" counts as one slot,
--- so a retried tool call cannot create a second row.
+-- propose_visit is idempotent per call + member + type + item. "No member named" and "no item" each count
+-- as one slot, so a retried tool call cannot create a second row, while two different unnamed items
+-- from one call (zucchini, tea) do not collide.
 create unique index opportunities_call_member_type_uidx
   on opportunities (
     check_in_vapi_call_id,
     type,
-    coalesce(mentioned_member_id, '00000000-0000-0000-0000-000000000000'::uuid)
+    coalesce(mentioned_member_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    coalesce(mentioned_item, '')
   )
   where check_in_vapi_call_id is not null;
 
