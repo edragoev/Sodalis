@@ -126,6 +126,38 @@ describe('POST /api/vapi/webhook', () => {
     })
   })
 
+  describe('web calls (the Talk button) have no phone number', () => {
+    const DEMO = '+15550100142'
+    const webCall = report({}, { type: 'webCall', customer: undefined })
+
+    it('saves a web call for the demo senior when DEMO_SENIOR_PHONE is set', async () => {
+      const { deps, post } = setup({ demoSeniorPhone: DEMO })
+      const res = await post(webCall)
+      expect(res.status).toBe(200)
+      expect(deps.findSeniorByPhone).toHaveBeenCalledWith(DEMO)
+      expect(deps.insertCheckIn).toHaveBeenCalledOnce()
+    })
+
+    it.each([undefined, ''])('returns 400 for a web call when no demo senior is configured (%j)', async (demoSeniorPhone) => {
+      const { deps, post } = setup({ demoSeniorPhone })
+      expect((await post(webCall)).status).toBe(400)
+      expect(deps.insertCheckIn).not.toHaveBeenCalled()
+    })
+
+    it('never files a phone call without a number under the demo senior', async () => {
+      const { deps, post } = setup({ demoSeniorPhone: DEMO })
+      const res = await post(report({}, { type: 'outboundPhoneCall', customer: {} }))
+      expect(res.status).toBe(400)
+      expect(deps.findSeniorByPhone).not.toHaveBeenCalled()
+    })
+
+    it('uses the real number when a web call does carry one', async () => {
+      const { deps, post } = setup({ demoSeniorPhone: DEMO })
+      await post(report({}, { type: 'webCall' }))
+      expect(deps.findSeniorByPhone).toHaveBeenCalledWith('+15550100001')
+    })
+  })
+
   describe('storing the check-in', () => {
     it('saves the call for that senior, with its transcript, summary and duration', async () => {
       const { deps, post } = setup()
