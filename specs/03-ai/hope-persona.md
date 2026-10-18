@@ -36,5 +36,5 @@ Use `responseMimeType: application/json` plus `responseSchema`. Model id from an
 ## Alert mapping
 - `mood.score < -0.4` or `low_mood` → `low_mood`
 - `health_concern` / `safety_concern` → `health` (urgent when severity is urgent)
-- `wants_family_contact` → `wants_contact` plus a `call_requests` row
+- `wants_family_contact` → `wants_contact` alert plus a `wants_contact` opportunity
 - Unanswered after retries → `missed_checkin`

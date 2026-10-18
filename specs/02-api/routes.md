@@ -31,6 +31,6 @@
 4. Pull `message.artifact.transcript`, `message.summary`, `startedAt`, `endedAt`, `endedReason`. Map senior by `call.customer.number`.
 5. Voicemail/no-answer: insert `no_answer` check-in and stop (retry scheduling is v2).
 6. Call Gemini Flash with the structured schema (see 03-ai). Retry once, then fall back to a minimal row so the call is never lost.
-7. Insert `check_ins`; insert `alerts` for fired flags; insert `call_requests` if `wants_family_contact`; update engagement aggregates. Skip extracted health alerts that `flag_concern` already raised during the call; start the coordinator for every extracted opportunity.
+7. Insert `check_ins`; insert `alerts` for fired flags; insert a `wants_contact` opportunity if `wants_family_contact`; update engagement aggregates. Skip extracted health alerts that `flag_concern` already raised during the call; start the coordinator for every extracted opportunity.
 8. FCM multicast to members with tokens; urgent alerts high priority.
 9. `export const maxDuration = 30`; if Gemini is slow, return 200 and finish with `after()`.

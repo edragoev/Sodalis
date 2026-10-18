@@ -26,7 +26,7 @@ The only message sent during a call is a health alert from Hope's `flag_concern`
 | `gift_errand` | Something the elder has or needs that a relative can bring or fetch | "My zucchini are out of control." / "I'm out of tea." | normal (high if the elder is out of a necessity) |
 | `activity` | Something to do together | "I haven't played cards in ages." | low |
 | `event` | Time-anchored moment | "My birthday is on the 14th." / "I have a doctor's appointment Tuesday." | high as the date nears |
-| `wants_contact` | The elder wants someone to see or call them (replaces the standalone `call_requests` trigger; the table stays, linked to the opportunity) | "I'd love to hear from Maya." | high |
+| `wants_contact` | The elder wants someone to see or call them (replaced the old `call_requests` table, which was dropped) | "I'd love to hear from Maya." | high |
 
 ## 3. Extraction schema
 Added to the Gemini output (see [hope-persona](../03-ai/hope-persona.md)):

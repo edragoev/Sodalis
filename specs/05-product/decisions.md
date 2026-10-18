@@ -6,7 +6,7 @@
 - Scheduler schedules family appointments with the elder (visits/calls in `visits`) against the elder's preferred times. Hope check-in calls run on a fixed cadence outside the scheduler.
 - Family free time from a manual weekly grid (v1). Google Calendar free/busy is v2.
 - Alerts: low mood, health/safety, missed check-in, wants family contact.
-- `call_requests`: the elder asks Hope to get a relative to call.
+- "The elder would love to hear from someone" is a `wants_contact` opportunity (the old `call_requests` table was dropped).
 - Scale: 1 senior, 3-4 family members.
 - No auth. v1: the elder and 4 family members are seeded, and a "Who are you?" picker saves `member_id` to localStorage (drives FCM tokens and fairness). v2: members link by the elder's phone number. See [family-linking](../07-onboarding/family-linking.md).
 - Demo priority: reliable call-to-dashboard loop, then the push to a family member after the call.
