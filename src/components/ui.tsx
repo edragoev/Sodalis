@@ -109,7 +109,8 @@ export function TabBar({ active, name }: { active: "home" | "calendar" | "profil
     { key: "profile", href: "/profile", label: name || "Me", icon: icons.person },
   ] as const;
   return (
-    <nav className="flex w-full border-t border-sand bg-white pb-[env(safe-area-inset-bottom)] sm:rounded-b-[28px]">
+    // Extra space under the tabs lifts them clear of the phone's bottom edge and home bar.
+    <nav className="flex w-full border-t border-sand bg-white pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:rounded-b-[28px]">
       {tabs.map((t) => (
         <Link
           key={t.key}
